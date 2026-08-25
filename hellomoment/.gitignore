@@ -1,0 +1,23 @@
+node_modules
+.next
+out
+build
+dist
+*.log
+npm-debug.log*
+
+.env
+.env.local
+.env.*.local
+
+prisma/dev.db
+prisma/dev.db-journal
+
+# Runtime-generated content (uploaded photos/templates, generated flyers,
+# and the local-dev SQLite database) — real deployments keep this on a
+# persistent volume/disk (see README), not committed to git.
+storage/
+
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts

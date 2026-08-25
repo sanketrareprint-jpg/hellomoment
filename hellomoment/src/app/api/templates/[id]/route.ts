@@ -1,0 +1,88 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+import { prisma } from '@/lib/db';
+import { requireApiBusiness } from '@/lib/session';
+
+const placeholderSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  fontSize: z.number().optional(),
+  color: z.string().optional(),
+  fontWeight: z.union([z.number(), z.string()]).optional(),
+  fontFamily: z.string().optional(),
+  align: z.enum(['left', 'center', 'right']).optional(),
+  maxWidth: z.number().optional(),
+  maxLines: z.number().optional(),
+  size: z.number().optional(),
+  shape: z.enum(['circle', 'square']).optional(),
+});
+
+const templateSchema = z.object({
+  name: z.string().min(1),
+  occasion: z.enum(['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL']),
+  backgroundUrl: z.string().min(1),
+  canvasWidth: z.number().int().positive(),
+  canvasHeight: z.number().int().positive(),
+  namePlaceholder: placeholderSchema,
+  datePlaceholder: placeholderSchema.nullable().optional(),
+  photoPlaceholder: placeholderSchema.nullable().optional(),
+  isDefault: z.boolean().optional(),
+  aisensyCampaignName: z.string().optional().nullable(),
+});
+
+async function loadOwnedTemplate(businessId: string, id: string) {
+  const template = await prisma.flyerTemplate.findUnique({ where: { id } });
+  if (!template || template.businessId !== businessId) return null;
+  return template;
+}
+
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const business = await requireApiBusiness(req);
+  if (business instanceof NextResponse) return business;
+  const template = await loadOwnedTemplate(business.id, params.id);
+  if (!template) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json({ template });
+}
+
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  const business = await requireApiBusiness(req);
+  if (business instanceof NextResponse) return business;
+  const existing = await loadOwnedTemplate(business.id, params.id);
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  const json = await req.json().catch(() => null);
+  const parsed = templateSchema.safeParse(json);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' }, { status: 400 });
+  }
+  const { namePlaceholder, datePlaceholder, photoPlaceholder, isDefault, ...rest } = parsed.data;
+
+  if (isDefault) {
+    await prisma.flyerTemplate.updateMany({
+      where: { businessId: business.id, occasion: rest.occasion, isDefault: true, id: { not: params.id } },
+      data: { isDefault: false },
+    });
+  }
+
+  const template = await prisma.flyerTemplate.update({
+    where: { id: params.id },
+    data: {
+      ...rest,
+      isDefault: Boolean(isDefault),
+      namePlaceholder: JSON.stringify(namePlaceholder),
+      datePlaceholder: datePlaceholder ? JSON.stringify(datePlaceholder) : null,
+      photoPlaceholder: photoPlaceholder ? JSON.stringify(photoPlaceholder) : null,
+    },
+  });
+  return NextResponse.json({ template });
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const business = await requireApiBusiness(req);
+  if (business instanceof NextResponse) return business;
+  const existing = await loadOwnedTemplate(business.id, params.id);
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
+  await prisma.flyerTemplate.delete({ where: { id: params.id } });
+  return NextResponse.json({ ok: true });
+}

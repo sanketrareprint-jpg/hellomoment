@@ -1,0 +1,168 @@
+// hellomoment.in — data model
+// SQLite by default; switch DATABASE_URL to a postgresql:// URL for
+// production scale (schema is compatible, just change `provider` below to
+// "postgresql" and re-run `npm run db:push`).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// A registered business/customer of hellomoment.in (multi-tenant: each
+// business only ever sees its own contacts, templates, festivals & logs).
+model Business {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  passwordHash   String
+  ownerWhatsapp  String // business owner's own WhatsApp number — also gets notified on every birthday/anniversary wish sent
+  timezone       String   @default("Asia/Kolkata")
+
+  // AiSensy credentials & default campaign (template) names. Each business
+  // connects their own AiSensy account — nothing is shared across tenants.
+  aisensyApiKey           String?
+  aisensyBirthdayCampaign String? // AiSensy "Live" campaign name used for birthday sends
+  aisensyAnniversaryCampaign String? // AiSensy "Live" campaign name used for anniversary sends
+  aisensyFestivalCampaign String? // AiSensy "Live" campaign name used for festival sends (falls back if a template doesn't override it)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contacts  Contact[]
+  templates FlyerTemplate[]
+  festivals Festival[]
+  sendLogs  SendLog[]
+}
+
+enum Relationship {
+  CUSTOMER
+  FRIEND
+  FAMILY
+  OTHER
+}
+
+model Contact {
+  id           String        @id @default(cuid())
+  businessId   String
+  business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name         String
+  relationship Relationship  @default(CUSTOMER)
+  whatsapp     String // WhatsApp number with country code, e.g. +919876543210
+  dob          DateTime? // date of birth (year may be a placeholder if unknown)
+  anniversary  DateTime? // wedding/relationship anniversary
+  photoUrl     String? // /uploads/photos/<file> — used as the variable photo on the flyer
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  sendLogs SendLog[]
+
+  @@index([businessId])
+  @@index([businessId, dob])
+  @@index([businessId, anniversary])
+}
+
+enum Occasion {
+  BIRTHDAY
+  ANNIVERSARY
+  FESTIVAL
+}
+
+// A reusable flyer background + where the variable name/date/photo go on it.
+// The business uploads the designed background image once; everything else
+// (name, date, photo) is overlaid automatically at send time.
+model FlyerTemplate {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name          String
+  occasion      Occasion
+  backgroundUrl String // /uploads/templates/<file>
+  canvasWidth   Int      @default(1080)
+  canvasHeight  Int      @default(1080)
+
+  // Placeholder positions/styles, stored as JSON, e.g.
+  // { "x":100, "y":800, "fontSize":48, "color":"#ffffff", "fontWeight":"700", "align":"center", "maxWidth":880 }
+  namePlaceholder  String // JSON, required
+  datePlaceholder  String? // JSON, optional (omit to not print the date)
+  photoPlaceholder String? // JSON, e.g. { "x":390,"y":140,"size":300,"shape":"circle" } — omit to not overlay a photo
+
+  isDefault          Boolean  @default(false) // used when a contact/festival doesn't specify a template
+  aisensyCampaignName String? // overrides the business-level default campaign for this template, if set
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  festivals Festival[]
+  sendLogs  SendLog[]
+
+  @@index([businessId, occasion])
+}
+
+// A custom festival/occasion the business wants to broadcast wishes for
+// (Diwali, Eid, New Year, a company anniversary, etc). Recurring festivals
+// match on month+day every year.
+model Festival {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  name       String
+  date       DateTime // the (next/reference) date of the festival
+  recurring  Boolean  @default(true) // if true, fires every year on this month+day
+  active     Boolean  @default(true)
+
+  templateId String?
+  template   FlyerTemplate? @relation(fields: [templateId], references: [id])
+  caption    String? // optional custom message caption
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sendLogs SendLog[]
+
+  @@index([businessId, active])
+}
+
+enum SendStatus {
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+// Audit trail of every flyer generated + WhatsApp send attempt, so a
+// business can see exactly what went out, to whom, and whether AiSensy
+// accepted it.
+model SendLog {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  festivalId String?
+  festival   Festival? @relation(fields: [festivalId], references: [id], onDelete: SetNull)
+
+  templateId String?
+  template   FlyerTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  occasion Occasion
+  status   SendStatus
+  flyerUrl String? // /generated/<file> — the composited flyer that was sent
+
+  sentToContact Boolean @default(false)
+  sentToOwner   Boolean @default(false)
+
+  aisensyResponse String? // JSON string of the raw AiSensy response, for debugging
+  errorMessage    String?
+
+  sentAt DateTime @default(now())
+
+  @@index([businessId, sentAt])
+}
