@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
-import TemplatePlaceholderEditor, { EMPTY_TEMPLATE } from '@/components/TemplatePlaceholderEditor';
+import TemplatePlaceholderEditor, { EMPTY_TEMPLATE, TemplateFormValues } from '@/components/TemplatePlaceholderEditor';
 
 export default async function EditTemplatePage({ params }: { params: { id: string } }) {
   const business = await getCurrentBusiness();
@@ -21,7 +21,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
         initial={{
           id: template.id,
           name: template.name,
-          occasion: template.occasion,
+          occasion: template.occasion as TemplateFormValues['occasion'],
           isDefault: template.isDefault,
           aisensyCampaignName: template.aisensyCampaignName ?? '',
           backgroundUrl: template.backgroundUrl,

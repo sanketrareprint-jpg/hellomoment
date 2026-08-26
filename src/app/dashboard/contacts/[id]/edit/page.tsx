@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
-import ContactForm from '@/components/ContactForm';
+import ContactForm, { ContactFormValues } from '@/components/ContactForm';
 import SendTestWishButton from '@/components/SendTestWishButton';
 
 function toDateInput(d: Date | null): string {
@@ -23,7 +23,7 @@ export default async function EditContactPage({ params }: { params: { id: string
         initial={{
           id: contact.id,
           name: contact.name,
-          relationship: contact.relationship,
+          relationship: contact.relationship as ContactFormValues['relationship'],
           whatsapp: contact.whatsapp,
           dob: toDateInput(contact.dob),
           anniversary: toDateInput(contact.anniversary),
