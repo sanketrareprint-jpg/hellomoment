@@ -38,19 +38,21 @@ model Business {
   sendLogs  SendLog[]
 }
 
-enum Relationship {
-  CUSTOMER
-  FRIEND
-  FAMILY
-  OTHER
-}
+// NOTE: SQLite (this project's default connector) does not support native
+// Prisma enums, so "enum" fields below are plain Strings holding one of a
+// fixed set of literal values (documented alongside each field). If you
+// switch `provider` to "postgresql" in the datasource block above, you can
+// optionally convert these back to real `enum` blocks for stricter DB-level
+// validation — the app code already only ever writes the literal values
+// listed, so no application code changes would be required either way.
 
+// Relationship: one of "CUSTOMER" | "FRIEND" | "FAMILY" | "OTHER"
 model Contact {
   id           String        @id @default(cuid())
   businessId   String
   business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name         String
-  relationship Relationship  @default(CUSTOMER)
+  relationship String        @default("CUSTOMER") // "CUSTOMER" | "FRIEND" | "FAMILY" | "OTHER"
   whatsapp     String // WhatsApp number with country code, e.g. +919876543210
   dob          DateTime? // date of birth (year may be a placeholder if unknown)
   anniversary  DateTime? // wedding/relationship anniversary
@@ -66,22 +68,17 @@ model Contact {
   @@index([businessId, anniversary])
 }
 
-enum Occasion {
-  BIRTHDAY
-  ANNIVERSARY
-  FESTIVAL
-}
-
 // A reusable flyer background + where the variable name/date/photo go on it.
 // The business uploads the designed background image once; everything else
 // (name, date, photo) is overlaid automatically at send time.
+// occasion: "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
 model FlyerTemplate {
   id         String   @id @default(cuid())
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   name          String
-  occasion      Occasion
+  occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
   backgroundUrl String // /uploads/templates/<file>
   canvasWidth   Int      @default(1080)
   canvasHeight  Int      @default(1080)
@@ -129,15 +126,10 @@ model Festival {
   @@index([businessId, active])
 }
 
-enum SendStatus {
-  SUCCESS
-  FAILED
-  SKIPPED
-}
-
 // Audit trail of every flyer generated + WhatsApp send attempt, so a
 // business can see exactly what went out, to whom, and whether AiSensy
 // accepted it.
+// status: "SUCCESS" | "FAILED" | "SKIPPED"
 model SendLog {
   id         String   @id @default(cuid())
   businessId String
@@ -152,8 +144,8 @@ model SendLog {
   templateId String?
   template   FlyerTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
 
-  occasion Occasion
-  status   SendStatus
+  occasion String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+  status   String // "SUCCESS" | "FAILED" | "SKIPPED"
   flyerUrl String? // /generated/<file> — the composited flyer that was sent
 
   sentToContact Boolean @default(false)

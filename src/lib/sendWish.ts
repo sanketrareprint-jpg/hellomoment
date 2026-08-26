@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { v4 as uuid } from 'uuid';
-import type { Business, Contact, Festival, FlyerTemplate, Occasion } from '@prisma/client';
+import type { Business, Contact, Festival, FlyerTemplate } from '@prisma/client';
 import { prisma } from './db';
 import { generateFlyer, TextPlaceholder, PhotoPlaceholder } from './flyer';
 import { sendAisensyCampaign } from './aisensy';
@@ -12,6 +12,11 @@ import { calculateAge, calculateYears, formatDateForDisplay, ordinal } from './d
  * a generated flyer + an AiSensy WhatsApp send + a SendLog row. Used by
  * both the daily cron trigger and (optionally) a "send now" test button.
  */
+
+// SQLite (this project's default connector) doesn't support native Prisma
+// enums, so `occasion`/`status` are plain String columns in the DB — this
+// union type is the app-level source of truth for the valid literal values.
+export type Occasion = 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL';
 
 interface SendWishParams {
   business: Business;
