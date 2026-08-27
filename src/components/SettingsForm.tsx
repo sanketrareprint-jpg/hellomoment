@@ -39,6 +39,11 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  // AiSensy/WhatsApp sending is fully automatic on hellomoment.in — it runs
+  // on one shared platform account, so there is nothing for a business to
+  // configure here. aisensyApiKey/aisensyBirthdayCampaign/etc. stay in
+  // `form` (unchanged, resubmitted as-is on save) but are intentionally not
+  // shown or editable anywhere in this UI.
 
   async function onLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -182,50 +187,6 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
               </p>
             </div>
           )}
-        </div>
-      </div>
-
-      <div className="card p-6 space-y-4">
-        <h2 className="font-semibold text-gray-900">AiSensy WhatsApp integration</h2>
-        <p className="text-sm text-gray-600">
-          Connect your AiSensy account so hellomoment.in can send wishes on your behalf. Find your API key under
-          Manage → API Key in your AiSensy dashboard. Each campaign name below must already exist and be{' '}
-          <strong>Live</strong> in AiSensy.
-        </p>
-        <div>
-          <label className="label">AiSensy API key</label>
-          <input
-            className="input"
-            type="password"
-            value={form.aisensyApiKey}
-            onChange={(e) => setForm({ ...form, aisensyApiKey: e.target.value })}
-            placeholder="Paste your AiSensy API key"
-          />
-        </div>
-        <div>
-          <label className="label">Birthday campaign name</label>
-          <input
-            className="input"
-            value={form.aisensyBirthdayCampaign}
-            onChange={(e) => setForm({ ...form, aisensyBirthdayCampaign: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className="label">Anniversary campaign name</label>
-          <input
-            className="input"
-            value={form.aisensyAnniversaryCampaign}
-            onChange={(e) => setForm({ ...form, aisensyAnniversaryCampaign: e.target.value })}
-          />
-        </div>
-        <div>
-          <label className="label">Default festival campaign name</label>
-          <input
-            className="input"
-            value={form.aisensyFestivalCampaign}
-            onChange={(e) => setForm({ ...form, aisensyFestivalCampaign: e.target.value })}
-          />
-          <p className="mt-1 text-xs text-gray-500">A specific flyer template can override this per-festival.</p>
         </div>
       </div>
 

@@ -5,7 +5,7 @@ import { prisma } from './db';
 import { generateFlyer, TextPlaceholder, PhotoPlaceholder } from './flyer';
 import { sendAisensyCampaign } from './aisensy';
 import { servedUrlToAbsolutePath, STORAGE_DIR } from './uploads';
-import { calculateAge, calculateYears, formatDateForDisplay, ordinal } from './dateUtils';
+import { formatDateForDisplay } from './dateUtils';
 
 /**
  * The single place that turns "it's Priya's birthday" (or a festival) into
@@ -27,12 +27,6 @@ interface SendWishParams {
   todayYear: number;
 }
 
-function buildCaption(occasion: Occasion, name: string, business: Business, extra?: string): string {
-  if (occasion === 'BIRTHDAY') return `🎉 Happy Birthday, ${name}! Warm wishes from ${business.name}.${extra ? ` ${extra}` : ''}`;
-  if (occasion === 'ANNIVERSARY') return `🎊 Happy Anniversary, ${name}! Warm wishes from ${business.name}.${extra ? ` ${extra}` : ''}`;
-  return `${extra || `Happy ${name}!`} — from ${business.name}.`;
-}
-
 export async function sendWishForContact(params: {
   business: Business;
   contact: Contact;
@@ -40,21 +34,13 @@ export async function sendWishForContact(params: {
   occasion: 'BIRTHDAY' | 'ANNIVERSARY';
   todayYear: number;
 }) {
-  const { business, contact, template, occasion, todayYear } = params;
+  const { business, contact, template, occasion } = params;
 
   const relevantDate = occasion === 'BIRTHDAY' ? contact.dob! : contact.anniversary!;
   const dateText = formatDateForDisplay(relevantDate);
+  const occasionWord = occasion === 'BIRTHDAY' ? 'Birthday' : 'Anniversary';
+  const fromName = brandFirmNameText(business) || business.name;
 
-  let extra: string | undefined;
-  if (occasion === 'BIRTHDAY') {
-    const age = calculateAge(relevantDate, todayYear);
-    if (age && age > 0) extra = `Wishing you a fantastic ${ordinal(age)} year ahead!`;
-  } else {
-    const years = calculateYears(relevantDate, todayYear);
-    if (years && years > 0) extra = `Celebrating ${ordinal(years)} years together!`;
-  }
-
-  const caption = buildCaption(occasion, contact.name, business, extra);
   const flyerUrl = await renderFlyer(business, template, contact.name, dateText, contact.photoUrl);
 
   let status: 'SUCCESS' | 'FAILED' = 'SUCCESS';
@@ -64,16 +50,23 @@ export async function sendWishForContact(params: {
   let sentToOwner = false;
 
   const campaignName = template.aisensyCampaignName || defaultCampaignFor(business, occasion);
+  const apiKey = resolveAisensyApiKey(business);
 
-  if (!business.aisensyApiKey || !campaignName) {
+  if (!apiKey || !campaignName) {
     status = 'FAILED';
     errorMessage = 'AiSensy API key or campaign name is not configured. Add it in Settings.';
   } else {
     const media = { url: absoluteUrlFor(business, flyerUrl), filename: 'flyer.jpg' };
-    const templateParams = [contact.name, dateText, caption];
+    // Matches the approved "hellomomentwishes" AiSensy template's 3 body
+    // variables in order: {{1}} the contact's name, {{2}} the occasion word
+    // ("Birthday"/"Anniversary"), {{3}} who it's from (the business's own
+    // name). If the approved template text ever changes, this must change
+    // to match it — AiSensy fills these blanks literally, it doesn't know
+    // what they're "supposed" to mean.
+    const templateParams = [contact.name, occasionWord, fromName];
 
     const contactResult = await sendAisensyCampaign({
-      apiKey: business.aisensyApiKey,
+      apiKey,
       campaignName,
       destination: contact.whatsapp,
       userName: contact.name,
@@ -88,11 +81,11 @@ export async function sendWishForContact(params: {
     }
 
     const ownerResult = await sendAisensyCampaign({
-      apiKey: business.aisensyApiKey,
+      apiKey,
       campaignName,
       destination: business.ownerWhatsapp,
       userName: business.name,
-      templateParams: [contact.name, dateText, caption],
+      templateParams,
       media,
     });
     sentToOwner = ownerResult.ok;
@@ -129,9 +122,10 @@ export async function sendWishForFestival(params: {
   const { business, festival, template, contacts } = params;
   const dateText = formatDateForDisplay(festival.date);
   const campaignName = template.aisensyCampaignName || business.aisensyFestivalCampaign;
+  const apiKey = resolveAisensyApiKey(business);
+  const fromName = brandFirmNameText(business) || business.name;
 
   for (const contact of contacts) {
-    const caption = festival.caption || `Wishing you a very happy ${festival.name}!`;
     const flyerUrl = await renderFlyer(business, template, contact.name, dateText, contact.photoUrl);
 
     let status: 'SUCCESS' | 'FAILED' = 'SUCCESS';
@@ -139,17 +133,20 @@ export async function sendWishForFestival(params: {
     let aisensyResponse: unknown = null;
     let sentToContact = false;
 
-    if (!business.aisensyApiKey || !campaignName) {
+    if (!apiKey || !campaignName) {
       status = 'FAILED';
       errorMessage = 'AiSensy API key or campaign name is not configured for festivals.';
     } else {
       const media = { url: absoluteUrlFor(business, flyerUrl), filename: 'flyer.jpg' };
+      // Same 3-variable shape as sendWishForContact: {{1}} name, {{2}} the
+      // occasion word (here, the festival's own name), {{3}} who it's from.
+      const templateParams = [contact.name, festival.name, fromName];
       const result = await sendAisensyCampaign({
-        apiKey: business.aisensyApiKey,
+        apiKey,
         campaignName,
         destination: contact.whatsapp,
         userName: contact.name,
-        templateParams: [contact.name, dateText, caption],
+        templateParams,
         media,
       });
       sentToContact = result.ok;
@@ -237,6 +234,18 @@ async function renderFlyer(
 
 function defaultCampaignFor(business: Business, occasion: 'BIRTHDAY' | 'ANNIVERSARY'): string | null {
   return occasion === 'BIRTHDAY' ? business.aisensyBirthdayCampaign : business.aisensyAnniversaryCampaign;
+}
+
+/**
+ * B2B platform model: hellomoment.in holds one shared AiSensy account/API
+ * key (set as the AISENSY_API_KEY env var on Railway) so a business can
+ * register and start sending without ever creating their own AiSensy
+ * account. A business's own key, if they've entered one in Settings
+ * (Advanced), always takes priority — this keeps any existing per-business
+ * setup (like the very first account on this platform) working unchanged.
+ */
+function resolveAisensyApiKey(business: Business): string | null {
+  return business.aisensyApiKey || process.env.AISENSY_API_KEY || null;
 }
 
 function absoluteUrlFor(business: Business, relativeUrl: string): string {

@@ -48,7 +48,9 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
           datePlaceholder: { ...EMPTY_TEMPLATE.datePlaceholder, ...(datePlaceholder ?? {}) },
           usePhoto: Boolean(photoPlaceholder),
           photoPlaceholder: { ...EMPTY_TEMPLATE.photoPlaceholder, ...(photoPlaceholder ?? {}) },
-          useLogo: Boolean(logoPlaceholder),
+          // Logo is compulsory — force true even for older templates saved
+          // before this was enforced (their logoPlaceholder may be null).
+          useLogo: true,
           logoPlaceholder: { ...EMPTY_TEMPLATE.logoPlaceholder, ...(logoPlaceholder ?? {}) },
           useFirmName: Boolean(firmNamePlaceholder),
           firmNamePlaceholder: { ...EMPTY_TEMPLATE.firmNamePlaceholder, ...(firmNamePlaceholder ?? {}) },

@@ -168,11 +168,18 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
   canvasHeight: 1080,
   useDate: true,
   usePhoto: true,
-  useLogo: false,
-  useFirmName: false,
-  usePhone: false,
-  useAddress: false,
-  useProducts: false,
+  // Logo is compulsory (see useLogo's comment below in TemplateFormValues
+  // usage) — there is no UI to turn it off. Firm name / phone / address /
+  // products stay on by default too, but the business can uncheck any of
+  // them ("if needed") — a festival flyer with no contact info gives a
+  // customer no way to actually act on it, so we default to showing it. If
+  // the matching Brand kit field is still empty, the checkbox stays
+  // disabled and nothing renders either way.
+  useLogo: true,
+  useFirmName: true,
+  usePhone: true,
+  useAddress: true,
+  useProducts: true,
   ...defaultsFor(1080, 1080),
 };
 
@@ -305,7 +312,7 @@ export default function TemplatePlaceholderEditor({
         namePlaceholder: form.namePlaceholder,
         datePlaceholder: form.useDate ? form.datePlaceholder : null,
         photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
-        logoPlaceholder: form.useLogo ? form.logoPlaceholder : null,
+        logoPlaceholder: form.logoPlaceholder, // compulsory — always sent
         firmNamePlaceholder: form.useFirmName ? form.firmNamePlaceholder : null,
         phonePlaceholder: form.usePhone ? form.phonePlaceholder : null,
         addressPlaceholder: form.useAddress ? form.addressPlaceholder : null,
@@ -450,38 +457,34 @@ export default function TemplatePlaceholderEditor({
         <div className="card p-5 space-y-4">
           <h3 className="font-semibold text-gray-900">Your business branding</h3>
           <p className="text-xs text-gray-500">
-            Pulled automatically from Settings → Brand kit for flyers — turn on whichever pieces you want on this
-            template and drag them into place.
+            Pulled automatically from Settings → Brand kit for flyers. Your logo always appears; the rest (firm
+            name, phone, address, products) is optional — turn on whichever you need and drag them into place.
           </p>
 
           <div className="space-y-2 border-t border-gray-100 pt-3">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
-              <input
-                type="checkbox"
-                checked={form.useLogo}
-                disabled={!business?.logoUrl}
-                onChange={(e) => setForm({ ...form, useLogo: e.target.checked })}
-              />
-              Show your logo
-            </label>
+            <p className="text-sm font-medium text-gray-900">Your logo — always included</p>
+            <p className="text-xs text-gray-500">
+              Every flyer your customers receive carries your logo, so they always know who sent the wish. This
+              can&rsquo;t be turned off — drag it into place below, or resize it here.
+            </p>
             {!business?.logoUrl && (
-              <p className="text-xs text-amber-600">Add a logo in Settings → Brand kit for flyers first.</p>
+              <p className="text-xs text-amber-600">
+                Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.
+              </p>
             )}
-            {form.useLogo && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label">Size (px)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    value={form.logoPlaceholder.size}
-                    onChange={(e) =>
-                      setForm({ ...form, logoPlaceholder: { ...form.logoPlaceholder, size: Number(e.target.value) } })
-                    }
-                  />
-                </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Size (px)</label>
+                <input
+                  className="input"
+                  type="number"
+                  value={form.logoPlaceholder.size}
+                  onChange={(e) =>
+                    setForm({ ...form, logoPlaceholder: { ...form.logoPlaceholder, size: Number(e.target.value) } })
+                  }
+                />
               </div>
-            )}
+            </div>
           </div>
 
           <div className="space-y-2 border-t border-gray-100 pt-3">

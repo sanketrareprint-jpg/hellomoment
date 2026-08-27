@@ -42,10 +42,12 @@ npm run dev            # http://localhost:3000
 
 Register a business account at `/register`, then in the app:
 
-1. **Settings** — paste your AiSensy API key and the campaign names you'll use for
-   birthdays/anniversaries/festivals (see "AiSensy setup" below). Also fill in your
-   **Brand kit for flyers** here (logo, phone, address, products line, and firm name
-   in English or Marathi) — enter it once and reuse it on any number of templates.
+1. **Settings** — nothing to set up for WhatsApp sending; it runs automatically on
+   hellomoment.in's own shared account (see "AiSensy setup" below — that part is a
+   one-time setup for the platform owner, not something each business does). Do fill
+   in your **Brand kit for flyers** here (logo, phone, address, products line, and
+   firm name in English or Marathi) — enter it once and reuse it on any number of
+   templates.
 2. **Flyer templates** — upload a background image per occasion and position the
    name/date/photo placeholders by dragging on the live preview. Optionally turn on
    any of your Brand kit elements (logo, firm name, phone, address, products) and
@@ -58,10 +60,13 @@ Register a business account at `/register`, then in the app:
 5. Use **Send test wish now** on a contact's edit page to confirm everything actually
    sends before relying on the automatic daily trigger.
 
-## 2. AiSensy setup
+## 2. AiSensy setup (one-time, platform owner only)
 
 hellomoment.in doesn't create WhatsApp templates on your behalf — it triggers
-campaigns you've already created and approved in AiSensy.
+campaigns you've already created and approved in AiSensy. This is a **one-time
+setup done by the platform owner** (whoever runs hellomoment.in) — individual
+businesses that register never see or touch any of this; there's no AiSensy
+field anywhere in their Settings.
 
 1. In AiSensy, create a WhatsApp template message with:
    - A **header** of type **Image** (this is where the generated flyer goes).
@@ -70,18 +75,16 @@ campaigns you've already created and approved in AiSensy.
      `{{3}}` = the wish caption/message.
    - Get it approved by WhatsApp, then create a **Campaign** in AiSensy using that
      template and set its status to **Live**. Note the exact campaign name.
-2. **Default setup used by this app:** every new business account is pre-filled in
-   Settings with a single shared campaign name, **`hellomomentwishes`**, used for
-   birthdays, anniversaries, and festivals alike — so you only need to create one
-   AiSensy campaign called exactly `hellomomentwishes` (Live status) to get started.
-   If you'd rather run separate campaigns per occasion (e.g. a differently-designed
-   header image for festivals), just change the relevant field(s) in Settings —
-   nothing else in the app needs to change.
-3. In hellomoment.in → Settings, paste your AiSensy **API key** (Manage → API Key in
-   your AiSensy dashboard). The campaign name field(s) are already pre-filled with
-   `hellomomentwishes`; edit them if you used a different name.
-4. A specific flyer template can override the campaign name too (useful if a
-   festival needs its own template with a differently-approved header).
+2. **Default used by this app:** every new business account is created with a single
+   shared campaign name, `hellomomentwishes`, stored on that business automatically
+   for birthdays, anniversaries, and festivals alike — so you only need one AiSensy
+   campaign called exactly `hellomomentwishes` (Live status) to get started. (A
+   specific flyer template can still override this per-template if you ever need a
+   differently-approved header for one festival — that's a template setting, not a
+   Settings-page one.)
+3. Set the `AISENSY_API_KEY` environment variable (see below) to your AiSensy
+   **API key** (Manage → API Key in your AiSensy dashboard). Every business on the
+   platform sends through this one key automatically.
 
 Reference: [AiSensy API Reference Docs](https://wiki.aisensy.com/en/articles/11501889-api-reference-docs),
 [AiSensy media-based template messages](https://wiki.aisensy.com/en/articles/11501590-how-to-create-send-media-based-whatsapp-template-messages-in-aisensy).
@@ -95,7 +98,7 @@ Reference: [AiSensy API Reference Docs](https://wiki.aisensy.com/en/articles/115
 | `JWT_SECRET` | Random 32+ char string signing login sessions (`openssl rand -base64 32`) |
 | `APP_BASE_URL` | Your public HTTPS URL, e.g. `https://hellomoment.in` — **AiSensy fetches the generated flyer image from `${APP_BASE_URL}/api/files/generated/<file>.jpg`, so this must be a real public URL in production, not localhost** |
 | `CRON_SECRET` | Random secret protecting `/api/cron/daily` — your scheduler sends it as `Authorization: Bearer <CRON_SECRET>` |
-| `AISENSY_API_KEY` | Optional fallback only; each business's own key (entered in Settings) is what's actually used |
+| `AISENSY_API_KEY` | **The platform's shared AiSensy key.** Every registered business uses this automatically — there is no AiSensy field in a business's Settings at all, nothing to set up or paste. |
 
 ### Why uploads/flyers aren't in `public/`
 
@@ -146,7 +149,14 @@ below easier; Namecheap or GoDaddy work equally well if you already use one of t
    JWT_SECRET=<openssl rand -base64 32>
    CRON_SECRET=<openssl rand -base64 32>
    APP_BASE_URL=https://hellomoment.in
+   AISENSY_API_KEY=<your AiSensy API key>
    ```
+   `AISENSY_API_KEY` is the platform's shared key — set it once here and every
+   business that registers can send WhatsApp wishes immediately, with no
+   AiSensy setup of their own required. (Whichever AiSensy account this key
+   belongs to is the one that gets billed for every message sent by every
+   business on the platform — factor that into how you price/monetize
+   registrations.)
    (Prefer managed Postgres instead of SQLite at real scale? Add Railway's
    Postgres plugin, set `DATABASE_URL` to the connection string it gives you, change
    `provider = "sqlite"` to `"postgresql"` in `prisma/schema.prisma`, and you no
@@ -180,7 +190,8 @@ below easier; Namecheap or GoDaddy work equally well if you already use one of t
      service and exits.
 
 8. Visit `https://hellomoment.in/register`, create your business account, and
-   follow the in-app setup checklist (AiSensy key, a flyer template, some contacts).
+   follow the in-app setup checklist (Brand kit, a flyer template, some contacts) —
+   WhatsApp sending itself needs no setup, it's already live via `AISENSY_API_KEY`.
    Use **Send test wish now** on a contact to confirm the whole pipeline — flyer
    generation, file storage, and the AiSensy send — actually works before relying
    on the daily job.

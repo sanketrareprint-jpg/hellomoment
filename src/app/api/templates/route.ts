@@ -35,6 +35,15 @@ const templateSchema = z.object({
   aisensyCampaignName: z.string().optional().nullable(),
 });
 
+// Mirrors the client's default logo position/size in TemplatePlaceholderEditor.tsx
+function defaultLogoPlaceholder(width: number, height: number) {
+  return {
+    x: Math.round(width * 0.42),
+    y: Math.round(height * 0.02),
+    size: Math.round(width * 0.16),
+  };
+}
+
 export async function GET(req: NextRequest) {
   const business = await requireApiBusiness(req);
   if (business instanceof NextResponse) return business;
@@ -75,6 +84,12 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  // Logo is compulsory on every flyer — a business's customers should
+  // always be able to tell who sent the wish. Default a placeholder even if
+  // the client didn't send one, so this can't be bypassed by calling the
+  // API directly.
+  const effectiveLogoPlaceholder = logoPlaceholder ?? defaultLogoPlaceholder(rest.canvasWidth, rest.canvasHeight);
+
   const template = await prisma.flyerTemplate.create({
     data: {
       ...rest,
@@ -83,7 +98,7 @@ export async function POST(req: NextRequest) {
       namePlaceholder: JSON.stringify(namePlaceholder),
       datePlaceholder: datePlaceholder ? JSON.stringify(datePlaceholder) : null,
       photoPlaceholder: photoPlaceholder ? JSON.stringify(photoPlaceholder) : null,
-      logoPlaceholder: logoPlaceholder ? JSON.stringify(logoPlaceholder) : null,
+      logoPlaceholder: JSON.stringify(effectiveLogoPlaceholder),
       firmNamePlaceholder: firmNamePlaceholder ? JSON.stringify(firmNamePlaceholder) : null,
       phonePlaceholder: phonePlaceholder ? JSON.stringify(phonePlaceholder) : null,
       addressPlaceholder: addressPlaceholder ? JSON.stringify(addressPlaceholder) : null,
