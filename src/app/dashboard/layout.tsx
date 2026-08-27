@@ -35,7 +35,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </Link>
           ))}
         </nav>
-        <div className="px-3 py-4 border-t border-gray-100">
+        <div className="px-3 py-4 border-t border-gray-100 space-y-2">
+          <div className="px-1">
+            <div className="text-xs font-medium text-gray-700 truncate">{business.name}</div>
+            <div className="text-xs text-gray-500 truncate">{business.email}</div>
+          </div>
           <LogoutButton />
         </div>
       </aside>

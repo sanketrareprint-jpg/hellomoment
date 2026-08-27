@@ -47,7 +47,7 @@ export default async function DashboardOverview() {
   return (
     <div className="space-y-8 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Welcome back 👋</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Welcome to Hello Moment 👋</h1>
         <p className="text-gray-600 mt-1">Make every customer moment memorable. ✨</p>
       </div>
 
