@@ -40,7 +40,9 @@ export default async function DashboardOverview() {
   }
   upcoming.sort((a, b) => a.days - b.days);
 
-  const setupIncomplete = !business.aisensyApiKey || templateCount === 0;
+  // WhatsApp sending itself is always ready (shared platform key) — the only
+  // thing worth nudging a new business about is uploading a flyer template.
+  const setupIncomplete = templateCount === 0;
 
   return (
     <div className="space-y-8 max-w-5xl">
@@ -55,15 +57,6 @@ export default async function DashboardOverview() {
           <div className="text-sm text-amber-800">
             <p className="font-medium">Finish setting up hellomoment.in</p>
             <ul className="mt-1 list-disc list-inside space-y-0.5">
-              {!business.aisensyApiKey && (
-                <li>
-                  Add your AiSensy API key in{' '}
-                  <Link href="/dashboard/settings" className="underline font-medium">
-                    Settings
-                  </Link>{' '}
-                  so wishes can actually be sent.
-                </li>
-              )}
               {templateCount === 0 && (
                 <li>
                   Upload a{' '}
@@ -78,11 +71,13 @@ export default async function DashboardOverview() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {/* "Upcoming (7 days)" used to be a 4th tile here too — removed since
+          the "Upcoming this week" card below already shows the same thing,
+          with actual names attached instead of just a count. */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <StatCard label="Contacts" value={contactCount} href="/dashboard/contacts" />
         <StatCard label="Flyer templates" value={templateCount} href="/dashboard/templates" />
         <StatCard label="Active festivals" value={festivalCount} href="/dashboard/festivals" />
-        <StatCard label="Upcoming (7 days)" value={upcoming.length} href="/dashboard/contacts" />
       </div>
 
       <div className="grid sm:grid-cols-2 gap-6">
