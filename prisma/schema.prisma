@@ -29,6 +29,21 @@ model Business {
   aisensyAnniversaryCampaign String? // AiSensy "Live" campaign name used for anniversary sends
   aisensyFestivalCampaign String? // AiSensy "Live" campaign name used for festival sends (falls back if a template doesn't override it)
 
+  // Brand kit — the business's own logo/contact/product details, entered
+  // once in Settings and reused across every flyer template. Each template
+  // decides *where* (or whether) to show these on its own design; the
+  // underlying values live here so a business never has to retype its own
+  // details for every new festival template.
+  // firmNameScript: "ENGLISH" | "MARATHI" — which script to render the firm
+  // name in on the flyer (English is auto-uppercased; Marathi uses
+  // firmNameMarathi verbatim, since there's no reliable auto-transliteration).
+  logoUrl          String? // /api/files/logos/<file>
+  phoneDisplay     String? // contact number to print on the flyer (can differ from ownerWhatsapp)
+  addressText      String?
+  productsText     String? // short line of products/services, e.g. "Sweets · Snacks · Catering"
+  firmNameScript   String  @default("ENGLISH") // "ENGLISH" | "MARATHI"
+  firmNameMarathi  String? // Marathi-script rendering of the firm name, typed by the business
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -88,6 +103,15 @@ model FlyerTemplate {
   namePlaceholder  String // JSON, required
   datePlaceholder  String? // JSON, optional (omit to not print the date)
   photoPlaceholder String? // JSON, e.g. { "x":390,"y":140,"size":300,"shape":"circle" } — omit to not overlay a photo
+
+  // Business branding placeholders — pull their actual text/image from the
+  // Business's own brand kit (see Business model above) at send time. All
+  // optional/independent so a template can show any mix of these.
+  logoPlaceholder      String? // JSON, e.g. { "x":390,"y":30,"size":180 } — business logo, contain-fit (not cropped)
+  firmNamePlaceholder  String? // JSON text placeholder — business name (English caps, or Marathi script)
+  phonePlaceholder     String? // JSON text placeholder — business phone number
+  addressPlaceholder   String? // JSON text placeholder — business address
+  productsPlaceholder  String? // JSON text placeholder — products/services line
 
   isDefault          Boolean  @default(false) // used when a contact/festival doesn't specify a template
   aisensyCampaignName String? // overrides the business-level default campaign for this template, if set

@@ -43,10 +43,16 @@ npm run dev            # http://localhost:3000
 Register a business account at `/register`, then in the app:
 
 1. **Settings** — paste your AiSensy API key and the campaign names you'll use for
-   birthdays/anniversaries/festivals (see "AiSensy setup" below).
+   birthdays/anniversaries/festivals (see "AiSensy setup" below). Also fill in your
+   **Brand kit for flyers** here (logo, phone, address, products line, and firm name
+   in English or Marathi) — enter it once and reuse it on any number of templates.
 2. **Flyer templates** — upload a background image per occasion and position the
-   name/date/photo placeholders by dragging on the live preview. Mark one template
-   per occasion as "default" — that's the one the daily job uses.
+   name/date/photo placeholders by dragging on the live preview. Optionally turn on
+   any of your Brand kit elements (logo, firm name, phone, address, products) and
+   drag those into place too — useful for festival flyers where every festival can
+   use its own background/design but still carry your business branding. Mark one
+   template per occasion as "default" — that's the one the daily job uses (a festival
+   can also link to its own specific template instead, from the festival's edit page).
 3. **Contacts** — add people one at a time, or use **Bulk import** for a CSV/XLSX.
 4. **Festivals** — add any custom occasions (Diwali, Eid, your shop's anniversary, etc).
 5. Use **Send test wish now** on a contact's edit page to confirm everything actually
@@ -152,14 +158,15 @@ below easier; Namecheap or GoDaddy work equally well if you already use one of t
    DNS provider. Railway issues a free SSL certificate automatically once DNS
    resolves (can take up to a few hours).
 
-6. **Run the first database sync.** After the first successful deploy, use the
-   [Railway CLI](https://docs.railway.com/guides/cli) from your machine:
-   ```bash
-   railway link           # link to your project
-   railway run npm run db:push
-   ```
-   This creates the tables inside the volume-backed SQLite file (or your Postgres
-   database, if you switched).
+6. **Database sync happens automatically.** The `start` script runs
+   `prisma db push` against the live `DATABASE_URL` every time the service
+   boots, before `next start` runs — so the tables are created inside the
+   volume-backed SQLite file (or your Postgres database, if you switched)
+   automatically on first deploy and after every schema change, no manual
+   step needed. (Do **not** use `railway run npm run db:push` for this —
+   that command runs locally on your machine with Railway's env vars
+   borrowed, not inside the actual deployed container, so it would create a
+   database file on your own computer instead of the real server.)
 
 7. **Add the daily trigger as a second service.** Cron jobs on Railway run a
    service's start command on a schedule, so create one more service from the same

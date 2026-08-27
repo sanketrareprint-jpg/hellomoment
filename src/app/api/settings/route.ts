@@ -11,6 +11,12 @@ const schema = z.object({
   aisensyBirthdayCampaign: z.string().optional().nullable(),
   aisensyAnniversaryCampaign: z.string().optional().nullable(),
   aisensyFestivalCampaign: z.string().optional().nullable(),
+  logoUrl: z.string().optional().nullable(),
+  phoneDisplay: z.string().optional().nullable(),
+  addressText: z.string().optional().nullable(),
+  productsText: z.string().optional().nullable(),
+  firmNameScript: z.enum(['ENGLISH', 'MARATHI']).optional(),
+  firmNameMarathi: z.string().optional().nullable(),
 });
 
 export async function PUT(req: NextRequest) {
@@ -31,6 +37,11 @@ export async function PUT(req: NextRequest) {
       aisensyBirthdayCampaign: parsed.data.aisensyBirthdayCampaign || null,
       aisensyAnniversaryCampaign: parsed.data.aisensyAnniversaryCampaign || null,
       aisensyFestivalCampaign: parsed.data.aisensyFestivalCampaign || null,
+      logoUrl: parsed.data.logoUrl || null,
+      phoneDisplay: parsed.data.phoneDisplay || null,
+      addressText: parsed.data.addressText || null,
+      productsText: parsed.data.productsText || null,
+      firmNameMarathi: parsed.data.firmNameMarathi || null,
     },
   });
   return NextResponse.json({

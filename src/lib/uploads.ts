@@ -37,7 +37,7 @@ export interface SavedUpload {
  * STORAGE_DIR/<subdir>/, returning both its servable URL and absolute
  * filesystem path. Rejects anything that isn't a recognized image type.
  */
-export async function saveImageUpload(file: File, subdir: 'photos' | 'templates'): Promise<SavedUpload> {
+export async function saveImageUpload(file: File, subdir: 'photos' | 'templates' | 'logos'): Promise<SavedUpload> {
   const ext = ALLOWED_IMAGE_TYPES[file.type];
   if (!ext) {
     throw new Error(`Unsupported image type: ${file.type || 'unknown'}. Use JPG, PNG, or WebP.`);

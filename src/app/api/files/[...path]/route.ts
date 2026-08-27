@@ -25,7 +25,7 @@ const CONTENT_TYPES: Record<string, string> = {
 // deliberately excludes the "data" subdirectory some deployments (see
 // README) use for the SQLite database file within the same STORAGE_DIR
 // volume — that must never become reachable by URL.
-const ALLOWED_SUBDIRS = new Set(['photos', 'templates', 'generated']);
+const ALLOWED_SUBDIRS = new Set(['photos', 'templates', 'generated', 'logos']);
 
 export async function GET(_req: NextRequest, { params }: { params: { path: string[] } }) {
   if (!ALLOWED_SUBDIRS.has(params.path[0])) {

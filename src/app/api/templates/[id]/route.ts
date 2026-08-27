@@ -26,6 +26,11 @@ const templateSchema = z.object({
   namePlaceholder: placeholderSchema,
   datePlaceholder: placeholderSchema.nullable().optional(),
   photoPlaceholder: placeholderSchema.nullable().optional(),
+  logoPlaceholder: placeholderSchema.nullable().optional(),
+  firmNamePlaceholder: placeholderSchema.nullable().optional(),
+  phonePlaceholder: placeholderSchema.nullable().optional(),
+  addressPlaceholder: placeholderSchema.nullable().optional(),
+  productsPlaceholder: placeholderSchema.nullable().optional(),
   isDefault: z.boolean().optional(),
   aisensyCampaignName: z.string().optional().nullable(),
 });
@@ -55,7 +60,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' }, { status: 400 });
   }
-  const { namePlaceholder, datePlaceholder, photoPlaceholder, isDefault, ...rest } = parsed.data;
+  const {
+    namePlaceholder,
+    datePlaceholder,
+    photoPlaceholder,
+    logoPlaceholder,
+    firmNamePlaceholder,
+    phonePlaceholder,
+    addressPlaceholder,
+    productsPlaceholder,
+    isDefault,
+    ...rest
+  } = parsed.data;
 
   if (isDefault) {
     await prisma.flyerTemplate.updateMany({
@@ -72,6 +88,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       namePlaceholder: JSON.stringify(namePlaceholder),
       datePlaceholder: datePlaceholder ? JSON.stringify(datePlaceholder) : null,
       photoPlaceholder: photoPlaceholder ? JSON.stringify(photoPlaceholder) : null,
+      logoPlaceholder: logoPlaceholder ? JSON.stringify(logoPlaceholder) : null,
+      firmNamePlaceholder: firmNamePlaceholder ? JSON.stringify(firmNamePlaceholder) : null,
+      phonePlaceholder: phonePlaceholder ? JSON.stringify(phonePlaceholder) : null,
+      addressPlaceholder: addressPlaceholder ? JSON.stringify(addressPlaceholder) : null,
+      productsPlaceholder: productsPlaceholder ? JSON.stringify(productsPlaceholder) : null,
     },
   });
   return NextResponse.json({ template });

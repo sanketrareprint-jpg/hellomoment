@@ -23,6 +23,26 @@ interface PhotoPlaceholder {
   shape: 'circle' | 'square';
 }
 
+interface LogoPlaceholder {
+  x: number;
+  y: number;
+  size: number;
+}
+
+// The business's saved Brand kit (Settings → Brand kit for flyers), passed
+// in so the editor can preview the *actual* logo/firm name/phone/address
+// instead of generic placeholder boxes — a truer what-you'll-actually-send
+// preview than a "Sample Name"-style stand-in would give.
+export interface BrandInfo {
+  logoUrl: string | null;
+  name: string;
+  phoneDisplay: string | null;
+  addressText: string | null;
+  productsText: string | null;
+  firmNameScript: 'ENGLISH' | 'MARATHI';
+  firmNameMarathi: string | null;
+}
+
 export interface TemplateFormValues {
   id?: string;
   name: string;
@@ -37,11 +57,28 @@ export interface TemplateFormValues {
   datePlaceholder: TextPlaceholder;
   usePhoto: boolean;
   photoPlaceholder: PhotoPlaceholder;
+  useLogo: boolean;
+  logoPlaceholder: LogoPlaceholder;
+  useFirmName: boolean;
+  firmNamePlaceholder: TextPlaceholder;
+  usePhone: boolean;
+  phonePlaceholder: TextPlaceholder;
+  useAddress: boolean;
+  addressPlaceholder: TextPlaceholder;
+  useProducts: boolean;
+  productsPlaceholder: TextPlaceholder;
 }
 
 function defaultsFor(width: number, height: number): Pick<
   TemplateFormValues,
-  'namePlaceholder' | 'datePlaceholder' | 'photoPlaceholder'
+  | 'namePlaceholder'
+  | 'datePlaceholder'
+  | 'photoPlaceholder'
+  | 'logoPlaceholder'
+  | 'firmNamePlaceholder'
+  | 'phonePlaceholder'
+  | 'addressPlaceholder'
+  | 'productsPlaceholder'
 > {
   return {
     namePlaceholder: {
@@ -70,6 +107,54 @@ function defaultsFor(width: number, height: number): Pick<
       size: Math.round(width * 0.28),
       shape: 'circle',
     },
+    // Business branding block — defaults stack neatly along the bottom edge
+    // (logo top-center by default); every element is independently
+    // draggable, so these are just a sensible starting point.
+    logoPlaceholder: {
+      x: Math.round(width * 0.42),
+      y: Math.round(height * 0.02),
+      size: Math.round(width * 0.16),
+    },
+    firmNamePlaceholder: {
+      x: Math.round(width / 2),
+      y: Math.round(height * 0.87),
+      fontSize: Math.round(width * 0.045),
+      color: '#ffffff',
+      fontWeight: 800,
+      align: 'center',
+      maxWidth: Math.round(width * 0.9),
+      maxLines: 1,
+    },
+    phonePlaceholder: {
+      x: Math.round(width / 2),
+      y: Math.round(height * 0.905),
+      fontSize: Math.round(width * 0.028),
+      color: '#ffffff',
+      fontWeight: 400,
+      align: 'center',
+      maxWidth: Math.round(width * 0.85),
+      maxLines: 1,
+    },
+    addressPlaceholder: {
+      x: Math.round(width / 2),
+      y: Math.round(height * 0.94),
+      fontSize: Math.round(width * 0.024),
+      color: '#ffffff',
+      fontWeight: 400,
+      align: 'center',
+      maxWidth: Math.round(width * 0.85),
+      maxLines: 2,
+    },
+    productsPlaceholder: {
+      x: Math.round(width / 2),
+      y: Math.round(height * 0.978),
+      fontSize: Math.round(width * 0.022),
+      color: '#ffffff',
+      fontWeight: 600,
+      align: 'center',
+      maxWidth: Math.round(width * 0.85),
+      maxLines: 1,
+    },
   };
 }
 
@@ -83,13 +168,24 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
   canvasHeight: 1080,
   useDate: true,
   usePhoto: true,
+  useLogo: false,
+  useFirmName: false,
+  usePhone: false,
+  useAddress: false,
+  useProducts: false,
   ...defaultsFor(1080, 1080),
 };
 
 const PREVIEW_WIDTH = 420;
-type DragTarget = 'name' | 'date' | 'photo' | null;
+type DragTarget = 'name' | 'date' | 'photo' | 'logo' | 'firmName' | 'phone' | 'address' | 'products' | null;
 
-export default function TemplatePlaceholderEditor({ initial }: { initial?: TemplateFormValues }) {
+export default function TemplatePlaceholderEditor({
+  initial,
+  business,
+}: {
+  initial?: TemplateFormValues;
+  business?: BrandInfo;
+}) {
   const router = useRouter();
   const [form, setForm] = useState<TemplateFormValues>(initial ?? EMPTY_TEMPLATE);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +196,12 @@ export default function TemplatePlaceholderEditor({ initial }: { initial?: Templ
 
   const scale = PREVIEW_WIDTH / form.canvasWidth;
   const previewHeight = form.canvasHeight * scale;
+
+  const firmNamePreviewText = business
+    ? business.firmNameScript === 'MARATHI'
+      ? business.firmNameMarathi || business.name
+      : business.name.toUpperCase()
+    : 'YOUR FIRM NAME';
 
   async function onBackgroundChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -142,18 +244,40 @@ export default function TemplatePlaceholderEditor({ initial }: { initial?: Templ
     const y = Math.round(py / scale);
 
     setForm((f) => {
-      if (dragTarget.current === 'name') return { ...f, namePlaceholder: { ...f.namePlaceholder, x, y } };
-      if (dragTarget.current === 'date') return { ...f, datePlaceholder: { ...f.datePlaceholder, x, y } };
-      if (dragTarget.current === 'photo')
-        return {
-          ...f,
-          photoPlaceholder: {
-            ...f.photoPlaceholder,
-            x: Math.round(x - f.photoPlaceholder.size / 2),
-            y: Math.round(y - f.photoPlaceholder.size / 2),
-          },
-        };
-      return f;
+      switch (dragTarget.current) {
+        case 'name':
+          return { ...f, namePlaceholder: { ...f.namePlaceholder, x, y } };
+        case 'date':
+          return { ...f, datePlaceholder: { ...f.datePlaceholder, x, y } };
+        case 'photo':
+          return {
+            ...f,
+            photoPlaceholder: {
+              ...f.photoPlaceholder,
+              x: Math.round(x - f.photoPlaceholder.size / 2),
+              y: Math.round(y - f.photoPlaceholder.size / 2),
+            },
+          };
+        case 'logo':
+          return {
+            ...f,
+            logoPlaceholder: {
+              ...f.logoPlaceholder,
+              x: Math.round(x - f.logoPlaceholder.size / 2),
+              y: Math.round(y - f.logoPlaceholder.size / 2),
+            },
+          };
+        case 'firmName':
+          return { ...f, firmNamePlaceholder: { ...f.firmNamePlaceholder, x, y } };
+        case 'phone':
+          return { ...f, phonePlaceholder: { ...f.phonePlaceholder, x, y } };
+        case 'address':
+          return { ...f, addressPlaceholder: { ...f.addressPlaceholder, x, y } };
+        case 'products':
+          return { ...f, productsPlaceholder: { ...f.productsPlaceholder, x, y } };
+        default:
+          return f;
+      }
     });
   }
 
@@ -181,6 +305,11 @@ export default function TemplatePlaceholderEditor({ initial }: { initial?: Templ
         namePlaceholder: form.namePlaceholder,
         datePlaceholder: form.useDate ? form.datePlaceholder : null,
         photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
+        logoPlaceholder: form.useLogo ? form.logoPlaceholder : null,
+        firmNamePlaceholder: form.useFirmName ? form.firmNamePlaceholder : null,
+        phonePlaceholder: form.usePhone ? form.phonePlaceholder : null,
+        addressPlaceholder: form.useAddress ? form.addressPlaceholder : null,
+        productsPlaceholder: form.useProducts ? form.productsPlaceholder : null,
       };
       const url = form.id ? `/api/templates/${form.id}` : '/api/templates';
       const method = form.id ? 'PUT' : 'POST';
@@ -318,6 +447,132 @@ export default function TemplatePlaceholderEditor({ initial }: { initial?: Templ
           )}
         </div>
 
+        <div className="card p-5 space-y-4">
+          <h3 className="font-semibold text-gray-900">Your business branding</h3>
+          <p className="text-xs text-gray-500">
+            Pulled automatically from Settings → Brand kit for flyers — turn on whichever pieces you want on this
+            template and drag them into place.
+          </p>
+
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <input
+                type="checkbox"
+                checked={form.useLogo}
+                disabled={!business?.logoUrl}
+                onChange={(e) => setForm({ ...form, useLogo: e.target.checked })}
+              />
+              Show your logo
+            </label>
+            {!business?.logoUrl && (
+              <p className="text-xs text-amber-600">Add a logo in Settings → Brand kit for flyers first.</p>
+            )}
+            {form.useLogo && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Size (px)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    value={form.logoPlaceholder.size}
+                    onChange={(e) =>
+                      setForm({ ...form, logoPlaceholder: { ...form.logoPlaceholder, size: Number(e.target.value) } })
+                    }
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <input
+                type="checkbox"
+                checked={form.useFirmName}
+                onChange={(e) => setForm({ ...form, useFirmName: e.target.checked })}
+              />
+              Show firm name ({business?.firmNameScript === 'MARATHI' ? 'Marathi' : 'English caps'})
+            </label>
+            {form.useFirmName && (
+              <PlaceholderControls
+                title=""
+                placeholder={form.firmNamePlaceholder}
+                onChange={(p) => setForm({ ...form, firmNamePlaceholder: p })}
+                compact
+              />
+            )}
+          </div>
+
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <input
+                type="checkbox"
+                checked={form.usePhone}
+                disabled={!business?.phoneDisplay}
+                onChange={(e) => setForm({ ...form, usePhone: e.target.checked })}
+              />
+              Show phone number
+            </label>
+            {!business?.phoneDisplay && (
+              <p className="text-xs text-amber-600">Add a phone number in Settings → Brand kit for flyers first.</p>
+            )}
+            {form.usePhone && (
+              <PlaceholderControls
+                title=""
+                placeholder={form.phonePlaceholder}
+                onChange={(p) => setForm({ ...form, phonePlaceholder: p })}
+                compact
+              />
+            )}
+          </div>
+
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <input
+                type="checkbox"
+                checked={form.useAddress}
+                disabled={!business?.addressText}
+                onChange={(e) => setForm({ ...form, useAddress: e.target.checked })}
+              />
+              Show address
+            </label>
+            {!business?.addressText && (
+              <p className="text-xs text-amber-600">Add an address in Settings → Brand kit for flyers first.</p>
+            )}
+            {form.useAddress && (
+              <PlaceholderControls
+                title=""
+                placeholder={form.addressPlaceholder}
+                onChange={(p) => setForm({ ...form, addressPlaceholder: p })}
+                compact
+              />
+            )}
+          </div>
+
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <input
+                type="checkbox"
+                checked={form.useProducts}
+                disabled={!business?.productsText}
+                onChange={(e) => setForm({ ...form, useProducts: e.target.checked })}
+              />
+              Show products / services line
+            </label>
+            {!business?.productsText && (
+              <p className="text-xs text-amber-600">Add a products/services line in Settings → Brand kit for flyers first.</p>
+            )}
+            {form.useProducts && (
+              <PlaceholderControls
+                title=""
+                placeholder={form.productsPlaceholder}
+                onChange={(p) => setForm({ ...form, productsPlaceholder: p })}
+                compact
+              />
+            )}
+          </div>
+        </div>
+
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex gap-3">
@@ -367,6 +622,26 @@ export default function TemplatePlaceholderEditor({ initial }: { initial?: Templ
             </div>
           )}
 
+          {form.useLogo && form.backgroundUrl && (
+            <div
+              onPointerDown={startDrag('logo')}
+              className="absolute border-2 border-dashed border-amber-500 cursor-move flex items-center justify-center overflow-hidden bg-white/10"
+              style={{
+                left: form.logoPlaceholder.x * scale,
+                top: form.logoPlaceholder.y * scale,
+                width: form.logoPlaceholder.size * scale,
+                height: form.logoPlaceholder.size * scale,
+              }}
+            >
+              {business?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={business.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain pointer-events-none" />
+              ) : (
+                <span className="text-[10px] font-medium text-amber-700">Logo</span>
+              )}
+            </div>
+          )}
+
           {form.backgroundUrl && (
             <div
               onPointerDown={startDrag('name')}
@@ -410,6 +685,98 @@ export default function TemplatePlaceholderEditor({ initial }: { initial?: Templ
               }}
             >
               25 August
+            </div>
+          )}
+
+          {form.useFirmName && form.backgroundUrl && (
+            <div
+              onPointerDown={startDrag('firmName')}
+              className="absolute cursor-move px-1 whitespace-nowrap"
+              style={{
+                left: form.firmNamePlaceholder.x * scale,
+                top: form.firmNamePlaceholder.y * scale,
+                transform:
+                  form.firmNamePlaceholder.align === 'center'
+                    ? 'translate(-50%, -50%)'
+                    : form.firmNamePlaceholder.align === 'right'
+                      ? 'translate(-100%, -50%)'
+                      : 'translate(0, -50%)',
+                fontSize: Math.max(9, form.firmNamePlaceholder.fontSize * scale),
+                fontWeight: form.firmNamePlaceholder.fontWeight,
+                color: form.firmNamePlaceholder.color,
+                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+              }}
+            >
+              {firmNamePreviewText}
+            </div>
+          )}
+
+          {form.usePhone && form.backgroundUrl && (
+            <div
+              onPointerDown={startDrag('phone')}
+              className="absolute cursor-move px-1 whitespace-nowrap"
+              style={{
+                left: form.phonePlaceholder.x * scale,
+                top: form.phonePlaceholder.y * scale,
+                transform:
+                  form.phonePlaceholder.align === 'center'
+                    ? 'translate(-50%, -50%)'
+                    : form.phonePlaceholder.align === 'right'
+                      ? 'translate(-100%, -50%)'
+                      : 'translate(0, -50%)',
+                fontSize: Math.max(8, form.phonePlaceholder.fontSize * scale),
+                fontWeight: form.phonePlaceholder.fontWeight,
+                color: form.phonePlaceholder.color,
+                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+              }}
+            >
+              {business?.phoneDisplay || 'Your phone number'}
+            </div>
+          )}
+
+          {form.useAddress && form.backgroundUrl && (
+            <div
+              onPointerDown={startDrag('address')}
+              className="absolute cursor-move px-1 whitespace-nowrap"
+              style={{
+                left: form.addressPlaceholder.x * scale,
+                top: form.addressPlaceholder.y * scale,
+                transform:
+                  form.addressPlaceholder.align === 'center'
+                    ? 'translate(-50%, -50%)'
+                    : form.addressPlaceholder.align === 'right'
+                      ? 'translate(-100%, -50%)'
+                      : 'translate(0, -50%)',
+                fontSize: Math.max(8, form.addressPlaceholder.fontSize * scale),
+                fontWeight: form.addressPlaceholder.fontWeight,
+                color: form.addressPlaceholder.color,
+                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+              }}
+            >
+              {business?.addressText || 'Your address'}
+            </div>
+          )}
+
+          {form.useProducts && form.backgroundUrl && (
+            <div
+              onPointerDown={startDrag('products')}
+              className="absolute cursor-move px-1 whitespace-nowrap"
+              style={{
+                left: form.productsPlaceholder.x * scale,
+                top: form.productsPlaceholder.y * scale,
+                transform:
+                  form.productsPlaceholder.align === 'center'
+                    ? 'translate(-50%, -50%)'
+                    : form.productsPlaceholder.align === 'right'
+                      ? 'translate(-100%, -50%)'
+                      : 'translate(0, -50%)',
+                fontSize: Math.max(8, form.productsPlaceholder.fontSize * scale),
+                fontWeight: form.productsPlaceholder.fontWeight,
+                color: form.productsPlaceholder.color,
+                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+              }}
+            >
+              {business?.productsText || 'Your products / services'}
             </div>
           )}
         </div>

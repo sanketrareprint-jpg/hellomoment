@@ -11,6 +11,12 @@ export interface SettingsFormValues {
   aisensyBirthdayCampaign: string;
   aisensyAnniversaryCampaign: string;
   aisensyFestivalCampaign: string;
+  logoUrl: string;
+  phoneDisplay: string;
+  addressText: string;
+  productsText: string;
+  firmNameScript: 'ENGLISH' | 'MARATHI';
+  firmNameMarathi: string;
 }
 
 const TIMEZONES = [
@@ -32,6 +38,26 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  async function onLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/uploads/logo', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Logo upload failed');
+      setForm((f) => ({ ...f, logoUrl: data.url }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Logo upload failed');
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -83,6 +109,79 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
             ))}
           </select>
           <p className="mt-1 text-xs text-gray-500">Birthdays/anniversaries/festivals trigger at local midnight in this timezone.</p>
+        </div>
+      </div>
+
+      <div className="card p-6 space-y-4">
+        <h2 className="font-semibold text-gray-900">Brand kit for flyers</h2>
+        <p className="text-sm text-gray-600">
+          These details are saved once here and can be shown on any flyer template — logo, firm name, phone,
+          address, products. Each template you design decides where (or whether) to show them; you don&rsquo;t
+          need to re-enter anything when you create a new festival template.
+        </p>
+        <div>
+          <label className="label">Logo</label>
+          <div className="flex items-center gap-3">
+            {form.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={form.logoUrl} alt="Logo preview" className="h-14 w-14 object-contain rounded border border-gray-200 bg-white" />
+            )}
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onLogoChange} />
+          </div>
+          {uploadingLogo && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
+          <p className="mt-1 text-xs text-gray-500">A PNG with a transparent background looks best.</p>
+        </div>
+        <div>
+          <label className="label">Phone number to show on the flyer</label>
+          <input
+            className="input"
+            value={form.phoneDisplay}
+            onChange={(e) => setForm({ ...form, phoneDisplay: e.target.value })}
+            placeholder="e.g. +91 98765 43210"
+          />
+        </div>
+        <div>
+          <label className="label">Address</label>
+          <input
+            className="input"
+            value={form.addressText}
+            onChange={(e) => setForm({ ...form, addressText: e.target.value })}
+            placeholder="Shop address to print on the flyer"
+          />
+        </div>
+        <div>
+          <label className="label">Products / services line</label>
+          <input
+            className="input"
+            value={form.productsText}
+            onChange={(e) => setForm({ ...form, productsText: e.target.value })}
+            placeholder="e.g. Sweets · Snacks · Catering"
+          />
+        </div>
+        <div>
+          <label className="label">Firm name script on the flyer</label>
+          <select
+            className="input"
+            value={form.firmNameScript}
+            onChange={(e) => setForm({ ...form, firmNameScript: e.target.value as 'ENGLISH' | 'MARATHI' })}
+          >
+            <option value="ENGLISH">English (shown in CAPITAL letters)</option>
+            <option value="MARATHI">Marathi (मराठी लिपी)</option>
+          </select>
+          {form.firmNameScript === 'MARATHI' && (
+            <div className="mt-2">
+              <label className="label">Firm name in Marathi</label>
+              <input
+                className="input"
+                value={form.firmNameMarathi}
+                onChange={(e) => setForm({ ...form, firmNameMarathi: e.target.value })}
+                placeholder="उदा. रेअरप्रिंट"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Type your firm name in Marathi script here — we print this exactly as typed.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

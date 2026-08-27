@@ -55,7 +55,7 @@ export async function sendWishForContact(params: {
   }
 
   const caption = buildCaption(occasion, contact.name, business, extra);
-  const flyerUrl = await renderFlyer(template, contact.name, dateText, contact.photoUrl);
+  const flyerUrl = await renderFlyer(business, template, contact.name, dateText, contact.photoUrl);
 
   let status: 'SUCCESS' | 'FAILED' = 'SUCCESS';
   let errorMessage: string | null = null;
@@ -132,7 +132,7 @@ export async function sendWishForFestival(params: {
 
   for (const contact of contacts) {
     const caption = festival.caption || `Wishing you a very happy ${festival.name}!`;
-    const flyerUrl = await renderFlyer(template, contact.name, dateText, contact.photoUrl);
+    const flyerUrl = await renderFlyer(business, template, contact.name, dateText, contact.photoUrl);
 
     let status: 'SUCCESS' | 'FAILED' = 'SUCCESS';
     let errorMessage: string | null = null;
@@ -178,7 +178,23 @@ export async function sendWishForFestival(params: {
   }
 }
 
+/**
+ * Renders the business's own brand name for the flyer footer, per their
+ * Settings → Brand kit choice: English is force-uppercased (per the
+ * business's request for capital English letters), Marathi is used
+ * verbatim as typed (Marathi script has no letter-casing concept, and
+ * auto-transliteration from the English name isn't reliable enough to do
+ * automatically).
+ */
+function brandFirmNameText(business: Business): string | null {
+  if (business.firmNameScript === 'MARATHI') {
+    return business.firmNameMarathi || business.name || null;
+  }
+  return business.name ? business.name.toUpperCase() : null;
+}
+
 async function renderFlyer(
+  business: Business,
   template: FlyerTemplate,
   name: string,
   dateText: string,
@@ -186,6 +202,12 @@ async function renderFlyer(
 ): Promise<string> {
   const outputName = `${uuid()}.jpg`;
   const outputPath = path.join(STORAGE_DIR, 'generated', outputName);
+
+  const logoPlaceholder = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
+  const firmNamePlaceholder = template.firmNamePlaceholder ? JSON.parse(template.firmNamePlaceholder) : null;
+  const phonePlaceholder = template.phonePlaceholder ? JSON.parse(template.phonePlaceholder) : null;
+  const addressPlaceholder = template.addressPlaceholder ? JSON.parse(template.addressPlaceholder) : null;
+  const productsPlaceholder = template.productsPlaceholder ? JSON.parse(template.productsPlaceholder) : null;
 
   await generateFlyer({
     backgroundPath: servedUrlToAbsolutePath(template.backgroundUrl),
@@ -197,6 +219,16 @@ async function renderFlyer(
     dateText,
     photoPlaceholder: template.photoPlaceholder ? (JSON.parse(template.photoPlaceholder) as PhotoPlaceholder) : null,
     photoPath: photoUrl ? servedUrlToAbsolutePath(photoUrl) : null,
+    logoPlaceholder,
+    logoPath: business.logoUrl ? servedUrlToAbsolutePath(business.logoUrl) : null,
+    firmNamePlaceholder,
+    firmNameText: brandFirmNameText(business),
+    phonePlaceholder,
+    phoneText: business.phoneDisplay || null,
+    addressPlaceholder,
+    addressText: business.addressText || null,
+    productsPlaceholder,
+    productsText: business.productsText || null,
     outputPath,
   });
 

@@ -17,6 +17,12 @@ export default async function SettingsPage() {
           aisensyBirthdayCampaign: business.aisensyBirthdayCampaign ?? '',
           aisensyAnniversaryCampaign: business.aisensyAnniversaryCampaign ?? '',
           aisensyFestivalCampaign: business.aisensyFestivalCampaign ?? '',
+          logoUrl: business.logoUrl ?? '',
+          phoneDisplay: business.phoneDisplay ?? '',
+          addressText: business.addressText ?? '',
+          productsText: business.productsText ?? '',
+          firmNameScript: (business.firmNameScript as 'ENGLISH' | 'MARATHI') ?? 'ENGLISH',
+          firmNameMarathi: business.firmNameMarathi ?? '',
         }}
       />
     </div>
