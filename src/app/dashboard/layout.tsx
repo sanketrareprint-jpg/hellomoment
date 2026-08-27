@@ -23,7 +23,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <div className="text-lg font-bold text-brand-700">
             hellomoment<span className="text-gray-400">.in</span>
           </div>
-          <div className="text-xs text-gray-500 mt-1 truncate">{business.name}</div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV.map((item) => (
