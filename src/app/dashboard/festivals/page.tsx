@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import DeleteFestivalButton from '@/components/DeleteFestivalButton';
+import AddCommonFestivalsButton from '@/components/AddCommonFestivalsButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +27,10 @@ export default async function FestivalsPage() {
         <Link href="/dashboard/festivals/new" className="btn-primary">
           + Add festival
         </Link>
+      </div>
+
+      <div className="card p-4 mb-6 bg-amber-50 border-amber-200">
+        <AddCommonFestivalsButton />
       </div>
 
       <div className="card overflow-hidden">
