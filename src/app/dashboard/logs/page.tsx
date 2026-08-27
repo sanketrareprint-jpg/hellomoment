@@ -43,7 +43,14 @@ export default async function LogsPage({ searchParams }: { searchParams: { page?
             {logs.map((log) => (
               <tr key={log.id} className="hover:bg-gray-50 align-top">
                 <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
-                  {new Date(log.sentAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                  {new Date(log.sentAt).toLocaleString('en-IN', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                    // Without this, the server's own clock (UTC on Railway)
+                    // gets used instead of the business's actual timezone —
+                    // a send at 8:21pm IST would otherwise show as 2:51pm.
+                    timeZone: business.timezone || 'Asia/Kolkata',
+                  })}
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-900">
                   {log.contact?.name ?? (log.festival ? `All contacts — ${log.festival.name}` : '—')}
