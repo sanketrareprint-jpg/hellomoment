@@ -4,7 +4,7 @@ import { getCurrentBusiness } from '@/lib/session';
 import LogoutButton from '@/components/LogoutButton';
 
 const NAV = [
-  { href: '/dashboard', label: 'Overview' },
+  { href: '/dashboard', label: 'Dashboard' },
   { href: '/dashboard/contacts', label: 'Contacts' },
   { href: '/dashboard/templates', label: 'Flyer templates' },
   { href: '/dashboard/festivals', label: 'Festivals' },
