@@ -45,6 +45,10 @@ export default function PublicJoinForm({ businessId }: { businessId: string }) {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    if (!photoUrl) {
+      setError('Please add your photo before submitting.');
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/public/contacts', {
@@ -94,7 +98,7 @@ export default function PublicJoinForm({ businessId }: { businessId: string }) {
           )}
         </div>
         <div>
-          <label className="label">Your photo (optional)</label>
+          <label className="label">Your photo (required)</label>
           <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onPhotoChange} />
           {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
         </div>

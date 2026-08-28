@@ -42,6 +42,9 @@ export async function POST(req: NextRequest) {
   if (!dob && !anniversary) {
     return NextResponse.json({ error: 'Add at least a birthday or an anniversary date' }, { status: 400 });
   }
+  if (!photoUrl) {
+    return NextResponse.json({ error: 'A photo is required' }, { status: 400 });
+  }
 
   const business = await prisma.business.findUnique({ where: { id: businessId } });
   if (!business) {
