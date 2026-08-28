@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
 import DeleteTemplateButton from '@/components/DeleteTemplateButton';
+import AddStarterTemplatesButton from '@/components/AddStarterTemplatesButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,16 +28,20 @@ export default async function TemplatesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Flyer templates</h1>
           <p className="text-gray-600 mt-1">Upload a background once; name, date and photo are filled in automatically.</p>
         </div>
-        <Link href="/dashboard/templates/new" className="btn-primary">
-          + New template
-        </Link>
+        <div className="flex gap-3">
+          <AddStarterTemplatesButton />
+          <Link href="/dashboard/templates/new" className="btn-primary">
+            + New template
+          </Link>
+        </div>
       </div>
 
       {templates.length === 0 ? (
         <div className="card p-10 text-center text-gray-500">
-          No templates yet.{' '}
+          No templates yet. Click <strong>+ Add starter flyer designs</strong> above for ready-made birthday,
+          anniversary, and festival flyers, or{' '}
           <Link href="/dashboard/templates/new" className="text-brand-600 font-medium">
-            Create your first one
+            create your own
           </Link>
           .
         </div>
