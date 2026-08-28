@@ -11,6 +11,7 @@ export interface ContactFormValues {
   dob: string; // YYYY-MM-DD or ''
   anniversary: string; // YYYY-MM-DD or ''
   photoUrl: string;
+  anniversaryPhotoUrl: string;
   notes: string;
 }
 
@@ -21,6 +22,7 @@ const EMPTY: ContactFormValues = {
   dob: '',
   anniversary: '',
   photoUrl: '',
+  anniversaryPhotoUrl: '',
   notes: '',
 };
 
@@ -30,6 +32,7 @@ export default function ContactForm({ initial }: { initial?: ContactFormValues }
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingAnniversary, setUploadingAnniversary] = useState(false);
 
   async function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -50,6 +53,25 @@ export default function ContactForm({ initial }: { initial?: ContactFormValues }
     }
   }
 
+  async function onAnniversaryPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAnniversary(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/uploads/photo', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      setForm((f) => ({ ...f, anniversaryPhotoUrl: data.url }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploadingAnniversary(false);
+    }
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -65,6 +87,7 @@ export default function ContactForm({ initial }: { initial?: ContactFormValues }
           dob: form.dob || null,
           anniversary: form.anniversary || null,
           photoUrl: form.photoUrl || null,
+          anniversaryPhotoUrl: form.anniversaryPhotoUrl || null,
           notes: form.notes || null,
         }),
       });
@@ -91,9 +114,28 @@ export default function ContactForm({ initial }: { initial?: ContactFormValues }
           )}
         </div>
         <div>
-          <label className="label">Photo</label>
+          <label className="label">Photo (birthday &amp; festival flyers)</label>
           <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onPhotoChange} />
           {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="w-20 h-20 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center border border-gray-200">
+          {form.anniversaryPhotoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={form.anniversaryPhotoUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-gray-400 text-xs">No photo</span>
+          )}
+        </div>
+        <div>
+          <label className="label">Anniversary photo (optional)</label>
+          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onAnniversaryPhotoChange} />
+          {uploadingAnniversary && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
+          <p className="mt-1 text-xs text-gray-500">
+            e.g. a couple&rsquo;s photo — used only on the anniversary flyer. Leave blank to reuse the photo above.
+          </p>
         </div>
       </div>
 
@@ -158,7 +200,7 @@ export default function ContactForm({ initial }: { initial?: ContactFormValues }
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex gap-3">
-        <button type="submit" disabled={loading || uploading} className="btn-primary">
+        <button type="submit" disabled={loading || uploading || uploadingAnniversary} className="btn-primary">
           {loading ? 'Saving…' : initial?.id ? 'Save changes' : 'Add contact'}
         </button>
         <button type="button" className="btn-secondary" onClick={() => router.push('/dashboard/contacts')}>

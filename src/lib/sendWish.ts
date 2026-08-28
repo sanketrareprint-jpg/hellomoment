@@ -40,8 +40,12 @@ export async function sendWishForContact(params: {
   const dateText = formatDateForDisplay(relevantDate);
   const occasionWord = occasion === 'BIRTHDAY' ? 'Birthday' : 'Anniversary';
   const fromName = brandFirmNameText(business) || business.name;
+  // Anniversary flyers use the contact's dedicated anniversary photo (e.g. a
+  // couple's photo) when they have one, falling back to their regular photo
+  // otherwise — birthdays always use the regular photo.
+  const photoForFlyer = occasion === 'ANNIVERSARY' ? contact.anniversaryPhotoUrl || contact.photoUrl : contact.photoUrl;
 
-  const flyerUrl = await renderFlyer(business, template, contact.name, dateText, contact.photoUrl);
+  const flyerUrl = await renderFlyer(business, template, contact.name, dateText, photoForFlyer);
 
   let status: 'SUCCESS' | 'FAILED' = 'SUCCESS';
   let errorMessage: string | null = null;

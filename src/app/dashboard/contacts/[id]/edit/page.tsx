@@ -28,6 +28,7 @@ export default async function EditContactPage({ params }: { params: { id: string
           dob: toDateInput(contact.dob),
           anniversary: toDateInput(contact.anniversary),
           photoUrl: contact.photoUrl ?? '',
+          anniversaryPhotoUrl: contact.anniversaryPhotoUrl ?? '',
           notes: contact.notes ?? '',
         }}
       />

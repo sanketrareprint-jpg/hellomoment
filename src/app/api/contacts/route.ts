@@ -18,6 +18,7 @@ const contactSchema = z.object({
   dob: dateOnly,
   anniversary: dateOnly,
   photoUrl: z.string().optional().nullable(),
+  anniversaryPhotoUrl: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 

@@ -71,7 +71,8 @@ model Contact {
   whatsapp     String // WhatsApp number with country code, e.g. +919876543210
   dob          DateTime? // date of birth (year may be a placeholder if unknown)
   anniversary  DateTime? // wedding/relationship anniversary
-  photoUrl     String? // /uploads/photos/<file> — used as the variable photo on the flyer
+  photoUrl     String? // /uploads/photos/<file> — used as the variable photo on birthday/festival flyers
+  anniversaryPhotoUrl String? // /uploads/photos/<file> — used instead of photoUrl on anniversary flyers (e.g. a couple's photo); falls back to photoUrl if not set
   notes        String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
