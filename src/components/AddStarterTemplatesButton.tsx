@@ -4,11 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 /**
- * One-click add of 16 ready-made flyer designs — 4 styles each for
- * Birthday, Anniversary, Diwali, and Raksha Bandhan — with everything
- * (background art, name/photo/branding placement) already set up, so a
- * business can pick a look they like without designing or uploading
- * anything.
+ * One-click add of 68 ready-made flyer designs — 4 styles each for
+ * Birthday, Anniversary, and every festival on the common Indian festival
+ * list (Diwali, Raksha Bandhan, New Year, Makar Sankranti, Republic Day,
+ * Holi, Gudi Padwa, Eid ul-Fitr, Eid ul-Adha, Independence Day, Ganesh
+ * Chaturthi, Gandhi Jayanti, Navratri, Dussehra, Christmas) — with
+ * everything (background art, name/photo/branding placement) already set
+ * up, so a business can pick a look they like without designing or
+ * uploading anything.
  */
 export default function AddStarterTemplatesButton() {
   const router = useRouter();

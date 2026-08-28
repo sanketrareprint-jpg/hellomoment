@@ -122,6 +122,71 @@ const STARTERS: { name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL
   { name: 'Starter — Raksha Bandhan: Thread of Love', occasion: 'FESTIVAL', file: 'rakhi-2.jpg' },
   { name: 'Starter — Raksha Bandhan: Golden Bond', occasion: 'FESTIVAL', file: 'rakhi-3.jpg' },
   { name: 'Starter — Raksha Bandhan: Pink Ribbon', occasion: 'FESTIVAL', file: 'rakhi-4.jpg' },
+  // New Year — 4 styles
+  { name: "Starter — New Year: Midnight Sky", occasion: 'FESTIVAL', file: 'newyear-1.jpg' },
+  { name: "Starter — New Year: Purple Fireworks", occasion: 'FESTIVAL', file: 'newyear-2.jpg' },
+  { name: "Starter — New Year: Pink Celebration", occasion: 'FESTIVAL', file: 'newyear-3.jpg' },
+  { name: "Starter — New Year: Golden Countdown", occasion: 'FESTIVAL', file: 'newyear-4.jpg' },
+  // Makar Sankranti — 4 styles
+  { name: 'Starter — Makar Sankranti: Blue Sky Kites', occasion: 'FESTIVAL', file: 'sankranti-1.jpg' },
+  { name: 'Starter — Makar Sankranti: Golden Harvest', occasion: 'FESTIVAL', file: 'sankranti-2.jpg' },
+  { name: 'Starter — Makar Sankranti: Til-Gul', occasion: 'FESTIVAL', file: 'sankranti-3.jpg' },
+  { name: 'Starter — Makar Sankranti: Sunrise Fields', occasion: 'FESTIVAL', file: 'sankranti-4.jpg' },
+  // Republic Day — 4 styles
+  { name: 'Starter — Republic Day: Tricolor', occasion: 'FESTIVAL', file: 'republicday-1.jpg' },
+  { name: 'Starter — Republic Day: Night Fireworks', occasion: 'FESTIVAL', file: 'republicday-2.jpg' },
+  { name: 'Starter — Republic Day: Sunrise Salute', occasion: 'FESTIVAL', file: 'republicday-3.jpg' },
+  { name: 'Starter — Republic Day: Deep Green', occasion: 'FESTIVAL', file: 'republicday-4.jpg' },
+  // Holi — 4 styles
+  { name: 'Starter — Holi: Colour Splash', occasion: 'FESTIVAL', file: 'holi-1.jpg' },
+  { name: 'Starter — Holi: Pink & Purple', occasion: 'FESTIVAL', file: 'holi-2.jpg' },
+  { name: 'Starter — Holi: Teal & Violet', occasion: 'FESTIVAL', file: 'holi-3.jpg' },
+  { name: 'Starter — Holi: Sunshine Yellow', occasion: 'FESTIVAL', file: 'holi-4.jpg' },
+  // Gudi Padwa — 4 styles
+  { name: 'Starter — Gudi Padwa: Saffron Gudi', occasion: 'FESTIVAL', file: 'gudipadwa-1.jpg' },
+  { name: 'Starter — Gudi Padwa: Green Prosperity', occasion: 'FESTIVAL', file: 'gudipadwa-2.jpg' },
+  { name: 'Starter — Gudi Padwa: Soft Gold', occasion: 'FESTIVAL', file: 'gudipadwa-3.jpg' },
+  { name: 'Starter — Gudi Padwa: Deep Red', occasion: 'FESTIVAL', file: 'gudipadwa-4.jpg' },
+  // Eid ul-Fitr — 4 styles
+  { name: 'Starter — Eid ul-Fitr: Emerald Moon', occasion: 'FESTIVAL', file: 'eidfitr-1.jpg' },
+  { name: 'Starter — Eid ul-Fitr: Midnight Blue', occasion: 'FESTIVAL', file: 'eidfitr-2.jpg' },
+  { name: 'Starter — Eid ul-Fitr: Golden Crescent', occasion: 'FESTIVAL', file: 'eidfitr-3.jpg' },
+  { name: 'Starter — Eid ul-Fitr: Deep Teal', occasion: 'FESTIVAL', file: 'eidfitr-4.jpg' },
+  // Eid ul-Adha — 4 styles
+  { name: 'Starter — Eid ul-Adha: Green Blessing', occasion: 'FESTIVAL', file: 'eidadha-1.jpg' },
+  { name: 'Starter — Eid ul-Adha: Midnight Blue', occasion: 'FESTIVAL', file: 'eidadha-2.jpg' },
+  { name: 'Starter — Eid ul-Adha: Golden Crescent', occasion: 'FESTIVAL', file: 'eidadha-3.jpg' },
+  { name: 'Starter — Eid ul-Adha: Emerald Moon', occasion: 'FESTIVAL', file: 'eidadha-4.jpg' },
+  // Independence Day — 4 styles
+  { name: 'Starter — Independence Day: Green Pride', occasion: 'FESTIVAL', file: 'independenceday-1.jpg' },
+  { name: 'Starter — Independence Day: Saffron Glow', occasion: 'FESTIVAL', file: 'independenceday-2.jpg' },
+  { name: 'Starter — Independence Day: Night Sky', occasion: 'FESTIVAL', file: 'independenceday-3.jpg' },
+  { name: 'Starter — Independence Day: Fresh White', occasion: 'FESTIVAL', file: 'independenceday-4.jpg' },
+  // Ganesh Chaturthi — 4 styles
+  { name: 'Starter — Ganesh Chaturthi: Warm Orange', occasion: 'FESTIVAL', file: 'ganeshchaturthi-1.jpg' },
+  { name: 'Starter — Ganesh Chaturthi: Deep Red', occasion: 'FESTIVAL', file: 'ganeshchaturthi-2.jpg' },
+  { name: 'Starter — Ganesh Chaturthi: Golden Sand', occasion: 'FESTIVAL', file: 'ganeshchaturthi-3.jpg' },
+  { name: 'Starter — Ganesh Chaturthi: Maroon Modak', occasion: 'FESTIVAL', file: 'ganeshchaturthi-4.jpg' },
+  // Gandhi Jayanti — 4 styles (respectful tone)
+  { name: 'Starter — Gandhi Jayanti: Sand & Green', occasion: 'FESTIVAL', file: 'gandhijayanti-1.jpg' },
+  { name: 'Starter — Gandhi Jayanti: Soft Green', occasion: 'FESTIVAL', file: 'gandhijayanti-2.jpg' },
+  { name: 'Starter — Gandhi Jayanti: Warm Cream', occasion: 'FESTIVAL', file: 'gandhijayanti-3.jpg' },
+  { name: 'Starter — Gandhi Jayanti: Soft Blue', occasion: 'FESTIVAL', file: 'gandhijayanti-4.jpg' },
+  // Navratri — 4 styles
+  { name: 'Starter — Navratri: Pink & Purple', occasion: 'FESTIVAL', file: 'navratri-1.jpg' },
+  { name: 'Starter — Navratri: Devi Red', occasion: 'FESTIVAL', file: 'navratri-2.jpg' },
+  { name: 'Starter — Navratri: Golden Orange', occasion: 'FESTIVAL', file: 'navratri-3.jpg' },
+  { name: 'Starter — Navratri: Royal Violet', occasion: 'FESTIVAL', file: 'navratri-4.jpg' },
+  // Dussehra — 4 styles
+  { name: 'Starter — Dussehra: Deep Red', occasion: 'FESTIVAL', file: 'dussehra-1.jpg' },
+  { name: 'Starter — Dussehra: Maroon Victory', occasion: 'FESTIVAL', file: 'dussehra-2.jpg' },
+  { name: 'Starter — Dussehra: Golden Sand', occasion: 'FESTIVAL', file: 'dussehra-3.jpg' },
+  { name: 'Starter — Dussehra: Burnt Orange', occasion: 'FESTIVAL', file: 'dussehra-4.jpg' },
+  // Christmas — 4 styles
+  { name: 'Starter — Christmas: Classic Red', occasion: 'FESTIVAL', file: 'christmas-1.jpg' },
+  { name: 'Starter — Christmas: Emerald Green', occasion: 'FESTIVAL', file: 'christmas-2.jpg' },
+  { name: 'Starter — Christmas: Midnight Blue', occasion: 'FESTIVAL', file: 'christmas-3.jpg' },
+  { name: 'Starter — Christmas: Festive Pink', occasion: 'FESTIVAL', file: 'christmas-4.jpg' },
 ];
 
 const ASSET_DIR = path.join(process.cwd(), 'assets', 'starter-templates');
