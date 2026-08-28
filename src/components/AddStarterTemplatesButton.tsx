@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 /**
- * One-click add of 4 ready-made flyer designs (birthday, anniversary, and
- * two festivals) with everything — background art, name/photo/branding
- * placement — already set up, so a business can send their first wish
- * without designing or uploading anything.
+ * One-click add of 16 ready-made flyer designs — 4 styles each for
+ * Birthday, Anniversary, Diwali, and Raksha Bandhan — with everything
+ * (background art, name/photo/branding placement) already set up, so a
+ * business can pick a look they like without designing or uploading
+ * anything.
  */
 export default function AddStarterTemplatesButton() {
   const router = useRouter();

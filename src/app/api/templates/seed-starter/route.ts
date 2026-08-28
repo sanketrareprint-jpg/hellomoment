@@ -102,10 +102,26 @@ function corePlaceholders() {
 }
 
 const STARTERS: { name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL'; file: string }[] = [
-  { name: 'Starter — Birthday balloons', occasion: 'BIRTHDAY', file: 'birthday.jpg' },
-  { name: 'Starter — Anniversary hearts', occasion: 'ANNIVERSARY', file: 'anniversary.jpg' },
-  { name: 'Starter — Diwali diyas', occasion: 'FESTIVAL', file: 'diwali.jpg' },
-  { name: 'Starter — Raksha Bandhan', occasion: 'FESTIVAL', file: 'rakshabandhan.jpg' },
+  // Birthday — 4 styles
+  { name: 'Starter — Birthday: Balloons & Confetti', occasion: 'BIRTHDAY', file: 'birthday-1.jpg' },
+  { name: 'Starter — Birthday: Party Hats', occasion: 'BIRTHDAY', file: 'birthday-2.jpg' },
+  { name: 'Starter — Birthday: Pastel Sprinkles', occasion: 'BIRTHDAY', file: 'birthday-3.jpg' },
+  { name: 'Starter — Birthday: Starry Night', occasion: 'BIRTHDAY', file: 'birthday-4.jpg' },
+  // Anniversary — 4 styles
+  { name: 'Starter — Anniversary: Rose Hearts', occasion: 'ANNIVERSARY', file: 'anniversary-1.jpg' },
+  { name: 'Starter — Anniversary: Gold Elegance', occasion: 'ANNIVERSARY', file: 'anniversary-2.jpg' },
+  { name: 'Starter — Anniversary: Deep Romance', occasion: 'ANNIVERSARY', file: 'anniversary-3.jpg' },
+  { name: 'Starter — Anniversary: Soft Blush', occasion: 'ANNIVERSARY', file: 'anniversary-4.jpg' },
+  // Diwali — 4 styles
+  { name: 'Starter — Diwali: Diya Lights', occasion: 'FESTIVAL', file: 'diwali-1.jpg' },
+  { name: 'Starter — Diwali: Golden Rangoli', occasion: 'FESTIVAL', file: 'diwali-2.jpg' },
+  { name: 'Starter — Diwali: Festive Lanterns', occasion: 'FESTIVAL', file: 'diwali-3.jpg' },
+  { name: 'Starter — Diwali: Sparkle Gold', occasion: 'FESTIVAL', file: 'diwali-4.jpg' },
+  // Raksha Bandhan — 4 styles
+  { name: 'Starter — Raksha Bandhan: Rakhi Sun', occasion: 'FESTIVAL', file: 'rakhi-1.jpg' },
+  { name: 'Starter — Raksha Bandhan: Thread of Love', occasion: 'FESTIVAL', file: 'rakhi-2.jpg' },
+  { name: 'Starter — Raksha Bandhan: Golden Bond', occasion: 'FESTIVAL', file: 'rakhi-3.jpg' },
+  { name: 'Starter — Raksha Bandhan: Pink Ribbon', occasion: 'FESTIVAL', file: 'rakhi-4.jpg' },
 ];
 
 const ASSET_DIR = path.join(process.cwd(), 'assets', 'starter-templates');

@@ -1,16 +1,10 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
-import DeleteTemplateButton from '@/components/DeleteTemplateButton';
 import AddStarterTemplatesButton from '@/components/AddStarterTemplatesButton';
+import TemplatesGrid from '@/components/TemplatesGrid';
 
 export const dynamic = 'force-dynamic';
-
-const OCCASION_LABEL: Record<string, string> = {
-  BIRTHDAY: 'Birthday',
-  ANNIVERSARY: 'Anniversary',
-  FESTIVAL: 'Festival',
-};
 
 export default async function TemplatesPage() {
   const business = await getCurrentBusiness();
@@ -46,31 +40,7 @@ export default async function TemplatesPage() {
           .
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {templates.map((t) => (
-            <div key={t.id} className="card overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={t.backgroundUrl} alt={t.name} className="w-full h-40 object-cover" />
-              <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">{t.name}</h3>
-                  {t.isDefault && (
-                    <span className="text-xs font-medium bg-brand-100 text-brand-700 rounded-full px-2 py-0.5">
-                      Default
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-gray-500 mt-1">{OCCASION_LABEL[t.occasion]}</p>
-                <div className="flex gap-3 mt-3">
-                  <Link href={`/dashboard/templates/${t.id}/edit`} className="text-brand-600 font-medium text-sm">
-                    Edit
-                  </Link>
-                  <DeleteTemplateButton id={t.id} name={t.name} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <TemplatesGrid templates={templates} />
       )}
     </div>
   );
