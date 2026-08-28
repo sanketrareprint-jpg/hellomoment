@@ -7,9 +7,30 @@ export default function PublicJoinForm({ businessId }: { businessId: string }) {
   const [whatsapp, setWhatsapp] = useState('');
   const [dob, setDob] = useState('');
   const [anniversary, setAnniversary] = useState('');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+
+  async function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch('/api/public/uploads/photo', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Photo upload failed');
+      setPhotoUrl(data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Photo upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -25,6 +46,7 @@ export default function PublicJoinForm({ businessId }: { businessId: string }) {
           whatsapp,
           dob: dob || null,
           anniversary: anniversary || null,
+          photoUrl: photoUrl || null,
         }),
       });
       const data = await res.json().catch(() => null);
@@ -51,6 +73,22 @@ export default function PublicJoinForm({ businessId }: { businessId: string }) {
 
   return (
     <form onSubmit={onSubmit} className="card p-6 space-y-4">
+      <div className="flex items-center gap-4">
+        <div className="w-20 h-20 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center border border-gray-200 shrink-0">
+          {photoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photoUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-gray-400 text-xs text-center px-1">No photo</span>
+          )}
+        </div>
+        <div>
+          <label className="label">Your photo (optional)</label>
+          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onPhotoChange} />
+          {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
+        </div>
+      </div>
+
       <div>
         <label className="label">Your name</label>
         <input className="input" required value={name} onChange={(e) => setName(e.target.value)} placeholder="Your full name" />
@@ -79,7 +117,7 @@ export default function PublicJoinForm({ businessId }: { businessId: string }) {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <button type="submit" disabled={loading} className="btn-primary w-full">
+      <button type="submit" disabled={loading || uploading} className="btn-primary w-full">
         {loading ? 'Submitting…' : 'Submit my details'}
       </button>
     </form>

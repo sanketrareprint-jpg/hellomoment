@@ -27,6 +27,7 @@ const publicContactSchema = z.object({
   whatsapp: z.string().min(8, 'Enter a valid WhatsApp number').max(20),
   dob: dateOnly,
   anniversary: dateOnly,
+  photoUrl: z.string().optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' }, { status: 400 });
   }
-  const { businessId, name, whatsapp, dob, anniversary } = parsed.data;
+  const { businessId, name, whatsapp, dob, anniversary, photoUrl } = parsed.data;
 
   if (!dob && !anniversary) {
     return NextResponse.json({ error: 'Add at least a birthday or an anniversary date' }, { status: 400 });
@@ -55,10 +56,10 @@ export async function POST(req: NextRequest) {
   const contact = existing
     ? await prisma.contact.update({
         where: { id: existing.id },
-        data: { name, dob, anniversary },
+        data: { name, dob, anniversary, ...(photoUrl ? { photoUrl } : {}) },
       })
     : await prisma.contact.create({
-        data: { businessId, name, whatsapp, dob, anniversary, relationship: 'CUSTOMER' },
+        data: { businessId, name, whatsapp, dob, anniversary, photoUrl: photoUrl || null, relationship: 'CUSTOMER' },
       });
 
   return NextResponse.json({ ok: true, contactId: contact.id }, { status: 201 });
