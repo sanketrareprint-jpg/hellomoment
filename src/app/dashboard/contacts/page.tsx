@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import DeleteContactButton from '@/components/DeleteContactButton';
+import ShareJoinLink from '@/components/ShareJoinLink';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,9 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
   ]);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
+  const appBaseUrl = process.env.APP_BASE_URL?.replace(/\/$/, '') || 'http://localhost:3000';
+  const joinLink = `${appBaseUrl}/join/${business.id}`;
+
   return (
     <div className="max-w-5xl">
       <div className="flex items-center justify-between mb-6">
@@ -40,6 +44,16 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
             + Add contact
           </Link>
         </div>
+      </div>
+
+      <div className="card p-4 mb-6 bg-brand-50 border-brand-200">
+        <p className="font-medium text-gray-900 mb-1">Don&rsquo;t have a customer list yet?</p>
+        <p className="text-sm text-gray-600 mb-3">
+          Share this link with your customers (WhatsApp status, a group, a text) — they fill in their own name,
+          WhatsApp number, and birthday/anniversary, and they&rsquo;re added here automatically. No spreadsheet
+          needed.
+        </p>
+        <ShareJoinLink link={joinLink} />
       </div>
 
       <form className="mb-4" method="GET">

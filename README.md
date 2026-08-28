@@ -55,7 +55,10 @@ Register a business account at `/register`, then in the app:
    use its own background/design but still carry your business branding. Mark one
    template per occasion as "default" — that's the one the daily job uses (a festival
    can also link to its own specific template instead, from the festival's edit page).
-3. **Contacts** — add people one at a time, or use **Bulk import** for a CSV/XLSX.
+3. **Contacts** — add people one at a time, use **Bulk import** for a CSV/XLSX, or share the
+   **customer self-add link** shown at the top of the Contacts page (`/join/<businessId>`,
+   no login required) — customers fill in their own name/WhatsApp/birthday and are added
+   automatically, no spreadsheet needed on your end.
 4. **Festivals** — add any custom occasions (Diwali, Eid, your shop's anniversary, etc).
 5. Use **Send test wish now** on a contact's edit page to confirm everything actually
    sends before relying on the automatic daily trigger.
