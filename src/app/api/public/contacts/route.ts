@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
   }
   const { businessId, name, whatsapp, dob, anniversary, photoUrl, anniversaryPhotoUrl } = parsed.data;
 
-  if (!dob && !anniversary) {
-    return NextResponse.json({ error: 'Add at least a birthday or an anniversary date' }, { status: 400 });
+  if (!dob) {
+    return NextResponse.json({ error: 'Date of birth is required' }, { status: 400 });
   }
   if (!photoUrl) {
     return NextResponse.json({ error: 'A photo is required' }, { status: 400 });

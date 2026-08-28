@@ -121,14 +121,14 @@ export default function PublicJoinForm({ businessId }: { businessId: string }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="label">Date of birth</label>
-          <input className="input" type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+          <input className="input" type="date" required value={dob} onChange={(e) => setDob(e.target.value)} />
         </div>
         <div>
-          <label className="label">Anniversary</label>
+          <label className="label">Anniversary (optional)</label>
           <input className="input" type="date" value={anniversary} onChange={(e) => setAnniversary(e.target.value)} />
         </div>
       </div>
-      <p className="text-xs text-gray-500">Add at least one date so we know when to send you a wish. Both is fine too!</p>
+      <p className="text-xs text-gray-500">Anniversary is optional — add it too if you&rsquo;d like a wish on that day as well.</p>
 
       {anniversary && (
         <div className="flex items-center gap-4 border-t border-gray-100 pt-4">
