@@ -40,3 +40,30 @@ export const SESSION_COOKIE_OPTIONS = {
   path: '/',
   maxAge: SESSION_MAX_AGE_SECONDS,
 };
+
+// --- Admin session (Vrushali's own "signed-up businesses" dashboard at
+// /admin) — gated by a single shared password in the ADMIN_PASSWORD env
+// var, not a Business account, since this view spans every tenant. ---
+export const ADMIN_SESSION_COOKIE = 'hm_admin_session';
+const ADMIN_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
+
+export function signAdminSession(): string {
+  return jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: ADMIN_SESSION_MAX_AGE_SECONDS });
+}
+
+export function verifyAdminSessionToken(token: string): boolean {
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return typeof decoded === 'object' && decoded !== null && (decoded as Record<string, unknown>).admin === true;
+  } catch {
+    return false;
+  }
+}
+
+export const ADMIN_SESSION_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: '/',
+  maxAge: ADMIN_SESSION_MAX_AGE_SECONDS,
+};

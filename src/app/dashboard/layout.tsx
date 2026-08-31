@@ -20,8 +20,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="min-h-screen flex">
       <aside className="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col">
         <div className="px-5 py-5 border-b border-gray-100">
-          <div className="text-lg font-bold text-brand-700">
-            hellomoment<span className="text-gray-400">.in</span>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="hellomoment.in" width={30} height={30} className="rounded-lg" />
+            <div className="text-lg font-bold text-brand-700">
+              hellomoment<span className="text-gray-400">.in</span>
+            </div>
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">

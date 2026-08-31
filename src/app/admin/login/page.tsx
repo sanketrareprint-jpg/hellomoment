@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -15,14 +14,14 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
-      router.push('/dashboard');
+      router.push('/admin');
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -33,50 +32,37 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-brand-50 px-4">
-      <div className="card w-full max-w-md p-8">
+      <div className="card w-full max-w-sm p-8">
         <div className="flex items-center gap-2 mb-1">
           <img src="/logo.png" alt="hellomoment.in" width={36} height={36} className="rounded-lg" />
           <div className="text-xl font-bold text-brand-700">
             hellomoment<span className="text-gray-400">.in</span>
           </div>
         </div>
-        <h1 className="text-lg font-semibold text-gray-900 mb-6">Log in</h1>
+        <h1 className="text-lg font-semibold text-gray-900 mb-6">Admin login</h1>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
-            <label className="label">Email</label>
+            <label className="label" htmlFor="password">
+              Admin password
+            </label>
             <input
-              className="input"
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="label">Password</label>
-            <input
-              className="input"
+              id="password"
               type="password"
+              autoFocus
+              className="input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               required
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button type="submit" disabled={loading} className="btn-primary w-full">
-            {loading ? 'Logging in…' : 'Log in'}
+            {loading ? 'Checking…' : 'Log in'}
           </button>
         </form>
-
-        <p className="mt-6 text-sm text-gray-600 text-center">
-          Don&rsquo;t have an account?{' '}
-          <Link href="/register" className="text-brand-600 font-medium">
-            Create one free
-          </Link>
-        </p>
       </div>
     </main>
   );

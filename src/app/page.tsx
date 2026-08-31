@@ -9,7 +9,10 @@ export default async function LandingPage() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
       <header className="max-w-6xl mx-auto flex items-center justify-between px-6 py-6">
-        <div className="text-xl font-bold text-brand-700">hellomoment<span className="text-gray-400">.in</span></div>
+        <div className="flex items-center gap-2">
+          <img src="/logo.png" alt="hellomoment.in" width={36} height={36} className="rounded-lg" />
+          <div className="text-xl font-bold text-brand-700">hellomoment<span className="text-gray-400">.in</span></div>
+        </div>
         <nav className="flex gap-3">
           <Link href="/login" className="btn-secondary">
             Log in
