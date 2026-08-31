@@ -1,11 +1,22 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
-import { formatDateForDisplay } from '@/lib/dateUtils';
+import { formatDateForDisplay, getTodayInTimezone } from '@/lib/dateUtils';
 import DeleteContactButton from '@/components/DeleteContactButton';
 import ShareJoinLink from '@/components/ShareJoinLink';
 
 export const dynamic = 'force-dynamic';
+
+function StatCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="card p-4">
+      <div className="text-2xl font-bold text-gray-900">{value}</div>
+      <div className="text-sm text-gray-500">{label}</div>
+    </div>
+  );
+}
+
+const RELATIONSHIPS = ['CUSTOMER', 'FRIEND', 'FAMILY', 'OTHER'] as const;
 
 export default async function ContactsPage({ searchParams }: { searchParams: { q?: string; page?: string } }) {
   const business = await getCurrentBusiness();
@@ -20,11 +31,31 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
     ...(q ? { OR: [{ name: { contains: q } }, { whatsapp: { contains: q } }] } : {}),
   };
 
-  const [contacts, total] = await Promise.all([
+  // The stats row below always reflects ALL of this business's contacts
+  // (not just the current search/page), so it's fetched separately with
+  // only the fields it needs.
+  const [contacts, total, allContacts] = await Promise.all([
     prisma.contact.findMany({ where, orderBy: { createdAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
     prisma.contact.count({ where }),
+    prisma.contact.findMany({
+      where: { businessId: business.id },
+      select: { relationship: true, dob: true, anniversary: true, photoUrl: true, createdAt: true },
+    }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const today = getTodayInTimezone(business.timezone);
+  const monthStart = new Date(Date.UTC(today.year, today.month - 1, 1));
+  const birthdaysThisMonth = allContacts.filter((c) => c.dob && c.dob.getUTCMonth() + 1 === today.month).length;
+  const anniversariesThisMonth = allContacts.filter(
+    (c) => c.anniversary && c.anniversary.getUTCMonth() + 1 === today.month,
+  ).length;
+  const missingPhoto = allContacts.filter((c) => !c.photoUrl).length;
+  const newThisMonth = allContacts.filter((c) => c.createdAt >= monthStart).length;
+  const relationshipCounts = RELATIONSHIPS.map((r) => ({
+    relationship: r,
+    count: allContacts.filter((c) => c.relationship === r).length,
+  })).filter((r) => r.count > 0);
 
   const appBaseUrl = process.env.APP_BASE_URL?.replace(/\/$/, '') || 'http://localhost:3000';
   const joinLink = `${appBaseUrl}/join/${business.id}`;
@@ -45,6 +76,28 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
           </Link>
         </div>
       </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4">
+        <StatCard label="Total contacts" value={allContacts.length} />
+        <StatCard label="New this month" value={newThisMonth} />
+        <StatCard label="Birthdays this month" value={birthdaysThisMonth} />
+        <StatCard label="Anniversaries this month" value={anniversariesThisMonth} />
+        <StatCard label="Missing a photo" value={missingPhoto} />
+      </div>
+
+      {relationshipCounts.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-6">
+          {relationshipCounts.map((r) => (
+            <span
+              key={r.relationship}
+              className="text-xs font-medium rounded-full px-2.5 py-1 bg-brand-50 text-brand-700 border border-brand-100 capitalize"
+            >
+              {r.count} {r.relationship.toLowerCase()}
+              {r.count === 1 ? '' : 's'}
+            </span>
+          ))}
+        </div>
+      )}
 
       <div className="card p-4 mb-6 bg-brand-50 border-brand-200">
         <p className="font-medium text-gray-900 mb-1">Don&rsquo;t have a customer list yet?</p>
