@@ -197,12 +197,12 @@ export async function POST(req: NextRequest) {
 
   const existing = await prisma.flyerTemplate.findMany({
     where: { businessId: business.id },
-    select: { name: true },
+    select: { id: true, name: true },
   });
-  const existingNames = new Set(existing.map((t) => t.name));
+  const existingByName = new Map(existing.map((t) => [t.name, t.id]));
 
   const created: string[] = [];
-  const skipped: string[] = [];
+  const updated: string[] = [];
 
   // Only auto-mark a starter as the default for BIRTHDAY/ANNIVERSARY —
   // those gate whether the daily send and "send test wish" work at all,
@@ -219,11 +219,6 @@ export async function POST(req: NextRequest) {
   };
 
   for (const starter of STARTERS) {
-    if (existingNames.has(starter.name)) {
-      skipped.push(starter.name);
-      continue;
-    }
-
     const sourcePath = path.join(ASSET_DIR, starter.file);
     const ext = path.extname(starter.file).replace('.', '') || 'jpg';
     const filename = `${uuid()}.${ext}`;
@@ -231,6 +226,19 @@ export async function POST(req: NextRequest) {
     await fs.mkdir(destDir, { recursive: true });
     await fs.copyFile(sourcePath, path.join(destDir, filename));
     const backgroundUrl = `/api/files/templates/${filename}`;
+
+    const existingId = existingByName.get(starter.name);
+    if (existingId) {
+      // Already has this starter — just refresh the artwork to the latest
+      // bundled design. Leave placeholders/default status untouched in
+      // case the business customized them.
+      await prisma.flyerTemplate.update({
+        where: { id: existingId },
+        data: { backgroundUrl },
+      });
+      updated.push(starter.name);
+      continue;
+    }
 
     const ph = corePlaceholders();
     const makeDefault = starter.occasion !== 'FESTIVAL' && !hasDefault[starter.occasion];
@@ -258,5 +266,5 @@ export async function POST(req: NextRequest) {
     created.push(starter.name);
   }
 
-  return NextResponse.json({ created, skipped });
+  return NextResponse.json({ created, updated });
 }
