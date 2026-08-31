@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import DeleteBusinessButton from '@/components/DeleteBusinessButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,6 +83,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
               <th className="px-4 py-3 font-medium whitespace-nowrap">Sends</th>
               <th className="px-4 py-3 font-medium whitespace-nowrap">Last send</th>
               <th className="px-4 py-3 font-medium whitespace-nowrap">AiSensy</th>
+              <th className="px-4 py-3 font-medium whitespace-nowrap">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -111,12 +113,19 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
                       {b.aisensyApiKey ? 'Connected' : 'Not set up'}
                     </span>
                   </td>
+                  <td className="px-4 py-3">
+                    <DeleteBusinessButton
+                      id={b.id}
+                      name={b.name}
+                      counts={{ contacts: b._count.contacts, templates: b._count.templates, sendLogs: b._count.sendLogs }}
+                    />
+                  </td>
                 </tr>
               );
             })}
             {businesses.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-gray-500">
+                <td colSpan={10} className="px-4 py-10 text-center text-gray-500">
                   {q ? 'No businesses match your search.' : 'No businesses have signed up yet.'}
                 </td>
               </tr>
