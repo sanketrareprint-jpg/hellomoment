@@ -34,9 +34,9 @@ export default function AdminLoginPage() {
     <main className="min-h-screen flex items-center justify-center bg-brand-50 px-4">
       <div className="card w-full max-w-sm p-8">
         <div className="flex items-center gap-2 mb-1">
-          <img src="/logo.png" alt="hellomoment.in" width={36} height={36} className="rounded-lg" />
+          <img src="/logo.png" alt="raregreet.com" width={36} height={36} className="rounded-lg" />
           <div className="text-xl font-bold text-brand-700">
-            hellomoment<span className="text-gray-400">.in</span>
+            raregreet<span className="text-gray-400">.com</span>
           </div>
         </div>
         <h1 className="text-lg font-semibold text-gray-900 mb-6">Admin login</h1>

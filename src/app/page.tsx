@@ -10,8 +10,8 @@ export default async function LandingPage() {
     <main className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
       <header className="max-w-6xl mx-auto flex items-center justify-between px-6 py-6">
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="hellomoment.in" width={36} height={36} className="rounded-lg" />
-          <div className="text-xl font-bold text-brand-700">hellomoment<span className="text-gray-400">.in</span></div>
+          <img src="/logo.png" alt="raregreet.com" width={36} height={36} className="rounded-lg" />
+          <div className="text-xl font-bold text-brand-700">raregreet<span className="text-gray-400">.com</span></div>
         </div>
         <nav className="flex gap-3">
           <Link href="/login" className="btn-secondary">
@@ -29,7 +29,7 @@ export default async function LandingPage() {
           again
         </h1>
         <p className="mt-5 text-lg text-gray-600 max-w-2xl mx-auto">
-          Add your customers once. hellomoment.in automatically designs a personalized flyer with their name, date
+          Add your customers once. raregreet.com automatically designs a personalized flyer with their name, date
           and photo, and sends it on WhatsApp &mdash; to them and to you &mdash; the moment it&rsquo;s their day.
         </p>
         <div className="mt-8 flex items-center justify-center gap-4">
@@ -50,11 +50,11 @@ export default async function LandingPage() {
           },
           {
             title: '2. Design once',
-            body: 'Upload a flyer background you like for birthdays, anniversaries and each festival. Position where the name, date and photo should appear — hellomoment.in fills those in automatically for every send.',
+            body: 'Upload a flyer background you like for birthdays, anniversaries and each festival. Position where the name, date and photo should appear — raregreet.com fills those in automatically for every send.',
           },
           {
             title: '3. It sends itself',
-            body: 'Every day, hellomoment.in checks who’s celebrating, generates their personalized flyer, and sends it on WhatsApp via your AiSensy account — to them and to you.',
+            body: 'Every day, raregreet.com checks who’s celebrating, generates their personalized flyer, and sends it on WhatsApp via your AiSensy account — to them and to you.',
           },
         ].map((f) => (
           <div key={f.title} className="card p-6">

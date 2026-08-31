@@ -8,12 +8,12 @@ import type { MetadataRoute } from 'next';
  * link that business shares directly, not for search engines to index).
  */
 export default function robots(): MetadataRoute.Robots {
-  const base = process.env.APP_BASE_URL?.replace(/\/$/, '') || 'https://hellomoment.in';
+  const base = process.env.APP_BASE_URL?.replace(/\/$/, '') || 'https://raregreet.com';
   return {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/dashboard', '/api'],
+      disallow: ['/dashboard', '/api', '/admin'],
     },
     sitemap: `${base}/sitemap.xml`,
   };

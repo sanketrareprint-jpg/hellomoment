@@ -51,7 +51,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Signed-up businesses</h1>
-      <p className="text-gray-600 mb-6">Every business that has registered on hellomoment.in.</p>
+      <p className="text-gray-600 mb-6">Every business that has registered on raregreet.com.</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
         <StatCard label="Total businesses" value={totalBusinesses} />

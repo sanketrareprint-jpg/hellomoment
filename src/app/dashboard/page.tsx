@@ -55,7 +55,7 @@ export default async function DashboardOverview() {
         <div className="card p-4 border-amber-300 bg-amber-50 flex items-start gap-3">
           <span className="text-amber-500 text-lg">⚠️</span>
           <div className="text-sm text-amber-800">
-            <p className="font-medium">Finish setting up hellomoment.in</p>
+            <p className="font-medium">Finish setting up raregreet.com</p>
             <ul className="mt-1 list-disc list-inside space-y-0.5">
               {templateCount === 0 && (
                 <li>

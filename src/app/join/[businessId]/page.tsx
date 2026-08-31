@@ -35,7 +35,7 @@ export default async function JoinPage({ params }: { params: { businessId: strin
           </p>
         </div>
         <PublicJoinForm businessId={business.id} />
-        <p className="text-center text-xs text-gray-400">Powered by hellomoment.in</p>
+        <p className="text-center text-xs text-gray-400">Powered by raregreet.com</p>
       </div>
     </div>
   );
