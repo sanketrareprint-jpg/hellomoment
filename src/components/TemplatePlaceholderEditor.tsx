@@ -391,7 +391,8 @@ export default function TemplatePlaceholderEditor({
             {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
             {form.backgroundUrl && (
               <p className="text-xs text-gray-500 mt-1">
-                {form.canvasWidth}×{form.canvasHeight}px
+                Current image is {form.canvasWidth}×{form.canvasHeight}px — only choose a file here if you want to
+                replace it with a different background.
               </p>
             )}
           </div>
