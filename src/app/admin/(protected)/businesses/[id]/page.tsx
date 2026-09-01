@@ -40,21 +40,25 @@ function SortHeader({
   activeField,
   activeDir,
   hrefFor,
+  filter,
 }: {
   label: string;
   field: string;
   activeField: string;
   activeDir: 'asc' | 'desc';
   hrefFor: (field: string, dir: 'asc' | 'desc') => string;
+  /** Optional small filter control (e.g. a <select>) shown right under the column label. */
+  filter?: React.ReactNode;
 }) {
   const isActive = field === activeField;
   const nextDir: 'asc' | 'desc' = isActive && activeDir === 'asc' ? 'desc' : 'asc';
   return (
-    <th className="px-4 py-2 font-medium whitespace-nowrap">
-      <a href={hrefFor(field, nextDir)} className="inline-flex items-center gap-1 hover:text-gray-800">
+    <th className="px-4 py-2 font-medium align-top">
+      <a href={hrefFor(field, nextDir)} className="inline-flex items-center gap-1 hover:text-gray-800 whitespace-nowrap">
         {label}
         <span className="text-gray-400">{isActive ? (activeDir === 'asc' ? '▲' : '▼') : '↕'}</span>
       </a>
+      {filter && <div className="mt-1 font-normal normal-case">{filter}</div>}
     </th>
   );
 }
@@ -284,78 +288,88 @@ export default async function AdminBusinessDetailPage({
       </div>
 
       <div className="card overflow-hidden overflow-x-auto">
-        <div className="px-5 py-3 border-b border-gray-100 space-y-2">
-          <div className="font-semibold text-gray-900">
-            Contacts ({contactsTotal} of {business._count.contacts} total) — click a name to see everything sent to them
+        <form method="GET">
+          <div className="px-5 py-3 border-b border-gray-100 space-y-2">
+            <div className="font-semibold text-gray-900">
+              Contacts ({contactsTotal} of {business._count.contacts} total) — click a name to see everything sent to them
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              <input
+                type="text"
+                name="cq"
+                defaultValue={contactsQuery}
+                placeholder="Search contacts by name, WhatsApp, or relationship…"
+                className="input max-w-md text-sm"
+              />
+              <input type="hidden" name="csort" value={contactsSort} />
+              <input type="hidden" name="cdir" value={contactsDir} />
+              <button type="submit" className="btn-secondary text-sm">
+                Filter
+              </button>
+              {(contactsQuery || contactsRel) && (
+                <a href={buildUrl(business.id, { csort: contactsSort, cdir: contactsDir })} className="text-sm text-gray-500">
+                  Clear
+                </a>
+              )}
+            </div>
           </div>
-          <form method="GET" className="flex flex-wrap gap-2 items-center">
-            <input
-              type="text"
-              name="cq"
-              defaultValue={contactsQuery}
-              placeholder="Search contacts by name, WhatsApp, or relationship…"
-              className="input max-w-md text-sm"
-            />
-            <select name="crel" defaultValue={contactsRel} className="input text-sm w-auto">
-              <option value="">All relationships</option>
-              <option value="CUSTOMER">Customer</option>
-              <option value="FRIEND">Friend</option>
-              <option value="FAMILY">Family</option>
-              <option value="OTHER">Other</option>
-            </select>
-            <input type="hidden" name="csort" value={contactsSort} />
-            <input type="hidden" name="cdir" value={contactsDir} />
-            <button type="submit" className="btn-secondary text-sm">
-              Filter
-            </button>
-            {(contactsQuery || contactsRel) && (
-              <a href={buildUrl(business.id, { csort: contactsSort, cdir: contactsDir })} className="text-sm text-gray-500">
-                Clear
-              </a>
-            )}
-          </form>
-        </div>
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-left">
-            <tr>
-              <SortHeader label="Name" field="name" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
-              <th className="px-4 py-2 font-medium whitespace-nowrap">WhatsApp</th>
-              <SortHeader label="Relationship" field="relationship" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
-              <SortHeader label="Birthday" field="dob" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
-              <SortHeader label="Anniversary" field="anniversary" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
-              <SortHeader label="Added" field="createdAt" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {contacts.map((c) => (
-              <tr key={c.id} className="hover:bg-gray-50">
-                <td className="px-4 py-2 font-medium whitespace-nowrap">
-                  <Link href={`/admin/businesses/${business.id}/contacts/${c.id}`} className="text-brand-700 hover:underline">
-                    {c.name}
-                  </Link>
-                </td>
-                <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.whatsapp}</td>
-                <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.relationship}</td>
-                <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
-                  {c.dob ? new Date(c.dob).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
-                </td>
-                <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
-                  {c.anniversary ? new Date(c.anniversary).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
-                </td>
-                <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
-                  {new Date(c.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
-                </td>
-              </tr>
-            ))}
-            {contacts.length === 0 && (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-500 text-left">
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                  No contacts match.
-                </td>
+                <SortHeader label="Name" field="name" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
+                <th className="px-4 py-2 font-medium whitespace-nowrap align-top">WhatsApp</th>
+                <SortHeader
+                  label="Relationship"
+                  field="relationship"
+                  activeField={contactsSort}
+                  activeDir={contactsDir}
+                  hrefFor={contactsHrefFor}
+                  filter={
+                    <select name="crel" defaultValue={contactsRel} className="input text-xs py-0.5 px-1 w-full">
+                      <option value="">All</option>
+                      <option value="CUSTOMER">Customer</option>
+                      <option value="FRIEND">Friend</option>
+                      <option value="FAMILY">Family</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+                  }
+                />
+                <SortHeader label="Birthday" field="dob" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
+                <SortHeader label="Anniversary" field="anniversary" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
+                <SortHeader label="Added" field="createdAt" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {contacts.map((c) => (
+                <tr key={c.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-2 font-medium whitespace-nowrap">
+                    <Link href={`/admin/businesses/${business.id}/contacts/${c.id}`} className="text-brand-700 hover:underline">
+                      {c.name}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.whatsapp}</td>
+                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.relationship}</td>
+                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                    {c.dob ? new Date(c.dob).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
+                  </td>
+                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                    {c.anniversary ? new Date(c.anniversary).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
+                  </td>
+                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                    {new Date(c.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
+                  </td>
+                </tr>
+              ))}
+              {contacts.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                    No contacts match.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </form>
         {contactsTotalPages > 1 && (
           <div className="flex gap-2 px-5 py-3 border-t border-gray-100">
             {Array.from({ length: contactsTotalPages }, (_, i) => i + 1).map((p) => (
@@ -375,89 +389,107 @@ export default async function AdminBusinessDetailPage({
       </div>
 
       <div id="send-logs" className="card overflow-hidden overflow-x-auto">
-        <div className="px-5 py-3 border-b border-gray-100 space-y-2">
-          <div className="font-semibold text-gray-900">
-            Send logs ({sendLogsTotal} of {business._count.sendLogs} total)
+        <form method="GET">
+          <div className="px-5 py-3 border-b border-gray-100 space-y-2">
+            <div className="font-semibold text-gray-900">
+              Send logs ({sendLogsTotal} of {business._count.sendLogs} total)
+            </div>
+            <div className="flex flex-wrap gap-2 items-center">
+              <input
+                type="text"
+                name="sq"
+                defaultValue={sendLogsQuery}
+                placeholder="Search sends by contact name, occasion, or status…"
+                className="input max-w-md text-sm"
+              />
+              <input type="hidden" name="ssort" value={sendLogsSort} />
+              <input type="hidden" name="sdir" value={sendLogsDir} />
+              <button type="submit" className="btn-secondary text-sm">
+                Filter
+              </button>
+              {(sendLogsQuery || sendLogsStatus || sendLogsOccasion) && (
+                <a
+                  href={buildUrl(business.id, { ssort: sendLogsSort, sdir: sendLogsDir }, '#send-logs')}
+                  className="text-sm text-gray-500"
+                >
+                  Clear
+                </a>
+              )}
+            </div>
           </div>
-          <form method="GET" className="flex flex-wrap gap-2 items-center">
-            <input
-              type="text"
-              name="sq"
-              defaultValue={sendLogsQuery}
-              placeholder="Search sends by contact name, occasion, or status…"
-              className="input max-w-md text-sm"
-            />
-            <select name="sstatus" defaultValue={sendLogsStatus} className="input text-sm w-auto">
-              <option value="">All statuses</option>
-              <option value="SUCCESS">Success</option>
-              <option value="FAILED">Failed</option>
-              <option value="SKIPPED">Skipped</option>
-            </select>
-            <select name="soccasion" defaultValue={sendLogsOccasion} className="input text-sm w-auto">
-              <option value="">All occasions</option>
-              <option value="BIRTHDAY">Birthday</option>
-              <option value="ANNIVERSARY">Anniversary</option>
-              <option value="FESTIVAL">Festival</option>
-            </select>
-            <input type="hidden" name="ssort" value={sendLogsSort} />
-            <input type="hidden" name="sdir" value={sendLogsDir} />
-            <button type="submit" className="btn-secondary text-sm">
-              Filter
-            </button>
-            {(sendLogsQuery || sendLogsStatus || sendLogsOccasion) && (
-              <a
-                href={buildUrl(business.id, { ssort: sendLogsSort, sdir: sendLogsDir }, '#send-logs')}
-                className="text-sm text-gray-500"
-              >
-                Clear
-              </a>
-            )}
-          </form>
-        </div>
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-left">
-            <tr>
-              <SortHeader label="To" field="contact" activeField={sendLogsSort} activeDir={sendLogsDir} hrefFor={sendLogsHrefFor} />
-              <SortHeader label="Occasion" field="occasion" activeField={sendLogsSort} activeDir={sendLogsDir} hrefFor={sendLogsHrefFor} />
-              <SortHeader label="Status" field="status" activeField={sendLogsSort} activeDir={sendLogsDir} hrefFor={sendLogsHrefFor} />
-              <SortHeader label="Sent at" field="sentAt" activeField={sendLogsSort} activeDir={sendLogsDir} hrefFor={sendLogsHrefFor} />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {sendLogs.map((log) => (
-              <tr key={log.id}>
-                <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">
-                  {log.contact?.name ?? log.festival?.name ?? '—'}
-                </td>
-                <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{log.occasion.toLowerCase()}</td>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  <span
-                    className={
-                      'text-xs font-medium rounded-full px-2 py-0.5 ' +
-                      (log.status === 'SUCCESS'
-                        ? 'bg-green-100 text-green-700'
-                        : log.status === 'FAILED'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-gray-100 text-gray-600')
-                    }
-                  >
-                    {log.status}
-                  </span>
-                </td>
-                <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
-                  {new Date(log.sentAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
-                </td>
-              </tr>
-            ))}
-            {sendLogs.length === 0 && (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-500 text-left">
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                  No sends match.
-                </td>
+                <SortHeader label="To" field="contact" activeField={sendLogsSort} activeDir={sendLogsDir} hrefFor={sendLogsHrefFor} />
+                <SortHeader
+                  label="Occasion"
+                  field="occasion"
+                  activeField={sendLogsSort}
+                  activeDir={sendLogsDir}
+                  hrefFor={sendLogsHrefFor}
+                  filter={
+                    <select name="soccasion" defaultValue={sendLogsOccasion} className="input text-xs py-0.5 px-1 w-full">
+                      <option value="">All</option>
+                      <option value="BIRTHDAY">Birthday</option>
+                      <option value="ANNIVERSARY">Anniversary</option>
+                      <option value="FESTIVAL">Festival</option>
+                    </select>
+                  }
+                />
+                <SortHeader
+                  label="Status"
+                  field="status"
+                  activeField={sendLogsSort}
+                  activeDir={sendLogsDir}
+                  hrefFor={sendLogsHrefFor}
+                  filter={
+                    <select name="sstatus" defaultValue={sendLogsStatus} className="input text-xs py-0.5 px-1 w-full">
+                      <option value="">All</option>
+                      <option value="SUCCESS">Success</option>
+                      <option value="FAILED">Failed</option>
+                      <option value="SKIPPED">Skipped</option>
+                    </select>
+                  }
+                />
+                <SortHeader label="Sent at" field="sentAt" activeField={sendLogsSort} activeDir={sendLogsDir} hrefFor={sendLogsHrefFor} />
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {sendLogs.map((log) => (
+                <tr key={log.id}>
+                  <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">
+                    {log.contact?.name ?? log.festival?.name ?? '—'}
+                  </td>
+                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{log.occasion.toLowerCase()}</td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    <span
+                      className={
+                        'text-xs font-medium rounded-full px-2 py-0.5 ' +
+                        (log.status === 'SUCCESS'
+                          ? 'bg-green-100 text-green-700'
+                          : log.status === 'FAILED'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-600')
+                      }
+                    >
+                      {log.status}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                    {new Date(log.sentAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                  </td>
+                </tr>
+              ))}
+              {sendLogs.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                    No sends match.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </form>
         {sendLogsTotalPages > 1 && (
           <div className="flex gap-2 px-5 py-3 border-t border-gray-100">
             {Array.from({ length: sendLogsTotalPages }, (_, i) => i + 1).map((p) => (
