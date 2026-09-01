@@ -10,7 +10,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
   const template = await prisma.flyerTemplate.findUnique({ where: { id: params.id } });
   if (!template || template.businessId !== business.id) notFound();
 
-  const namePlaceholder = JSON.parse(template.namePlaceholder);
+  const namePlaceholder = template.namePlaceholder ? JSON.parse(template.namePlaceholder) : null;
   const datePlaceholder = template.datePlaceholder ? JSON.parse(template.datePlaceholder) : null;
   const photoPlaceholder = template.photoPlaceholder ? JSON.parse(template.photoPlaceholder) : null;
   const logoPlaceholder = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
@@ -43,14 +43,13 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
           backgroundUrl: template.backgroundUrl,
           canvasWidth: template.canvasWidth,
           canvasHeight: template.canvasHeight,
-          namePlaceholder: { ...EMPTY_TEMPLATE.namePlaceholder, ...namePlaceholder },
+          useName: Boolean(namePlaceholder),
+          namePlaceholder: { ...EMPTY_TEMPLATE.namePlaceholder, ...(namePlaceholder ?? {}) },
           useDate: Boolean(datePlaceholder),
           datePlaceholder: { ...EMPTY_TEMPLATE.datePlaceholder, ...(datePlaceholder ?? {}) },
           usePhoto: Boolean(photoPlaceholder),
           photoPlaceholder: { ...EMPTY_TEMPLATE.photoPlaceholder, ...(photoPlaceholder ?? {}) },
-          // Logo is compulsory — force true even for older templates saved
-          // before this was enforced (their logoPlaceholder may be null).
-          useLogo: true,
+          useLogo: Boolean(logoPlaceholder),
           logoPlaceholder: { ...EMPTY_TEMPLATE.logoPlaceholder, ...(logoPlaceholder ?? {}) },
           useFirmName: Boolean(firmNamePlaceholder),
           firmNamePlaceholder: { ...EMPTY_TEMPLATE.firmNamePlaceholder, ...(firmNamePlaceholder ?? {}) },

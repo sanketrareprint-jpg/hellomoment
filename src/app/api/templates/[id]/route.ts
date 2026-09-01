@@ -23,7 +23,7 @@ const templateSchema = z.object({
   backgroundUrl: z.string().min(1),
   canvasWidth: z.number().int().positive(),
   canvasHeight: z.number().int().positive(),
-  namePlaceholder: placeholderSchema,
+  namePlaceholder: placeholderSchema.nullable().optional(),
   datePlaceholder: placeholderSchema.nullable().optional(),
   photoPlaceholder: placeholderSchema.nullable().optional(),
   logoPlaceholder: placeholderSchema.nullable().optional(),
@@ -34,15 +34,6 @@ const templateSchema = z.object({
   isDefault: z.boolean().optional(),
   aisensyCampaignName: z.string().optional().nullable(),
 });
-
-// Mirrors the client's default logo position/size in TemplatePlaceholderEditor.tsx
-function defaultLogoPlaceholder(width: number, height: number) {
-  return {
-    x: Math.round(width * 0.42),
-    y: Math.round(height * 0.02),
-    size: Math.round(width * 0.16),
-  };
-}
 
 async function loadOwnedTemplate(businessId: string, id: string) {
   const template = await prisma.flyerTemplate.findUnique({ where: { id } });
@@ -89,20 +80,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     });
   }
 
-  // Logo is compulsory on every flyer — default a placeholder even if the
-  // client didn't send one, so this can't be bypassed by calling the API
-  // directly.
-  const effectiveLogoPlaceholder = logoPlaceholder ?? defaultLogoPlaceholder(rest.canvasWidth, rest.canvasHeight);
-
   const template = await prisma.flyerTemplate.update({
     where: { id: params.id },
     data: {
       ...rest,
       isDefault: Boolean(isDefault),
-      namePlaceholder: JSON.stringify(namePlaceholder),
+      namePlaceholder: namePlaceholder ? JSON.stringify(namePlaceholder) : null,
       datePlaceholder: datePlaceholder ? JSON.stringify(datePlaceholder) : null,
       photoPlaceholder: photoPlaceholder ? JSON.stringify(photoPlaceholder) : null,
-      logoPlaceholder: JSON.stringify(effectiveLogoPlaceholder),
+      logoPlaceholder: logoPlaceholder ? JSON.stringify(logoPlaceholder) : null,
       firmNamePlaceholder: firmNamePlaceholder ? JSON.stringify(firmNamePlaceholder) : null,
       phonePlaceholder: phonePlaceholder ? JSON.stringify(phonePlaceholder) : null,
       addressPlaceholder: addressPlaceholder ? JSON.stringify(addressPlaceholder) : null,

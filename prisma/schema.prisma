@@ -101,7 +101,7 @@ model FlyerTemplate {
 
   // Placeholder positions/styles, stored as JSON, e.g.
   // { "x":100, "y":800, "fontSize":48, "color":"#ffffff", "fontWeight":"700", "align":"center", "maxWidth":880 }
-  namePlaceholder  String // JSON, required
+  namePlaceholder  String? // JSON, optional (omit to not print the contact's name)
   datePlaceholder  String? // JSON, optional (omit to not print the date)
   photoPlaceholder String? // JSON, e.g. { "x":390,"y":140,"size":300,"shape":"circle" } — omit to not overlay a photo
 

@@ -44,8 +44,8 @@ export interface GenerateFlyerOptions {
   backgroundPath: string; // absolute filesystem path to the template background
   canvasWidth: number;
   canvasHeight: number;
-  namePlaceholder: TextPlaceholder;
-  name: string;
+  namePlaceholder?: TextPlaceholder | null;
+  name?: string | null;
   datePlaceholder?: TextPlaceholder | null;
   dateText?: string | null;
   photoPlaceholder?: PhotoPlaceholder | null;
@@ -79,35 +79,25 @@ function escapeXml(input: string): string {
 /**
  * A bundled, redistributable (GNU FreeFont, GPL-with-font-exception) font
  * with wide Unicode coverage — including Devanagari (Marathi/Hindi) as well
- * as Latin — is embedded directly into every generated flyer's SVG as a
- * base64 data URI. This is deliberate: it means text (including Marathi
- * firm names) always renders correctly regardless of what fonts happen to
- * be installed on the hosting server (e.g. Railway's build image), rather
- * than silently falling back to missing-glyph boxes for scripts the host
- * doesn't have a font for.
+ * as Latin — is loaded directly from these two files by *file path* for
+ * every piece of text on a flyer (via sharp's native text renderer, using
+ * its `fontfile` option). This is deliberate: an earlier version of this
+ * file embedded the font as a base64 @font-face inside a generated SVG
+ * instead, which turned out to be unreliable — on the production host, all
+ * text (including plain English names) came out as missing-glyph boxes,
+ * because librsvg's CSS @font-face support can't be relied on and the host
+ * has no system fonts installed as a fallback. Passing `fontfile` makes
+ * sharp/Pango load our exact bundled file directly, regardless of what (if
+ * anything) is installed system-wide.
  */
 export const BUNDLED_FONT_FAMILY = 'HMFont';
 const FONT_DIR = path.join(process.cwd(), 'assets', 'fonts');
-let cachedFontFaceCss: string | null = null;
+const FONT_FILE_REGULAR = path.join(FONT_DIR, 'FreeSans.ttf');
+const FONT_FILE_BOLD = path.join(FONT_DIR, 'FreeSansBold.ttf');
 
-async function loadFontFaceCss(): Promise<string> {
-  if (cachedFontFaceCss !== null) return cachedFontFaceCss;
-  try {
-    const [regular, bold] = await Promise.all([
-      fs.readFile(path.join(FONT_DIR, 'FreeSans.ttf')),
-      fs.readFile(path.join(FONT_DIR, 'FreeSansBold.ttf')),
-    ]);
-    cachedFontFaceCss =
-      `<style>` +
-      `@font-face{font-family:'${BUNDLED_FONT_FAMILY}';font-weight:400;src:url(data:font/ttf;base64,${regular.toString('base64')}) format('truetype');}` +
-      `@font-face{font-family:'${BUNDLED_FONT_FAMILY}';font-weight:700;src:url(data:font/ttf;base64,${bold.toString('base64')}) format('truetype');}` +
-      `</style>`;
-  } catch {
-    // Bundled font files missing for some reason — fall back to whatever
-    // the host provides under this family name (won't crash the send).
-    cachedFontFaceCss = '';
-  }
-  return cachedFontFaceCss;
+function fontFileFor(fontWeight: number | string | undefined): string {
+  const weight = typeof fontWeight === 'string' ? parseInt(fontWeight, 10) : fontWeight;
+  return weight && weight >= 600 ? FONT_FILE_BOLD : FONT_FILE_REGULAR;
 }
 
 /**
@@ -143,38 +133,66 @@ export function wrapText(text: string, maxWidth: number | undefined, fontSize: n
   return lines.slice(0, maxLines);
 }
 
-function textAnchorFor(align: Align | undefined): string {
-  if (align === 'center') return 'middle';
-  if (align === 'right') return 'end';
-  return 'start';
-}
-
-async function buildTextSvg(
+/**
+ * Renders one text placeholder (possibly multiple wrapped lines) to its own
+ * small transparent PNG via sharp's native text renderer, using our bundled
+ * font *file* directly (see fontFileFor above) rather than a font family
+ * name the host has to resolve. The (x, y) on the placeholder is treated as
+ * the visual center of the rendered block — matching exactly how the
+ * template editor's live preview already positions these markers
+ * (`translate(-50%, -50%)` etc. in TemplatePlaceholderEditor.tsx) — so what
+ * a business drags into place in the editor is what actually gets sent.
+ */
+async function buildTextComposite(
+  placeholder: TextPlaceholder,
+  text: string,
   canvasWidth: number,
-  canvasHeight: number,
-  entries: { placeholder: TextPlaceholder; text: string }[]
-): Promise<Buffer> {
-  const fontFaceCss = await loadFontFaceCss();
-  const textNodes = entries
-    .map(({ placeholder, text }) => {
-      const lines = wrapText(text, placeholder.maxWidth, placeholder.fontSize, placeholder.maxLines ?? 2);
-      const lineHeight = placeholder.fontSize * 1.2;
-      const tspans = lines
-        .map(
-          (line, i) =>
-            `<tspan x="${placeholder.x}" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
-        )
-        .join('');
-      return `<text x="${placeholder.x}" y="${placeholder.y}" font-size="${placeholder.fontSize}" font-family="${escapeXml(
-        placeholder.fontFamily || BUNDLED_FONT_FAMILY
-      )}" font-weight="${placeholder.fontWeight ?? 600}" fill="${escapeXml(
-        placeholder.color
-      )}" text-anchor="${textAnchorFor(placeholder.align)}">${tspans}</text>`;
-    })
-    .join('');
+  canvasHeight: number
+): Promise<{ input: Buffer; left: number; top: number }> {
+  const lines = wrapText(text, placeholder.maxWidth, placeholder.fontSize, placeholder.maxLines ?? 2);
+  const markup = lines.map((line) => escapeXml(line)).join('\n');
+  const fontfile = placeholder.fontFamily ? undefined : fontFileFor(placeholder.fontWeight);
+  const fontDescription = `${placeholder.fontFamily || BUNDLED_FONT_FAMILY} ${Math.round(placeholder.fontSize)}`;
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${canvasWidth}" height="${canvasHeight}">${fontFaceCss}${textNodes}</svg>`;
-  return Buffer.from(svg);
+  const buffer = await sharp({
+    text: {
+      text: `<span foreground="${escapeXml(placeholder.color)}">${markup}</span>`,
+      font: fontDescription,
+      ...(fontfile ? { fontfile } : {}),
+      rgba: true,
+      align: placeholder.align === 'right' ? 'right' : placeholder.align === 'center' ? 'center' : 'left',
+    },
+  })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+
+  let { data } = buffer;
+  let w = buffer.info.width;
+  let h = buffer.info.height;
+
+  // sharp refuses to composite an overlay that would extend past the base
+  // canvas at the given offset, so clamp/crop defensively — an unusually
+  // long name shouldn't be able to fail an entire send.
+  if (w > canvasWidth || h > canvasHeight) {
+    const cropWidth = Math.min(w, canvasWidth);
+    const cropHeight = Math.min(h, canvasHeight);
+    data = await sharp(data).extract({ left: 0, top: 0, width: cropWidth, height: cropHeight }).png().toBuffer();
+    w = cropWidth;
+    h = cropHeight;
+  }
+
+  const rawLeft =
+    placeholder.align === 'center'
+      ? Math.round(placeholder.x - w / 2)
+      : placeholder.align === 'right'
+        ? Math.round(placeholder.x - w)
+        : Math.round(placeholder.x);
+  const rawTop = Math.round(placeholder.y - h / 2);
+
+  const left = Math.min(Math.max(0, rawLeft), Math.max(0, canvasWidth - w));
+  const top = Math.min(Math.max(0, rawTop), Math.max(0, canvasHeight - h));
+
+  return { input: data, left, top };
 }
 
 async function buildPhotoComposite(
@@ -240,9 +258,10 @@ export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string>
     }
   }
 
-  const textEntries: { placeholder: TextPlaceholder; text: string }[] = [
-    { placeholder: opts.namePlaceholder, text: opts.name },
-  ];
+  const textEntries: { placeholder: TextPlaceholder; text: string }[] = [];
+  if (opts.namePlaceholder && opts.name) {
+    textEntries.push({ placeholder: opts.namePlaceholder, text: opts.name });
+  }
   if (opts.datePlaceholder && opts.dateText) {
     textEntries.push({ placeholder: opts.datePlaceholder, text: opts.dateText });
   }
@@ -258,11 +277,10 @@ export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string>
   if (opts.productsPlaceholder && opts.productsText) {
     textEntries.push({ placeholder: opts.productsPlaceholder, text: opts.productsText });
   }
-  composites.push({
-    input: await buildTextSvg(opts.canvasWidth, opts.canvasHeight, textEntries),
-    left: 0,
-    top: 0,
-  });
+  for (const { placeholder, text } of textEntries) {
+    if (!text.trim()) continue;
+    composites.push(await buildTextComposite(placeholder, text, opts.canvasWidth, opts.canvasHeight));
+  }
 
   await sharp(opts.backgroundPath)
     .resize(opts.canvasWidth, opts.canvasHeight, { fit: 'cover' })

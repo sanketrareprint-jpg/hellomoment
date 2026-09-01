@@ -52,6 +52,7 @@ export interface TemplateFormValues {
   backgroundUrl: string;
   canvasWidth: number;
   canvasHeight: number;
+  useName: boolean;
   namePlaceholder: TextPlaceholder;
   useDate: boolean;
   datePlaceholder: TextPlaceholder;
@@ -168,15 +169,14 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
   backgroundUrl: '',
   canvasWidth: 1080,
   canvasHeight: 1080,
+  useName: true,
   useDate: true,
   usePhoto: true,
-  // Logo is compulsory (see useLogo's comment below in TemplateFormValues
-  // usage) — there is no UI to turn it off. Firm name / phone / address /
-  // products stay on by default too, but the business can uncheck any of
-  // them ("if needed") — a festival flyer with no contact info gives a
-  // customer no way to actually act on it, so we default to showing it. If
-  // the matching Brand kit field is still empty, the checkbox stays
-  // disabled and nothing renders either way.
+  // Name and logo default to on (nearly every flyer wants both), but — like
+  // everything else here — the business can turn either off per template.
+  // Firm name / phone / address / products stay on by default too; if the
+  // matching Brand kit field is still empty, the checkbox stays disabled
+  // and nothing renders either way.
   useLogo: true,
   useFirmName: true,
   usePhone: true,
@@ -311,10 +311,10 @@ export default function TemplatePlaceholderEditor({
         canvasHeight: form.canvasHeight,
         isDefault: form.isDefault,
         aisensyCampaignName: form.aisensyCampaignName || null,
-        namePlaceholder: form.namePlaceholder,
+        namePlaceholder: form.useName ? form.namePlaceholder : null,
         datePlaceholder: form.useDate ? form.datePlaceholder : null,
         photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
-        logoPlaceholder: form.logoPlaceholder, // compulsory — always sent
+        logoPlaceholder: form.useLogo ? form.logoPlaceholder : null,
         firmNamePlaceholder: form.useFirmName ? form.firmNamePlaceholder : null,
         phonePlaceholder: form.usePhone ? form.phonePlaceholder : null,
         addressPlaceholder: form.useAddress ? form.addressPlaceholder : null,
@@ -398,11 +398,20 @@ export default function TemplatePlaceholderEditor({
           </div>
         </div>
 
-        <PlaceholderControls
-          title="Name text"
-          placeholder={form.namePlaceholder}
-          onChange={(p) => setForm({ ...form, namePlaceholder: p })}
-        />
+        <div className="card p-5 space-y-3">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
+            <input type="checkbox" checked={form.useName} onChange={(e) => setForm({ ...form, useName: e.target.checked })} />
+            Print the contact&rsquo;s name on the flyer
+          </label>
+          {form.useName && (
+            <PlaceholderControls
+              title=""
+              placeholder={form.namePlaceholder}
+              onChange={(p) => setForm({ ...form, namePlaceholder: p })}
+              compact
+            />
+          )}
+        </div>
 
         <div className="card p-5 space-y-3">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
@@ -465,29 +474,30 @@ export default function TemplatePlaceholderEditor({
           </p>
 
           <div className="space-y-2 border-t border-gray-100 pt-3">
-            <p className="text-sm font-medium text-gray-900">Your logo — always included</p>
-            <p className="text-xs text-gray-500">
-              Every flyer your customers receive carries your logo, so they always know who sent the wish. This
-              can&rsquo;t be turned off — drag it into place below, or resize it here.
-            </p>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
+              <input type="checkbox" checked={form.useLogo} onChange={(e) => setForm({ ...form, useLogo: e.target.checked })} />
+              Show your logo
+            </label>
             {!business?.logoUrl && (
               <p className="text-xs text-amber-600">
                 Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.
               </p>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">Size (px)</label>
-                <input
-                  className="input"
-                  type="number"
-                  value={form.logoPlaceholder.size}
-                  onChange={(e) =>
-                    setForm({ ...form, logoPlaceholder: { ...form.logoPlaceholder, size: Number(e.target.value) } })
-                  }
-                />
+            {form.useLogo && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Size (px)</label>
+                  <input
+                    className="input"
+                    type="number"
+                    value={form.logoPlaceholder.size}
+                    onChange={(e) =>
+                      setForm({ ...form, logoPlaceholder: { ...form.logoPlaceholder, size: Number(e.target.value) } })
+                    }
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           <div className="space-y-2 border-t border-gray-100 pt-3">
@@ -648,7 +658,7 @@ export default function TemplatePlaceholderEditor({
             </div>
           )}
 
-          {form.backgroundUrl && (
+          {form.useName && form.backgroundUrl && (
             <div
               onPointerDown={startDrag('name')}
               className="absolute cursor-move px-1 whitespace-nowrap"

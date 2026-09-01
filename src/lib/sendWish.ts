@@ -214,7 +214,7 @@ async function renderFlyer(
     backgroundPath: servedUrlToAbsolutePath(template.backgroundUrl),
     canvasWidth: template.canvasWidth,
     canvasHeight: template.canvasHeight,
-    namePlaceholder: JSON.parse(template.namePlaceholder) as TextPlaceholder,
+    namePlaceholder: template.namePlaceholder ? (JSON.parse(template.namePlaceholder) as TextPlaceholder) : null,
     name,
     datePlaceholder: template.datePlaceholder ? (JSON.parse(template.datePlaceholder) as TextPlaceholder) : null,
     dateText,
