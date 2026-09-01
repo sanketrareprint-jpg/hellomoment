@@ -26,6 +26,7 @@ function SiteHeader() {
 function SiteFooter() {
   return (
     <footer className="max-w-6xl mx-auto px-6 py-10 mt-16 border-t border-gray-100">
+      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center mb-3">About us</div>
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 justify-center">
         <Link href="/contact" className="hover:text-brand-600">Contact</Link>
         <Link href="/pricing" className="hover:text-brand-600">Pricing</Link>

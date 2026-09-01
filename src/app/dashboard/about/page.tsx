@@ -1,7 +1,17 @@
+import Link from 'next/link';
+
+const PAGES = [
+  { href: '/contact', label: 'Contact' },
+  { href: '/pricing', label: 'Pricing' },
+  { href: '/terms', label: 'Terms & Conditions' },
+  { href: '/privacy', label: 'Privacy Policy' },
+  { href: '/refund-policy', label: 'Refund & Delivery Policy' },
+];
+
 export default function AboutPage() {
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">About &amp; Contact</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">About us</h1>
 
       <div className="card p-6 mb-6">
         <h2 className="font-semibold text-gray-900 mb-2">About RareGreet</h2>
@@ -13,13 +23,16 @@ export default function AboutPage() {
       </div>
 
       <div className="card p-6">
-        <h2 className="font-semibold text-gray-900 mb-2">Contact us</h2>
-        <p className="text-sm text-gray-600 leading-relaxed mb-3">
-          Have a question about billing, your account, or anything else? We&rsquo;re happy to help.
-        </p>
-        <a href="mailto:sales.raregreet@gmail.com" className="text-brand-600 font-medium text-sm">
-          sales.raregreet@gmail.com
-        </a>
+        <h2 className="font-semibold text-gray-900 mb-3">More information</h2>
+        <ul className="space-y-2">
+          {PAGES.map((p) => (
+            <li key={p.href}>
+              <Link href={p.href} className="text-brand-600 font-medium text-sm hover:underline">
+                {p.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

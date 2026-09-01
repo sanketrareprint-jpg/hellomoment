@@ -26,6 +26,7 @@ function SiteHeader() {
 function SiteFooter() {
   return (
     <footer className="max-w-6xl mx-auto px-6 py-10 mt-16 border-t border-gray-100">
+      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center mb-3">About us</div>
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 justify-center">
         <Link href="/contact" className="hover:text-brand-600">Contact</Link>
         <Link href="/pricing" className="hover:text-brand-600">Pricing</Link>
@@ -61,10 +62,6 @@ export default function ContactPage() {
           <div>
             <div className="text-xs text-gray-500">Response time</div>
             <div className="text-sm text-gray-700">We typically reply within 24–48 hours.</div>
-          </div>
-          <div>
-            <div className="text-xs text-gray-500">Operated by</div>
-            <div className="text-sm text-gray-700">RAREPRINT IN</div>
           </div>
         </div>
       </section>

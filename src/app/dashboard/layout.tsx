@@ -3,15 +3,15 @@ import { redirect } from 'next/navigation';
 import { getCurrentBusiness } from '@/lib/session';
 import LogoutButton from '@/components/LogoutButton';
 
+// Contacts, Flyer templates, Festivals, and Send logs are reached from
+// inside the Dashboard home page (as cards / "View all" links) rather than
+// as their own top-level items, per the simplified sidebar the user asked for.
 const NAV = [
   { href: '/dashboard', label: 'Dashboard' },
-  { href: '/dashboard/contacts', label: 'Contacts' },
-  { href: '/dashboard/templates', label: 'Flyer templates' },
-  { href: '/dashboard/festivals', label: 'Festivals' },
-  { href: '/dashboard/logs', label: 'Send logs' },
   { href: '/dashboard/wallet', label: 'Wallet' },
+  { href: '/dashboard/about', label: 'About us' },
+  { href: '/dashboard/contact-us', label: 'Contact us' },
   { href: '/dashboard/settings', label: 'Settings' },
-  { href: '/dashboard/about', label: 'About & Contact' },
 ];
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
