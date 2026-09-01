@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import DeleteBusinessButton from '@/components/DeleteBusinessButton';
 
@@ -91,7 +92,11 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
               const lastSend = lastSendByBusiness.get(b.id);
               return (
                 <tr key={b.id} className="hover:bg-gray-50 align-top">
-                  <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{b.name}</td>
+                  <td className="px-4 py-3 font-medium whitespace-nowrap">
+                    <Link href={`/admin/businesses/${b.id}`} className="text-brand-700 hover:underline">
+                      {b.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{b.email}</td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{b.ownerWhatsapp}</td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
