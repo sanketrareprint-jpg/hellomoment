@@ -57,12 +57,33 @@ model Business {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contacts           Contact[]
-  templates          FlyerTemplate[]
-  festivals          Festival[]
-  sendLogs           SendLog[]
-  walletTransactions WalletTransaction[]
-  rechargeOrders     RechargeOrder[]
+  contacts            Contact[]
+  templates           FlyerTemplate[]
+  festivals           Festival[]
+  sendLogs            SendLog[]
+  walletTransactions  WalletTransaction[]
+  rechargeOrders      RechargeOrder[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+// A one-time-use "forgot password" link. Created when a business requests a
+// reset (POST /api/auth/forgot-password), emailed to them via Resend, and
+// consumed the moment they set a new password (POST
+// /api/auth/reset-password) — or once it expires, whichever comes first.
+// Only a SHA-256 hash of the raw token is stored, never the token itself,
+// so a leaked database dump alone can't be used to reset anyone's account.
+model PasswordResetToken {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([businessId])
 }
 
 // A Razorpay recharge, from order creation through payment confirmation.
