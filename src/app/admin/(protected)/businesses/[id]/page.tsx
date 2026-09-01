@@ -21,7 +21,7 @@ export default async function AdminBusinessDetailPage({
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { cpage?: string };
+  searchParams: { cpage?: string; cq?: string; sq?: string };
 }) {
   const business = await prisma.business.findUnique({
     where: { id: params.id },
@@ -32,17 +32,31 @@ export default async function AdminBusinessDetailPage({
   if (!business) notFound();
 
   const contactsPage = Math.max(1, Number(searchParams.cpage ?? '1'));
-  const contactsTotalPages = Math.max(1, Math.ceil(business._count.contacts / CONTACTS_PAGE_SIZE));
+  const contactsQuery = (searchParams.cq ?? '').trim();
+  const sendLogsQuery = (searchParams.sq ?? '').trim();
 
-  const [contacts, sendLogs, sendStatusCounts] = await Promise.all([
+  const contactsWhere = {
+    businessId: business.id,
+    ...(contactsQuery
+      ? { OR: [{ name: { contains: contactsQuery } }, { whatsapp: { contains: contactsQuery } }, { relationship: { contains: contactsQuery } }] }
+      : {}),
+  };
+
+  const [contactsTotal, contacts, sendLogs, sendStatusCounts] = await Promise.all([
+    prisma.contact.count({ where: contactsWhere }),
     prisma.contact.findMany({
-      where: { businessId: business.id },
+      where: contactsWhere,
       orderBy: { createdAt: 'desc' },
       skip: (contactsPage - 1) * CONTACTS_PAGE_SIZE,
       take: CONTACTS_PAGE_SIZE,
     }),
     prisma.sendLog.findMany({
-      where: { businessId: business.id },
+      where: {
+        businessId: business.id,
+        ...(sendLogsQuery
+          ? { OR: [{ contact: { name: { contains: sendLogsQuery } } }, { occasion: { contains: sendLogsQuery } }, { status: { contains: sendLogsQuery } }] }
+          : {}),
+      },
       orderBy: { sentAt: 'desc' },
       take: 25,
       include: { contact: true, festival: true },
@@ -54,6 +68,7 @@ export default async function AdminBusinessDetailPage({
     }),
   ]);
 
+  const contactsTotalPages = Math.max(1, Math.ceil(contactsTotal / CONTACTS_PAGE_SIZE));
   const statusMap = Object.fromEntries(sendStatusCounts.map((s) => [s.status, s._count._all]));
 
   return (
@@ -146,8 +161,24 @@ export default async function AdminBusinessDetailPage({
       </div>
 
       <div className="card overflow-hidden overflow-x-auto">
-        <div className="px-5 py-3 border-b border-gray-100 font-semibold text-gray-900">
-          Contacts ({business._count.contacts} total) — click a name to see everything sent to them
+        <div className="px-5 py-3 border-b border-gray-100 space-y-2">
+          <div className="font-semibold text-gray-900">
+            Contacts ({contactsTotal} of {business._count.contacts} total) — click a name to see everything sent to them
+          </div>
+          <form method="GET" className="flex gap-2">
+            <input
+              type="text"
+              name="cq"
+              defaultValue={contactsQuery}
+              placeholder="Search contacts by name, WhatsApp, or relationship…"
+              className="input max-w-md text-sm"
+            />
+            {contactsQuery && (
+              <a href={`/admin/businesses/${business.id}`} className="text-sm text-gray-500 self-center">
+                Clear
+              </a>
+            )}
+          </form>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-left">
@@ -195,7 +226,7 @@ export default async function AdminBusinessDetailPage({
             {Array.from({ length: contactsTotalPages }, (_, i) => i + 1).map((p) => (
               <a
                 key={p}
-                href={`/admin/businesses/${business.id}?cpage=${p}`}
+                href={`/admin/businesses/${business.id}?cpage=${p}${contactsQuery ? `&cq=${encodeURIComponent(contactsQuery)}` : ''}`}
                 className={
                   'px-3 py-1 rounded-lg text-sm ' +
                   (p === contactsPage ? 'bg-brand-600 text-white' : 'bg-white border border-gray-300')
@@ -209,8 +240,24 @@ export default async function AdminBusinessDetailPage({
       </div>
 
       <div className="card overflow-hidden overflow-x-auto">
-        <div className="px-5 py-3 border-b border-gray-100 font-semibold text-gray-900">
-          Send logs ({business._count.sendLogs} total, showing latest 25)
+        <div className="px-5 py-3 border-b border-gray-100 space-y-2">
+          <div className="font-semibold text-gray-900">
+            Send logs ({business._count.sendLogs} total, showing latest 25{sendLogsQuery ? ' matching' : ''})
+          </div>
+          <form method="GET" className="flex gap-2">
+            <input
+              type="text"
+              name="sq"
+              defaultValue={sendLogsQuery}
+              placeholder="Search sends by contact name, occasion, or status…"
+              className="input max-w-md text-sm"
+            />
+            {sendLogsQuery && (
+              <a href={`/admin/businesses/${business.id}`} className="text-sm text-gray-500 self-center">
+                Clear
+              </a>
+            )}
+          </form>
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-left">
