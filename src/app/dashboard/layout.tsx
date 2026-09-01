@@ -9,6 +9,7 @@ const NAV = [
   { href: '/dashboard/templates', label: 'Flyer templates' },
   { href: '/dashboard/festivals', label: 'Festivals' },
   { href: '/dashboard/logs', label: 'Send logs' },
+  { href: '/dashboard/wallet', label: 'Wallet' },
   { href: '/dashboard/settings', label: 'Settings' },
 ];
 
@@ -39,6 +40,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
           ))}
         </nav>
         <div className="px-3 py-4 border-t border-gray-100 space-y-2">
+          <Link
+            href="/dashboard/wallet"
+            className="block rounded-lg px-3 py-2 bg-brand-50 hover:bg-brand-100"
+          >
+            <div className="text-xs text-gray-500">Wallet balance</div>
+            <div className="text-sm font-bold text-brand-700">
+              ₹{(business.walletBalancePaise / 100).toFixed(2)}
+            </div>
+          </Link>
           <div className="px-1">
             <div className="text-xs font-medium text-gray-700 truncate">{business.name}</div>
             <div className="text-xs text-gray-500 truncate">{business.email}</div>

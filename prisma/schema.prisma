@@ -44,13 +44,73 @@ model Business {
   firmNameScript   String  @default("ENGLISH") // "ENGLISH" | "MARATHI"
   firmNameMarathi  String? // Marathi-script rendering of the firm name, typed by the business
 
+  // Wallet — prepaid balance that pays for WhatsApp sends, in paise (₹1 =
+  // 100 paise; integers avoid floating-point rounding on money). Recharged
+  // via Razorpay (see RechargeOrder below); walletRatePaise is the
+  // per-message price currently locked in for this business, set from
+  // whichever recharge tier their last top-up qualified for (see
+  // src/lib/pricing.ts) — it does not change again until their next
+  // recharge, even as the balance is spent down.
+  walletBalancePaise Int @default(0)
+  walletRatePaise    Int @default(500) // ₹5.00/message until a bigger recharge unlocks a lower rate
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contacts  Contact[]
-  templates FlyerTemplate[]
-  festivals Festival[]
-  sendLogs  SendLog[]
+  contacts           Contact[]
+  templates          FlyerTemplate[]
+  festivals          Festival[]
+  sendLogs           SendLog[]
+  walletTransactions WalletTransaction[]
+  rechargeOrders     RechargeOrder[]
+}
+
+// A Razorpay recharge, from order creation through payment confirmation.
+// Created (status CREATED) when the business clicks a recharge amount on
+// the Wallet page; flipped to PAID by /api/wallet/recharge/verify once
+// Razorpay's checkout confirms payment and we've verified the signature —
+// that's also the moment the matching WalletTransaction is created and the
+// Business's walletBalancePaise/walletRatePaise are updated. A CREATED
+// order that's never verified (e.g. the business closed the checkout
+// popup) just stays CREATED forever and nothing is charged or credited.
+model RechargeOrder {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  amountPaise Int // amount actually paid via Razorpay
+  ratePaise   Int // per-message rate this recharge unlocks (see src/lib/pricing.ts), applied to the business on verify
+
+  razorpayOrderId String  @unique
+  status          String  @default("CREATED") // "CREATED" | "PAID" | "FAILED"
+
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+
+  @@index([businessId, createdAt])
+}
+
+// One line of wallet history — a recharge credit or a per-send debit.
+// amountPaise is always stored positive; `type` says which direction it
+// moved the balance. Kept even after the RechargeOrder/SendLog it relates
+// to might be gone, as a permanent statement the business (and admin) can
+// review.
+// type: "RECHARGE" | "DEBIT" | "REFUND" | "ADJUSTMENT"
+model WalletTransaction {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  type        String
+  amountPaise Int
+  description String?
+
+  rechargeOrderId String? // set for type=RECHARGE
+  sendLogId       String? // set for type=DEBIT — which send this paid for
+
+  createdAt DateTime @default(now())
+
+  @@index([businessId, createdAt])
 }
 
 // NOTE: SQLite (this project's default connector) does not support native

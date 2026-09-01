@@ -36,6 +36,24 @@ export async function sendWishForContact(params: {
 }) {
   const { business, contact, template, occasion } = params;
 
+  // Wallet gate: every send costs business.walletRatePaise (locked in at
+  // their last recharge — see src/lib/pricing.ts). If they can't cover even
+  // one more message, skip it rather than sending for free — the business
+  // sees exactly why in their Send logs / this contact's timeline.
+  if (business.walletBalancePaise < business.walletRatePaise) {
+    await prisma.sendLog.create({
+      data: {
+        businessId: business.id,
+        contactId: contact.id,
+        templateId: template.id,
+        occasion,
+        status: 'SKIPPED',
+        errorMessage: insufficientBalanceMessage(business),
+      },
+    });
+    return;
+  }
+
   const relevantDate = occasion === 'BIRTHDAY' ? contact.dob! : contact.anniversary!;
   const dateText = formatDateForDisplay(relevantDate);
   const occasionWord = occasion === 'BIRTHDAY' ? 'Birthday' : 'Anniversary';
@@ -101,7 +119,7 @@ export async function sendWishForContact(params: {
     }
   }
 
-  await prisma.sendLog.create({
+  const sendLog = await prisma.sendLog.create({
     data: {
       businessId: business.id,
       contactId: contact.id,
@@ -115,6 +133,10 @@ export async function sendWishForContact(params: {
       errorMessage,
     },
   });
+
+  if (status === 'SUCCESS') {
+    await debitWallet(business, sendLog.id, `${occasionWord} wish sent to ${contact.name}`);
+  }
 }
 
 export async function sendWishForFestival(params: {
@@ -129,7 +151,28 @@ export async function sendWishForFestival(params: {
   const apiKey = resolveAisensyApiKey(business);
   const fromName = brandFirmNameText(business) || business.name;
 
+  // Tracked locally rather than re-reading from the DB every iteration —
+  // this loop runs sequentially in one process, so a running total is
+  // enough to stop sending once the wallet can't cover the next message,
+  // even mid-batch.
+  let remainingBalance = business.walletBalancePaise;
+
   for (const contact of contacts) {
+    if (remainingBalance < business.walletRatePaise) {
+      await prisma.sendLog.create({
+        data: {
+          businessId: business.id,
+          contactId: contact.id,
+          festivalId: festival.id,
+          templateId: template.id,
+          occasion: 'FESTIVAL',
+          status: 'SKIPPED',
+          errorMessage: insufficientBalanceMessage(business),
+        },
+      });
+      continue;
+    }
+
     const flyerUrl = await renderFlyer(business, template, contact.name, dateText, contact.photoUrl);
 
     let status: 'SUCCESS' | 'FAILED' = 'SUCCESS';
@@ -161,7 +204,7 @@ export async function sendWishForFestival(params: {
       }
     }
 
-    await prisma.sendLog.create({
+    const sendLog = await prisma.sendLog.create({
       data: {
         businessId: business.id,
         contactId: contact.id,
@@ -176,6 +219,11 @@ export async function sendWishForFestival(params: {
         errorMessage,
       },
     });
+
+    if (status === 'SUCCESS') {
+      remainingBalance -= business.walletRatePaise;
+      await debitWallet(business, sendLog.id, `${festival.name} wish sent to ${contact.name}`);
+    }
   }
 }
 
@@ -234,6 +282,32 @@ async function renderFlyer(
   });
 
   return `/api/files/generated/${outputName}`;
+}
+
+function insufficientBalanceMessage(business: Business): string {
+  return (
+    `Wallet balance too low (₹${(business.walletBalancePaise / 100).toFixed(2)}) to send at ` +
+    `₹${(business.walletRatePaise / 100).toFixed(2)}/message — recharge your wallet to resume automatic sends.`
+  );
+}
+
+/** Deducts one message's cost from the business's wallet and logs the debit, tied to the SendLog it paid for. */
+async function debitWallet(business: Business, sendLogId: string, description: string): Promise<void> {
+  await prisma.$transaction([
+    prisma.business.update({
+      where: { id: business.id },
+      data: { walletBalancePaise: { decrement: business.walletRatePaise } },
+    }),
+    prisma.walletTransaction.create({
+      data: {
+        businessId: business.id,
+        type: 'DEBIT',
+        amountPaise: business.walletRatePaise,
+        description,
+        sendLogId,
+      },
+    }),
+  ]);
 }
 
 function defaultCampaignFor(business: Business, occasion: 'BIRTHDAY' | 'ANNIVERSARY'): string | null {
