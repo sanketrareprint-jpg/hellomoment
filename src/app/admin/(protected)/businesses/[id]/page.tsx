@@ -15,13 +15,14 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 const CONTACTS_PAGE_SIZE = 50;
+const SEND_LOGS_PAGE_SIZE = 50;
 
 export default async function AdminBusinessDetailPage({
   params,
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { cpage?: string; cq?: string; sq?: string };
+  searchParams: { cpage?: string; cq?: string; spage?: string; sq?: string };
 }) {
   const business = await prisma.business.findUnique({
     where: { id: params.id },
@@ -33,6 +34,7 @@ export default async function AdminBusinessDetailPage({
 
   const contactsPage = Math.max(1, Number(searchParams.cpage ?? '1'));
   const contactsQuery = (searchParams.cq ?? '').trim();
+  const sendLogsPage = Math.max(1, Number(searchParams.spage ?? '1'));
   const sendLogsQuery = (searchParams.sq ?? '').trim();
 
   const contactsWhere = {
@@ -42,7 +44,14 @@ export default async function AdminBusinessDetailPage({
       : {}),
   };
 
-  const [contactsTotal, contacts, sendLogs, sendStatusCounts] = await Promise.all([
+  const sendLogsWhere = {
+    businessId: business.id,
+    ...(sendLogsQuery
+      ? { OR: [{ contact: { name: { contains: sendLogsQuery } } }, { occasion: { contains: sendLogsQuery } }, { status: { contains: sendLogsQuery } }] }
+      : {}),
+  };
+
+  const [contactsTotal, contacts, sendLogsTotal, sendLogs, sendStatusCounts] = await Promise.all([
     prisma.contact.count({ where: contactsWhere }),
     prisma.contact.findMany({
       where: contactsWhere,
@@ -50,15 +59,12 @@ export default async function AdminBusinessDetailPage({
       skip: (contactsPage - 1) * CONTACTS_PAGE_SIZE,
       take: CONTACTS_PAGE_SIZE,
     }),
+    prisma.sendLog.count({ where: sendLogsWhere }),
     prisma.sendLog.findMany({
-      where: {
-        businessId: business.id,
-        ...(sendLogsQuery
-          ? { OR: [{ contact: { name: { contains: sendLogsQuery } } }, { occasion: { contains: sendLogsQuery } }, { status: { contains: sendLogsQuery } }] }
-          : {}),
-      },
+      where: sendLogsWhere,
       orderBy: { sentAt: 'desc' },
-      take: 25,
+      skip: (sendLogsPage - 1) * SEND_LOGS_PAGE_SIZE,
+      take: SEND_LOGS_PAGE_SIZE,
       include: { contact: true, festival: true },
     }),
     prisma.sendLog.groupBy({
@@ -69,6 +75,7 @@ export default async function AdminBusinessDetailPage({
   ]);
 
   const contactsTotalPages = Math.max(1, Math.ceil(contactsTotal / CONTACTS_PAGE_SIZE));
+  const sendLogsTotalPages = Math.max(1, Math.ceil(sendLogsTotal / SEND_LOGS_PAGE_SIZE));
   const statusMap = Object.fromEntries(sendStatusCounts.map((s) => [s.status, s._count._all]));
 
   return (
@@ -239,10 +246,10 @@ export default async function AdminBusinessDetailPage({
         )}
       </div>
 
-      <div className="card overflow-hidden overflow-x-auto">
+      <div id="send-logs" className="card overflow-hidden overflow-x-auto">
         <div className="px-5 py-3 border-b border-gray-100 space-y-2">
           <div className="font-semibold text-gray-900">
-            Send logs ({business._count.sendLogs} total, showing latest 25{sendLogsQuery ? ' matching' : ''})
+            Send logs ({sendLogsTotal} of {business._count.sendLogs} total)
           </div>
           <form method="GET" className="flex gap-2">
             <input
@@ -303,6 +310,22 @@ export default async function AdminBusinessDetailPage({
             )}
           </tbody>
         </table>
+        {sendLogsTotalPages > 1 && (
+          <div className="flex gap-2 px-5 py-3 border-t border-gray-100">
+            {Array.from({ length: sendLogsTotalPages }, (_, i) => i + 1).map((p) => (
+              <a
+                key={p}
+                href={`/admin/businesses/${business.id}?spage=${p}${sendLogsQuery ? `&sq=${encodeURIComponent(sendLogsQuery)}` : ''}#send-logs`}
+                className={
+                  'px-3 py-1 rounded-lg text-sm ' +
+                  (p === sendLogsPage ? 'bg-brand-600 text-white' : 'bg-white border border-gray-300')
+                }
+              >
+                {p}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
