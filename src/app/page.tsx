@@ -13,7 +13,10 @@ export default async function LandingPage() {
           <img src="/logo.png" alt="raregreet.com" width={36} height={36} className="rounded-lg" />
           <div className="text-xl font-bold text-brand-700">raregreet<span className="text-gray-400">.com</span></div>
         </div>
-        <nav className="flex gap-3">
+        <nav className="flex items-center gap-5">
+          <Link href="/pricing" className="text-sm font-medium text-gray-600 hover:text-brand-600">
+            Pricing
+          </Link>
           <Link href="/login" className="btn-secondary">
             Log in
           </Link>
@@ -63,6 +66,19 @@ export default async function LandingPage() {
           </div>
         ))}
       </section>
+
+      <footer className="max-w-6xl mx-auto px-6 py-10 border-t border-gray-100">
+        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 justify-center">
+          <Link href="/contact" className="hover:text-brand-600">Contact</Link>
+          <Link href="/pricing" className="hover:text-brand-600">Pricing</Link>
+          <Link href="/terms" className="hover:text-brand-600">Terms &amp; Conditions</Link>
+          <Link href="/privacy" className="hover:text-brand-600">Privacy Policy</Link>
+          <Link href="/refund-policy" className="hover:text-brand-600">Refund &amp; Delivery Policy</Link>
+        </div>
+        <p className="text-center text-xs text-gray-400 mt-4">
+          &copy; {new Date().getFullYear()} RAREPRINT IN, operating raregreet.com. All rights reserved.
+        </p>
+      </footer>
     </main>
   );
 }
