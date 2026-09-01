@@ -17,12 +17,66 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
 const CONTACTS_PAGE_SIZE = 50;
 const SEND_LOGS_PAGE_SIZE = 50;
 
+const CONTACT_SORT_FIELDS = ['name', 'relationship', 'dob', 'anniversary', 'createdAt'] as const;
+type ContactSortField = (typeof CONTACT_SORT_FIELDS)[number];
+
+const SEND_LOG_SORT_FIELDS = ['contact', 'occasion', 'status', 'sentAt'] as const;
+type SendLogSortField = (typeof SEND_LOG_SORT_FIELDS)[number];
+
+/** Builds a link to this page with the given query params, dropping any that are empty. */
+function buildUrl(businessId: string, params: Record<string, string | undefined>, hash?: string) {
+  const usp = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v) usp.set(k, v);
+  }
+  const qs = usp.toString();
+  return `/admin/businesses/${businessId}${qs ? `?${qs}` : ''}${hash ?? ''}`;
+}
+
+/** A clickable column header that sorts by `field`, flipping direction if it's already the active sort. */
+function SortHeader({
+  label,
+  field,
+  activeField,
+  activeDir,
+  hrefFor,
+}: {
+  label: string;
+  field: string;
+  activeField: string;
+  activeDir: 'asc' | 'desc';
+  hrefFor: (field: string, dir: 'asc' | 'desc') => string;
+}) {
+  const isActive = field === activeField;
+  const nextDir: 'asc' | 'desc' = isActive && activeDir === 'asc' ? 'desc' : 'asc';
+  return (
+    <th className="px-4 py-2 font-medium whitespace-nowrap">
+      <a href={hrefFor(field, nextDir)} className="inline-flex items-center gap-1 hover:text-gray-800">
+        {label}
+        <span className="text-gray-400">{isActive ? (activeDir === 'asc' ? '▲' : '▼') : '↕'}</span>
+      </a>
+    </th>
+  );
+}
+
 export default async function AdminBusinessDetailPage({
   params,
   searchParams,
 }: {
   params: { id: string };
-  searchParams: { cpage?: string; cq?: string; spage?: string; sq?: string };
+  searchParams: {
+    cpage?: string;
+    cq?: string;
+    crel?: string;
+    csort?: string;
+    cdir?: string;
+    spage?: string;
+    sq?: string;
+    sstatus?: string;
+    soccasion?: string;
+    ssort?: string;
+    sdir?: string;
+  };
 }) {
   const business = await prisma.business.findUnique({
     where: { id: params.id },
@@ -34,11 +88,38 @@ export default async function AdminBusinessDetailPage({
 
   const contactsPage = Math.max(1, Number(searchParams.cpage ?? '1'));
   const contactsQuery = (searchParams.cq ?? '').trim();
+  const contactsRel = (searchParams.crel ?? '').trim();
+  const contactsSort: ContactSortField = CONTACT_SORT_FIELDS.includes(searchParams.csort as ContactSortField)
+    ? (searchParams.csort as ContactSortField)
+    : 'createdAt';
+  const contactsDir: 'asc' | 'desc' = searchParams.cdir === 'asc' ? 'asc' : searchParams.cdir === 'desc' ? 'desc' : 'desc';
+
   const sendLogsPage = Math.max(1, Number(searchParams.spage ?? '1'));
   const sendLogsQuery = (searchParams.sq ?? '').trim();
+  const sendLogsStatus = (searchParams.sstatus ?? '').trim();
+  const sendLogsOccasion = (searchParams.soccasion ?? '').trim();
+  const sendLogsSort: SendLogSortField = SEND_LOG_SORT_FIELDS.includes(searchParams.ssort as SendLogSortField)
+    ? (searchParams.ssort as SendLogSortField)
+    : 'sentAt';
+  const sendLogsDir: 'asc' | 'desc' = searchParams.sdir === 'asc' ? 'asc' : searchParams.sdir === 'desc' ? 'desc' : 'desc';
+
+  const contactsBaseParams = { cq: contactsQuery, crel: contactsRel, csort: contactsSort, cdir: contactsDir };
+  const contactsHrefFor = (field: string, dir: 'asc' | 'desc') =>
+    buildUrl(business.id, { ...contactsBaseParams, csort: field, cdir: dir });
+
+  const sendLogsBaseParams = {
+    sq: sendLogsQuery,
+    sstatus: sendLogsStatus,
+    soccasion: sendLogsOccasion,
+    ssort: sendLogsSort,
+    sdir: sendLogsDir,
+  };
+  const sendLogsHrefFor = (field: string, dir: 'asc' | 'desc') =>
+    buildUrl(business.id, { ...sendLogsBaseParams, ssort: field, sdir: dir }, '#send-logs');
 
   const contactsWhere = {
     businessId: business.id,
+    ...(contactsRel ? { relationship: contactsRel } : {}),
     ...(contactsQuery
       ? { OR: [{ name: { contains: contactsQuery } }, { whatsapp: { contains: contactsQuery } }, { relationship: { contains: contactsQuery } }] }
       : {}),
@@ -46,23 +127,58 @@ export default async function AdminBusinessDetailPage({
 
   const sendLogsWhere = {
     businessId: business.id,
+    ...(sendLogsStatus ? { status: sendLogsStatus } : {}),
+    ...(sendLogsOccasion ? { occasion: sendLogsOccasion } : {}),
     ...(sendLogsQuery
       ? { OR: [{ contact: { name: { contains: sendLogsQuery } } }, { occasion: { contains: sendLogsQuery } }, { status: { contains: sendLogsQuery } }] }
       : {}),
   };
 
+  function contactOrderBy(field: ContactSortField, dir: 'asc' | 'desc') {
+    switch (field) {
+      case 'name':
+        return { name: dir };
+      case 'relationship':
+        return { relationship: dir };
+      case 'dob':
+        return { dob: dir };
+      case 'anniversary':
+        return { anniversary: dir };
+      case 'createdAt':
+      default:
+        return { createdAt: dir };
+    }
+  }
+
+  function sendLogOrderBy(field: SendLogSortField, dir: 'asc' | 'desc') {
+    switch (field) {
+      case 'contact':
+        return { contact: { name: dir } };
+      case 'occasion':
+        return { occasion: dir };
+      case 'status':
+        return { status: dir };
+      case 'sentAt':
+      default:
+        return { sentAt: dir };
+    }
+  }
+
+  const contactsOrderBy = contactOrderBy(contactsSort, contactsDir);
+  const sendLogsOrderBy = sendLogOrderBy(sendLogsSort, sendLogsDir);
+
   const [contactsTotal, contacts, sendLogsTotal, sendLogs, sendStatusCounts] = await Promise.all([
     prisma.contact.count({ where: contactsWhere }),
     prisma.contact.findMany({
       where: contactsWhere,
-      orderBy: { createdAt: 'desc' },
+      orderBy: contactsOrderBy,
       skip: (contactsPage - 1) * CONTACTS_PAGE_SIZE,
       take: CONTACTS_PAGE_SIZE,
     }),
     prisma.sendLog.count({ where: sendLogsWhere }),
     prisma.sendLog.findMany({
       where: sendLogsWhere,
-      orderBy: { sentAt: 'desc' },
+      orderBy: sendLogsOrderBy,
       skip: (sendLogsPage - 1) * SEND_LOGS_PAGE_SIZE,
       take: SEND_LOGS_PAGE_SIZE,
       include: { contact: true, festival: true },
@@ -172,7 +288,7 @@ export default async function AdminBusinessDetailPage({
           <div className="font-semibold text-gray-900">
             Contacts ({contactsTotal} of {business._count.contacts} total) — click a name to see everything sent to them
           </div>
-          <form method="GET" className="flex gap-2">
+          <form method="GET" className="flex flex-wrap gap-2 items-center">
             <input
               type="text"
               name="cq"
@@ -180,8 +296,20 @@ export default async function AdminBusinessDetailPage({
               placeholder="Search contacts by name, WhatsApp, or relationship…"
               className="input max-w-md text-sm"
             />
-            {contactsQuery && (
-              <a href={`/admin/businesses/${business.id}`} className="text-sm text-gray-500 self-center">
+            <select name="crel" defaultValue={contactsRel} className="input text-sm w-auto">
+              <option value="">All relationships</option>
+              <option value="CUSTOMER">Customer</option>
+              <option value="FRIEND">Friend</option>
+              <option value="FAMILY">Family</option>
+              <option value="OTHER">Other</option>
+            </select>
+            <input type="hidden" name="csort" value={contactsSort} />
+            <input type="hidden" name="cdir" value={contactsDir} />
+            <button type="submit" className="btn-secondary text-sm">
+              Filter
+            </button>
+            {(contactsQuery || contactsRel) && (
+              <a href={buildUrl(business.id, { csort: contactsSort, cdir: contactsDir })} className="text-sm text-gray-500">
                 Clear
               </a>
             )}
@@ -190,12 +318,12 @@ export default async function AdminBusinessDetailPage({
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>
-              <th className="px-4 py-2 font-medium whitespace-nowrap">Name</th>
+              <SortHeader label="Name" field="name" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
               <th className="px-4 py-2 font-medium whitespace-nowrap">WhatsApp</th>
-              <th className="px-4 py-2 font-medium whitespace-nowrap">Relationship</th>
-              <th className="px-4 py-2 font-medium whitespace-nowrap">Birthday</th>
-              <th className="px-4 py-2 font-medium whitespace-nowrap">Anniversary</th>
-              <th className="px-4 py-2 font-medium whitespace-nowrap">Added</th>
+              <SortHeader label="Relationship" field="relationship" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
+              <SortHeader label="Birthday" field="dob" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
+              <SortHeader label="Anniversary" field="anniversary" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
+              <SortHeader label="Added" field="createdAt" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -222,7 +350,7 @@ export default async function AdminBusinessDetailPage({
             {contacts.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                  No contacts added yet.
+                  No contacts match.
                 </td>
               </tr>
             )}
@@ -233,7 +361,7 @@ export default async function AdminBusinessDetailPage({
             {Array.from({ length: contactsTotalPages }, (_, i) => i + 1).map((p) => (
               <a
                 key={p}
-                href={`/admin/businesses/${business.id}?cpage=${p}${contactsQuery ? `&cq=${encodeURIComponent(contactsQuery)}` : ''}`}
+                href={buildUrl(business.id, { ...contactsBaseParams, cpage: String(p) })}
                 className={
                   'px-3 py-1 rounded-lg text-sm ' +
                   (p === contactsPage ? 'bg-brand-600 text-white' : 'bg-white border border-gray-300')
@@ -251,7 +379,7 @@ export default async function AdminBusinessDetailPage({
           <div className="font-semibold text-gray-900">
             Send logs ({sendLogsTotal} of {business._count.sendLogs} total)
           </div>
-          <form method="GET" className="flex gap-2">
+          <form method="GET" className="flex flex-wrap gap-2 items-center">
             <input
               type="text"
               name="sq"
@@ -259,8 +387,28 @@ export default async function AdminBusinessDetailPage({
               placeholder="Search sends by contact name, occasion, or status…"
               className="input max-w-md text-sm"
             />
-            {sendLogsQuery && (
-              <a href={`/admin/businesses/${business.id}`} className="text-sm text-gray-500 self-center">
+            <select name="sstatus" defaultValue={sendLogsStatus} className="input text-sm w-auto">
+              <option value="">All statuses</option>
+              <option value="SUCCESS">Success</option>
+              <option value="FAILED">Failed</option>
+              <option value="SKIPPED">Skipped</option>
+            </select>
+            <select name="soccasion" defaultValue={sendLogsOccasion} className="input text-sm w-auto">
+              <option value="">All occasions</option>
+              <option value="BIRTHDAY">Birthday</option>
+              <option value="ANNIVERSARY">Anniversary</option>
+              <option value="FESTIVAL">Festival</option>
+            </select>
+            <input type="hidden" name="ssort" value={sendLogsSort} />
+            <input type="hidden" name="sdir" value={sendLogsDir} />
+            <button type="submit" className="btn-secondary text-sm">
+              Filter
+            </button>
+            {(sendLogsQuery || sendLogsStatus || sendLogsOccasion) && (
+              <a
+                href={buildUrl(business.id, { ssort: sendLogsSort, sdir: sendLogsDir }, '#send-logs')}
+                className="text-sm text-gray-500"
+              >
                 Clear
               </a>
             )}
@@ -269,10 +417,10 @@ export default async function AdminBusinessDetailPage({
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>
-              <th className="px-4 py-2 font-medium whitespace-nowrap">To</th>
-              <th className="px-4 py-2 font-medium whitespace-nowrap">Occasion</th>
-              <th className="px-4 py-2 font-medium whitespace-nowrap">Status</th>
-              <th className="px-4 py-2 font-medium whitespace-nowrap">Sent at</th>
+              <SortHeader label="To" field="contact" activeField={sendLogsSort} activeDir={sendLogsDir} hrefFor={sendLogsHrefFor} />
+              <SortHeader label="Occasion" field="occasion" activeField={sendLogsSort} activeDir={sendLogsDir} hrefFor={sendLogsHrefFor} />
+              <SortHeader label="Status" field="status" activeField={sendLogsSort} activeDir={sendLogsDir} hrefFor={sendLogsHrefFor} />
+              <SortHeader label="Sent at" field="sentAt" activeField={sendLogsSort} activeDir={sendLogsDir} hrefFor={sendLogsHrefFor} />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -304,7 +452,7 @@ export default async function AdminBusinessDetailPage({
             {sendLogs.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                  No sends yet.
+                  No sends match.
                 </td>
               </tr>
             )}
@@ -315,7 +463,7 @@ export default async function AdminBusinessDetailPage({
             {Array.from({ length: sendLogsTotalPages }, (_, i) => i + 1).map((p) => (
               <a
                 key={p}
-                href={`/admin/businesses/${business.id}?spage=${p}${sendLogsQuery ? `&sq=${encodeURIComponent(sendLogsQuery)}` : ''}#send-logs`}
+                href={buildUrl(business.id, { ...sendLogsBaseParams, spage: String(p) }, '#send-logs')}
                 className={
                   'px-3 py-1 rounded-lg text-sm ' +
                   (p === sendLogsPage ? 'bg-brand-600 text-white' : 'bg-white border border-gray-300')
