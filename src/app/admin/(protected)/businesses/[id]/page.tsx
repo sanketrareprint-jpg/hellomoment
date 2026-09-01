@@ -14,7 +14,15 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-export default async function AdminBusinessDetailPage({ params }: { params: { id: string } }) {
+const CONTACTS_PAGE_SIZE = 50;
+
+export default async function AdminBusinessDetailPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { cpage?: string };
+}) {
   const business = await prisma.business.findUnique({
     where: { id: params.id },
     include: {
@@ -23,11 +31,15 @@ export default async function AdminBusinessDetailPage({ params }: { params: { id
   });
   if (!business) notFound();
 
+  const contactsPage = Math.max(1, Number(searchParams.cpage ?? '1'));
+  const contactsTotalPages = Math.max(1, Math.ceil(business._count.contacts / CONTACTS_PAGE_SIZE));
+
   const [contacts, sendLogs, sendStatusCounts] = await Promise.all([
     prisma.contact.findMany({
       where: { businessId: business.id },
       orderBy: { createdAt: 'desc' },
-      take: 25,
+      skip: (contactsPage - 1) * CONTACTS_PAGE_SIZE,
+      take: CONTACTS_PAGE_SIZE,
     }),
     prisma.sendLog.findMany({
       where: { businessId: business.id },
@@ -135,7 +147,7 @@ export default async function AdminBusinessDetailPage({ params }: { params: { id
 
       <div className="card overflow-hidden overflow-x-auto">
         <div className="px-5 py-3 border-b border-gray-100 font-semibold text-gray-900">
-          Contacts ({business._count.contacts} total, showing latest 25)
+          Contacts ({business._count.contacts} total) — click a name to see everything sent to them
         </div>
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-left">
@@ -150,8 +162,12 @@ export default async function AdminBusinessDetailPage({ params }: { params: { id
           </thead>
           <tbody className="divide-y divide-gray-100">
             {contacts.map((c) => (
-              <tr key={c.id}>
-                <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">{c.name}</td>
+              <tr key={c.id} className="hover:bg-gray-50">
+                <td className="px-4 py-2 font-medium whitespace-nowrap">
+                  <Link href={`/admin/businesses/${business.id}/contacts/${c.id}`} className="text-brand-700 hover:underline">
+                    {c.name}
+                  </Link>
+                </td>
                 <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.whatsapp}</td>
                 <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.relationship}</td>
                 <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
@@ -174,6 +190,22 @@ export default async function AdminBusinessDetailPage({ params }: { params: { id
             )}
           </tbody>
         </table>
+        {contactsTotalPages > 1 && (
+          <div className="flex gap-2 px-5 py-3 border-t border-gray-100">
+            {Array.from({ length: contactsTotalPages }, (_, i) => i + 1).map((p) => (
+              <a
+                key={p}
+                href={`/admin/businesses/${business.id}?cpage=${p}`}
+                className={
+                  'px-3 py-1 rounded-lg text-sm ' +
+                  (p === contactsPage ? 'bg-brand-600 text-white' : 'bg-white border border-gray-300')
+                }
+              >
+                {p}
+              </a>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card overflow-hidden overflow-x-auto">
