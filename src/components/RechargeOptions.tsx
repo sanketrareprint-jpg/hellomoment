@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { RechargeTier } from '@/lib/pricing';
+import { MIN_RECHARGE_RUPEES, type RechargeTier } from '@/lib/pricing';
 
 declare global {
   interface Window {
@@ -47,7 +47,10 @@ export default function RechargeOptions({
     loadRazorpayScript();
   }, []);
 
-  const minAmount = tiers[0]?.amountRupees ?? 500;
+  // Uses MIN_RECHARGE_RUPEES (not the lowest tier button) so the custom-amount
+  // field always matches whatever the server will actually accept — this is
+  // currently lowered to ₹5 in src/lib/pricing.ts for live-mode testing.
+  const minAmount = MIN_RECHARGE_RUPEES;
   const amountRupees = customAmount ? Number(customAmount) : selected;
 
   async function handleRecharge() {

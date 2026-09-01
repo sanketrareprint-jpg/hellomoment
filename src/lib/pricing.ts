@@ -20,7 +20,10 @@ export const RECHARGE_TIERS: RechargeTier[] = [
   { amountRupees: 5000, pricePerMessageRupees: 4 },
 ];
 
-export const MIN_RECHARGE_RUPEES = 500;
+// TEMPORARY — lowered from 500 to 5 so a real Razorpay live-mode recharge
+// can be tested for a few rupees instead of ₹500. Change this back to 500
+// once testing is done — see the note in RechargeOptions.tsx too.
+export const MIN_RECHARGE_RUPEES = 5;
 
 export const DEFAULT_RATE_PAISE = Math.round(RECHARGE_TIERS[0].pricePerMessageRupees * 100);
 
