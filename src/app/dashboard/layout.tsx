@@ -3,17 +3,16 @@ import { redirect } from 'next/navigation';
 import { getCurrentBusiness } from '@/lib/session';
 import LogoutButton from '@/components/LogoutButton';
 
-// Contacts, Flyer templates, Festivals, and Send logs live inside a
-// "Dashboard" dropdown in the sidebar instead of their own top-level rows.
-const DASHBOARD_LINKS = [
-  { href: '/dashboard', label: 'Overview' },
+// Dashboard and Overview are the same page (/dashboard), so there is a
+// single "Dashboard" link rather than separate "Dashboard" / "Overview"
+// entries. Contacts, Flyer templates, Festivals, and Send logs are each
+// their own top-level row in the sidebar (no dropdown).
+const NAV = [
+  { href: '/dashboard', label: 'Dashboard' },
   { href: '/dashboard/contacts', label: 'Contacts' },
   { href: '/dashboard/templates', label: 'Flyer templates' },
   { href: '/dashboard/festivals', label: 'Festivals' },
   { href: '/dashboard/logs', label: 'Send logs' },
-];
-
-const NAV = [
   { href: '/dashboard/wallet', label: 'Wallet' },
   { href: '/dashboard/about', label: 'About us' },
   { href: '/dashboard/contact-us', label: 'Contact us' },
@@ -36,24 +35,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </div>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
-          <details open className="group">
-            <summary className="list-none cursor-pointer flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-brand-50 hover:text-brand-700 [&::-webkit-details-marker]:hidden">
-              <span>Dashboard</span>
-              <span className="text-xs text-gray-400 transition-transform group-open:rotate-180">▾</span>
-            </summary>
-            <div className="mt-1 ml-3 space-y-1 border-l border-gray-100 pl-3">
-              {DASHBOARD_LINKS.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="block rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-brand-50 hover:text-brand-700"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
-          </details>
-
           {NAV.map((item) => (
             <Link
               key={item.href}

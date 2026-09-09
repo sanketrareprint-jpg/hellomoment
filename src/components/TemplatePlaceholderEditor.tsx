@@ -340,8 +340,8 @@ export default function TemplatePlaceholderEditor({
 
   return (
     <form onSubmit={onSubmit} className="grid lg:grid-cols-2 gap-6">
-      <div className="space-y-4">
-        <div className="card p-5 space-y-4">
+      <div className="space-y-3">
+        <div className="card p-4 space-y-3">
           <div>
             <label className="label">Template name</label>
             <input
@@ -352,7 +352,7 @@ export default function TemplatePlaceholderEditor({
               placeholder="e.g. Birthday — Gold theme"
             />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Occasion</label>
               <select
@@ -398,7 +398,7 @@ export default function TemplatePlaceholderEditor({
           </div>
         </div>
 
-        <div className="card p-5 space-y-3">
+        <div className="card p-3 space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
             <input type="checkbox" checked={form.useName} onChange={(e) => setForm({ ...form, useName: e.target.checked })} />
             Print the contact&rsquo;s name on the flyer
@@ -413,7 +413,7 @@ export default function TemplatePlaceholderEditor({
           )}
         </div>
 
-        <div className="card p-5 space-y-3">
+        <div className="card p-3 space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
             <input type="checkbox" checked={form.useDate} onChange={(e) => setForm({ ...form, useDate: e.target.checked })} />
             Print the date on the flyer
@@ -428,7 +428,7 @@ export default function TemplatePlaceholderEditor({
           )}
         </div>
 
-        <div className="card p-5 space-y-3">
+        <div className="card p-3 space-y-2">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
             <input type="checkbox" checked={form.usePhoto} onChange={(e) => setForm({ ...form, usePhoto: e.target.checked })} />
             Overlay the contact&rsquo;s photo
@@ -466,14 +466,14 @@ export default function TemplatePlaceholderEditor({
           )}
         </div>
 
-        <div className="card p-5 space-y-4">
+        <div className="card p-4 space-y-2">
           <h3 className="font-semibold text-gray-900">Your business branding</h3>
           <p className="text-xs text-gray-500">
             Pulled automatically from Settings → Brand kit for flyers. Your logo always appears; the rest (firm
             name, phone, address, products) is optional — turn on whichever you need and drag them into place.
           </p>
 
-          <div className="space-y-2 border-t border-gray-100 pt-3">
+          <div className="space-y-1.5 border-t border-gray-100 pt-2">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <input type="checkbox" checked={form.useLogo} onChange={(e) => setForm({ ...form, useLogo: e.target.checked })} />
               Show your logo
@@ -500,7 +500,7 @@ export default function TemplatePlaceholderEditor({
             )}
           </div>
 
-          <div className="space-y-2 border-t border-gray-100 pt-3">
+          <div className="space-y-1.5 border-t border-gray-100 pt-2">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <input
                 type="checkbox"
@@ -519,7 +519,7 @@ export default function TemplatePlaceholderEditor({
             )}
           </div>
 
-          <div className="space-y-2 border-t border-gray-100 pt-3">
+          <div className="space-y-1.5 border-t border-gray-100 pt-2">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <input
                 type="checkbox"
@@ -542,7 +542,7 @@ export default function TemplatePlaceholderEditor({
             )}
           </div>
 
-          <div className="space-y-2 border-t border-gray-100 pt-3">
+          <div className="space-y-1.5 border-t border-gray-100 pt-2">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <input
                 type="checkbox"
@@ -565,7 +565,7 @@ export default function TemplatePlaceholderEditor({
             )}
           </div>
 
-          <div className="space-y-2 border-t border-gray-100 pt-3">
+          <div className="space-y-1.5 border-t border-gray-100 pt-2">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <input
                 type="checkbox"
@@ -815,7 +815,7 @@ function PlaceholderControls({
   return (
     <div className={compact ? '' : 'card p-5'}>
       {title && <h3 className="font-semibold text-gray-900 mb-3">{title}</h3>}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-2">
         <div>
           <label className="label">Font size</label>
           <input

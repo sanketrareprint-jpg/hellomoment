@@ -68,13 +68,20 @@ export default function ImportContactsPage() {
       <form onSubmit={onSubmit} className="card p-6 space-y-4">
         <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" required />
         {error && <p className="text-sm text-red-600">{error}</p>}
-        <div className="flex gap-3">
+        <div className="flex gap-3 items-center">
           <button type="submit" disabled={loading} className="btn-primary">
             {loading ? 'Importing…' : 'Import contacts'}
           </button>
           <Link href="/dashboard/contacts" className="btn-secondary">
             Back to contacts
           </Link>
+          <a
+            href="/sample-contacts.csv"
+            download
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
+          >
+            ⬇ Download sample file
+          </a>
         </div>
       </form>
 

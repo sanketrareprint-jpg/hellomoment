@@ -67,10 +67,17 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
           <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
           <p className="text-gray-600 mt-1">{total} people in your list</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <Link href="/dashboard/contacts/import" className="btn-secondary">
             Bulk import
           </Link>
+          <a
+            href="/sample-contacts.csv"
+            download
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
+          >
+            ⬇ Download sample file
+          </a>
           <Link href="/dashboard/contacts/new" className="btn-primary">
             + Add contact
           </Link>
