@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
       // case the business customized them.
       await prisma.flyerTemplate.update({
         where: { id: existingId },
-        data: { backgroundUrl },
+        data: { backgroundUrl, source: 'STARTER' },
       });
       updated.push(starter.name);
       continue;
@@ -249,6 +249,7 @@ export async function POST(req: NextRequest) {
         businessId: business.id,
         name: starter.name,
         occasion: starter.occasion,
+        source: 'STARTER',
         backgroundUrl,
         canvasWidth: CANVAS,
         canvasHeight: CANVAS,
@@ -257,10 +258,11 @@ export async function POST(req: NextRequest) {
         datePlaceholder: JSON.stringify(ph.datePlaceholder),
         photoPlaceholder: JSON.stringify(ph.photoPlaceholder),
         logoPlaceholder: JSON.stringify(ph.logoPlaceholder),
-        firmNamePlaceholder: JSON.stringify(ph.firmNamePlaceholder),
-        phonePlaceholder: JSON.stringify(ph.phonePlaceholder),
-        addressPlaceholder: JSON.stringify(ph.addressPlaceholder),
-        productsPlaceholder: JSON.stringify(ph.productsPlaceholder),
+        // Firm name / phone / address / products are left unset here on
+        // purpose: these starter designs already have their own finished
+        // footer art, so overlaying this text block by default collided
+        // with it. The business can turn any of these on from the
+        // template editor (Your business branding) if they want it.
       },
     });
     created.push(starter.name);

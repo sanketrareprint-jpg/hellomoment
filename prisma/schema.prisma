@@ -176,6 +176,7 @@ model FlyerTemplate {
 
   name          String
   occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+  source        String   @default("CUSTOM") // "STARTER" (bundled ready-made design) | "CUSTOM" (business-made) — splits the Templates page into two folders
   backgroundUrl String // /uploads/templates/<file>
   canvasWidth   Int      @default(1080)
   canvasHeight  Int      @default(1080)

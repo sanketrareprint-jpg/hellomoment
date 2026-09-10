@@ -28,8 +28,8 @@ export interface TextPlaceholder {
 export interface PhotoPlaceholder {
   x: number;
   y: number;
-  size: number; // diameter (circle) or side length (square)
-  shape?: 'circle' | 'square';
+  size: number; // diameter (circle) or side length (square/rounded/hexagon)
+  shape?: 'circle' | 'square' | 'rounded' | 'hexagon';
   borderColor?: string;
   borderWidth?: number;
 }
@@ -95,9 +95,37 @@ const FONT_DIR = path.join(process.cwd(), 'assets', 'fonts');
 const FONT_FILE_REGULAR = path.join(FONT_DIR, 'FreeSans.ttf');
 const FONT_FILE_BOLD = path.join(FONT_DIR, 'FreeSansBold.ttf');
 
-function fontFileFor(fontWeight: number | string | undefined): string {
+// Additional named font choices a business can pick per text placeholder
+// (Font family dropdown in the template editor). Every one of these is a
+// *static* (non-variable) TTF bundled in assets/fonts and loaded directly
+// via sharp's `fontfile` option below — same reliable approach as the
+// default HMFont, so nothing depends on fonts being installed on the
+// Railway host. These are Latin-only (no Devanagari), unlike the default.
+const NAMED_FONT_FILES: Record<string, { regular: string; bold: string }> = {
+  poppins: {
+    regular: path.join(FONT_DIR, 'Poppins-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Poppins-Bold.ttf'),
+  },
+  playfair: {
+    regular: path.join(FONT_DIR, 'PlayfairDisplay-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'PlayfairDisplay-Bold.ttf'),
+  },
+  'dancing-script': {
+    regular: path.join(FONT_DIR, 'DancingScript-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'DancingScript-Bold.ttf'),
+  },
+  oswald: {
+    regular: path.join(FONT_DIR, 'Oswald-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Oswald-Bold.ttf'),
+  },
+};
+
+function fontFileFor(fontWeight: number | string | undefined, fontFamily?: string): string {
   const weight = typeof fontWeight === 'string' ? parseInt(fontWeight, 10) : fontWeight;
-  return weight && weight >= 600 ? FONT_FILE_BOLD : FONT_FILE_REGULAR;
+  const isBold = Boolean(weight && weight >= 600);
+  const named = fontFamily ? NAMED_FONT_FILES[fontFamily] : undefined;
+  if (named) return isBold ? named.bold : named.regular;
+  return isBold ? FONT_FILE_BOLD : FONT_FILE_REGULAR;
 }
 
 /**
@@ -151,14 +179,14 @@ async function buildTextComposite(
 ): Promise<{ input: Buffer; left: number; top: number }> {
   const lines = wrapText(text, placeholder.maxWidth, placeholder.fontSize, placeholder.maxLines ?? 2);
   const markup = lines.map((line) => escapeXml(line)).join('\n');
-  const fontfile = placeholder.fontFamily ? undefined : fontFileFor(placeholder.fontWeight);
-  const fontDescription = `${placeholder.fontFamily || BUNDLED_FONT_FAMILY} ${Math.round(placeholder.fontSize)}`;
+  const fontfile = fontFileFor(placeholder.fontWeight, placeholder.fontFamily);
+  const fontDescription = `${BUNDLED_FONT_FAMILY} ${Math.round(placeholder.fontSize)}`;
 
   const buffer = await sharp({
     text: {
       text: `<span foreground="${escapeXml(placeholder.color)}">${markup}</span>`,
       font: fontDescription,
-      ...(fontfile ? { fontfile } : {}),
+      fontfile,
       rgba: true,
       align: placeholder.align === 'right' ? 'right' : placeholder.align === 'center' ? 'center' : 'left',
     },
@@ -209,6 +237,29 @@ async function buildPhotoComposite(
       `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size / 2}" cy="${
         size / 2
       }" r="${size / 2}" fill="#fff"/></svg>`
+    );
+    photo = photo.composite([{ input: maskSvg, blend: 'dest-in' }]);
+  } else if (shape === 'rounded') {
+    const radius = Math.round(size * 0.18);
+    const maskSvg = Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${size}" height="${size}" rx="${radius}" ry="${radius}" fill="#fff"/></svg>`
+    );
+    photo = photo.composite([{ input: maskSvg, blend: 'dest-in' }]);
+  } else if (shape === 'hexagon') {
+    const w = size;
+    const h = size;
+    const points = [
+      [w * 0.25, 0],
+      [w * 0.75, 0],
+      [w, h * 0.5],
+      [w * 0.75, h],
+      [w * 0.25, h],
+      [0, h * 0.5],
+    ]
+      .map(([x, y]) => `${x},${y}`)
+      .join(' ');
+    const maskSvg = Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><polygon points="${points}" fill="#fff"/></svg>`
     );
     photo = photo.composite([{ input: maskSvg, blend: 'dest-in' }]);
   }

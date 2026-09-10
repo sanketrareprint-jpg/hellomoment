@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { FONT_FAMILIES, type FontFamilyId } from '@/lib/fontFamilies';
 
 type Align = 'left' | 'center' | 'right';
 
@@ -11,6 +12,7 @@ interface TextPlaceholder {
   fontSize: number;
   color: string;
   fontWeight: number;
+  fontFamily?: FontFamilyId;
   align: Align;
   maxWidth: number;
   maxLines: number;
@@ -20,7 +22,7 @@ interface PhotoPlaceholder {
   x: number;
   y: number;
   size: number;
-  shape: 'circle' | 'square';
+  shape: 'circle' | 'square' | 'rounded' | 'hexagon';
 }
 
 interface LogoPlaceholder {
@@ -174,14 +176,16 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
   usePhoto: true,
   // Name and logo default to on (nearly every flyer wants both), but — like
   // everything else here — the business can turn either off per template.
-  // Firm name / phone / address / products stay on by default too; if the
-  // matching Brand kit field is still empty, the checkbox stays disabled
-  // and nothing renders either way.
+  // Firm name / phone / address / products default to OFF: most flyer
+  // artwork (including the bundled starter designs) already has its own
+  // decorative footer, and stacking this text block on top of it collided
+  // with the art. The business can still switch any of these on per
+  // template and drag them into a clear spot.
   useLogo: true,
-  useFirmName: true,
-  usePhone: true,
-  useAddress: true,
-  useProducts: true,
+  useFirmName: false,
+  usePhone: false,
+  useAddress: false,
+  useProducts: false,
   ...defaultsFor(1080, 1080),
 };
 
@@ -200,11 +204,23 @@ export default function TemplatePlaceholderEditor({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Advanced options (currently just the AiSensy campaign override) are
+  // hidden by default — almost no business ever needs this, so showing it
+  // on every template just confuses people. Auto-open it if a template
+  // being edited already has a value set, so it isn't silently hidden.
+  const [showAdvanced, setShowAdvanced] = useState(Boolean(initial?.aisensyCampaignName));
   const previewRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
 
   const scale = PREVIEW_WIDTH / form.canvasWidth;
   const previewHeight = form.canvasHeight * scale;
+
+  // Resolves a placeholder's chosen font to the matching CSS font-family for
+  // the live preview only — the actual flyer PNG is always rendered
+  // server-side from the bundled .ttf files in assets/fonts (see flyer.ts).
+  function cssFontFamilyFor(id?: string) {
+    return FONT_FAMILIES.find((f) => f.id === id)?.cssFamily ?? 'inherit';
+  }
 
   const firmNamePreviewText = business
     ? business.firmNameScript === 'MARATHI'
@@ -339,9 +355,9 @@ export default function TemplatePlaceholderEditor({
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid lg:grid-cols-2 gap-6">
-      <div className="space-y-3">
-        <div className="card p-4 space-y-3">
+    <form onSubmit={onSubmit} className="compact-form grid lg:grid-cols-2 gap-4">
+      <div className="space-y-2">
+        <div className="card p-2 space-y-1.5">
           <div>
             <label className="label">Template name</label>
             <input
@@ -376,15 +392,25 @@ export default function TemplatePlaceholderEditor({
               </label>
             </div>
           </div>
-          <div>
-            <label className="label">AiSensy campaign name (optional override)</label>
-            <input
-              className="input"
-              value={form.aisensyCampaignName}
-              onChange={(e) => setForm({ ...form, aisensyCampaignName: e.target.value })}
-              placeholder="Leave blank to use your Settings default"
-            />
-          </div>
+          {!showAdvanced ? (
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(true)}
+              className="text-sm font-medium text-brand-600 hover:text-brand-700"
+            >
+              + Advanced options (optional)
+            </button>
+          ) : (
+            <div>
+              <label className="label">AiSensy campaign name (optional)</label>
+              <input
+                className="input"
+                value={form.aisensyCampaignName}
+                onChange={(e) => setForm({ ...form, aisensyCampaignName: e.target.value })}
+                placeholder="Leave blank to use your Settings default"
+              />
+            </div>
+          )}
           <div>
             <label className="label">Flyer background image</label>
             <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onBackgroundChange} />
@@ -398,7 +424,7 @@ export default function TemplatePlaceholderEditor({
           </div>
         </div>
 
-        <div className="card p-3 space-y-2">
+        <div className="card p-2 space-y-1.5">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
             <input type="checkbox" checked={form.useName} onChange={(e) => setForm({ ...form, useName: e.target.checked })} />
             Print the contact&rsquo;s name on the flyer
@@ -413,7 +439,7 @@ export default function TemplatePlaceholderEditor({
           )}
         </div>
 
-        <div className="card p-3 space-y-2">
+        <div className="card p-2 space-y-1.5">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
             <input type="checkbox" checked={form.useDate} onChange={(e) => setForm({ ...form, useDate: e.target.checked })} />
             Print the date on the flyer
@@ -428,7 +454,7 @@ export default function TemplatePlaceholderEditor({
           )}
         </div>
 
-        <div className="card p-3 space-y-2">
+        <div className="card p-2 space-y-1.5">
           <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
             <input type="checkbox" checked={form.usePhoto} onChange={(e) => setForm({ ...form, usePhoto: e.target.checked })} />
             Overlay the contact&rsquo;s photo
@@ -454,26 +480,30 @@ export default function TemplatePlaceholderEditor({
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      photoPlaceholder: { ...form.photoPlaceholder, shape: e.target.value as 'circle' | 'square' },
+                      photoPlaceholder: {
+                        ...form.photoPlaceholder,
+                        shape: e.target.value as 'circle' | 'square' | 'rounded' | 'hexagon',
+                      },
                     })
                   }
                 >
                   <option value="circle">Circle</option>
                   <option value="square">Square</option>
+                  <option value="rounded">Rounded square</option>
+                  <option value="hexagon">Hexagon</option>
                 </select>
               </div>
             </div>
           )}
         </div>
 
-        <div className="card p-4 space-y-2">
-          <h3 className="font-semibold text-gray-900">Your business branding</h3>
-          <p className="text-xs text-gray-500">
-            Pulled automatically from Settings → Brand kit for flyers. Your logo always appears; the rest (firm
-            name, phone, address, products) is optional — turn on whichever you need and drag them into place.
+        <div className="card p-2 space-y-1.5">
+          <h3 className="font-semibold text-gray-900 text-sm">Your business branding</h3>
+          <p className="text-[11px] leading-snug text-gray-500">
+            From Settings → Brand kit. Logo always shows; the rest is optional — toggle and drag into place.
           </p>
 
-          <div className="space-y-1.5 border-t border-gray-100 pt-2">
+          <div className="space-y-1 border-t border-gray-100 pt-1.5">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <input type="checkbox" checked={form.useLogo} onChange={(e) => setForm({ ...form, useLogo: e.target.checked })} />
               Show your logo
@@ -500,7 +530,7 @@ export default function TemplatePlaceholderEditor({
             )}
           </div>
 
-          <div className="space-y-1.5 border-t border-gray-100 pt-2">
+          <div className="space-y-1 border-t border-gray-100 pt-1.5">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <input
                 type="checkbox"
@@ -519,7 +549,7 @@ export default function TemplatePlaceholderEditor({
             )}
           </div>
 
-          <div className="space-y-1.5 border-t border-gray-100 pt-2">
+          <div className="space-y-1 border-t border-gray-100 pt-1.5">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <input
                 type="checkbox"
@@ -542,7 +572,7 @@ export default function TemplatePlaceholderEditor({
             )}
           </div>
 
-          <div className="space-y-1.5 border-t border-gray-100 pt-2">
+          <div className="space-y-1 border-t border-gray-100 pt-1.5">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <input
                 type="checkbox"
@@ -565,7 +595,7 @@ export default function TemplatePlaceholderEditor({
             )}
           </div>
 
-          <div className="space-y-1.5 border-t border-gray-100 pt-2">
+          <div className="space-y-1 border-t border-gray-100 pt-1.5">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
               <input
                 type="checkbox"
@@ -631,7 +661,16 @@ export default function TemplatePlaceholderEditor({
                 top: form.photoPlaceholder.y * scale,
                 width: form.photoPlaceholder.size * scale,
                 height: form.photoPlaceholder.size * scale,
-                borderRadius: form.photoPlaceholder.shape === 'circle' ? '9999px' : '4px',
+                borderRadius:
+                  form.photoPlaceholder.shape === 'circle'
+                    ? '9999px'
+                    : form.photoPlaceholder.shape === 'rounded'
+                      ? '18%'
+                      : '4px',
+                clipPath:
+                  form.photoPlaceholder.shape === 'hexagon'
+                    ? 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)'
+                    : undefined,
               }}
             >
               Photo
@@ -673,6 +712,7 @@ export default function TemplatePlaceholderEditor({
                       : 'translate(0, -50%)',
                 fontSize: Math.max(10, form.namePlaceholder.fontSize * scale),
                 fontWeight: form.namePlaceholder.fontWeight,
+                fontFamily: cssFontFamilyFor(form.namePlaceholder.fontFamily),
                 color: form.namePlaceholder.color,
                 textShadow: '0 1px 3px rgba(0,0,0,0.5)',
               }}
@@ -696,6 +736,7 @@ export default function TemplatePlaceholderEditor({
                       : 'translate(0, -50%)',
                 fontSize: Math.max(9, form.datePlaceholder.fontSize * scale),
                 fontWeight: form.datePlaceholder.fontWeight,
+                fontFamily: cssFontFamilyFor(form.datePlaceholder.fontFamily),
                 color: form.datePlaceholder.color,
                 textShadow: '0 1px 3px rgba(0,0,0,0.5)',
               }}
@@ -719,6 +760,7 @@ export default function TemplatePlaceholderEditor({
                       : 'translate(0, -50%)',
                 fontSize: Math.max(9, form.firmNamePlaceholder.fontSize * scale),
                 fontWeight: form.firmNamePlaceholder.fontWeight,
+                fontFamily: cssFontFamilyFor(form.firmNamePlaceholder.fontFamily),
                 color: form.firmNamePlaceholder.color,
                 textShadow: '0 1px 3px rgba(0,0,0,0.5)',
               }}
@@ -742,6 +784,7 @@ export default function TemplatePlaceholderEditor({
                       : 'translate(0, -50%)',
                 fontSize: Math.max(8, form.phonePlaceholder.fontSize * scale),
                 fontWeight: form.phonePlaceholder.fontWeight,
+                fontFamily: cssFontFamilyFor(form.phonePlaceholder.fontFamily),
                 color: form.phonePlaceholder.color,
                 textShadow: '0 1px 3px rgba(0,0,0,0.5)',
               }}
@@ -765,6 +808,7 @@ export default function TemplatePlaceholderEditor({
                       : 'translate(0, -50%)',
                 fontSize: Math.max(8, form.addressPlaceholder.fontSize * scale),
                 fontWeight: form.addressPlaceholder.fontWeight,
+                fontFamily: cssFontFamilyFor(form.addressPlaceholder.fontFamily),
                 color: form.addressPlaceholder.color,
                 textShadow: '0 1px 3px rgba(0,0,0,0.5)',
               }}
@@ -788,6 +832,7 @@ export default function TemplatePlaceholderEditor({
                       : 'translate(0, -50%)',
                 fontSize: Math.max(8, form.productsPlaceholder.fontSize * scale),
                 fontWeight: form.productsPlaceholder.fontWeight,
+                fontFamily: cssFontFamilyFor(form.productsPlaceholder.fontFamily),
                 color: form.productsPlaceholder.color,
                 textShadow: '0 1px 3px rgba(0,0,0,0.5)',
               }}
@@ -815,7 +860,21 @@ function PlaceholderControls({
   return (
     <div className={compact ? '' : 'card p-5'}>
       {title && <h3 className="font-semibold text-gray-900 mb-3">{title}</h3>}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-1.5">
+        <div>
+          <label className="label">Font</label>
+          <select
+            className="input"
+            value={placeholder.fontFamily ?? 'default'}
+            onChange={(e) => onChange({ ...placeholder, fontFamily: e.target.value as TextPlaceholder['fontFamily'] })}
+          >
+            {FONT_FAMILIES.map((f) => (
+              <option key={f.id} value={f.id}>
+                {f.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="label">Font size</label>
           <input

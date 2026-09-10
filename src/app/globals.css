@@ -35,3 +35,19 @@ body {
 .label {
   @apply block text-sm font-medium text-gray-700 mb-1;
 }
+
+/* Scoped, denser variant of .input/.label/.card used only inside the flyer
+   template editor form (TemplatePlaceholderEditor.tsx) — that page stacks
+   many small field groups and needed to fit far more compactly than the
+   rest of the app, which keeps the normal (larger, more comfortable)
+   spacing above. Higher specificity here (two classes) beats the plain
+   .input/.label/.card rules without having to touch them globally. */
+.compact-form .input {
+  @apply px-2 py-1.5 text-sm;
+}
+.compact-form .label {
+  @apply text-xs mb-0.5;
+}
+.compact-form .card {
+  @apply shadow-none;
+}
