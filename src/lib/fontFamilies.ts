@@ -3,7 +3,16 @@
 // the (client) template editor to render the dropdown and preview text with
 // a matching web font. No Node built-ins here so this file is safe to
 // import from either side.
-export type FontFamilyId = 'default' | 'poppins' | 'playfair' | 'dancing-script' | 'oswald';
+export type FontFamilyId =
+  | 'default'
+  | 'poppins'
+  | 'playfair'
+  | 'dancing-script'
+  | 'oswald'
+  | 'arimo'
+  | 'tinos'
+  | 'carlito'
+  | 'gelasio';
 
 export interface FontFamilyOption {
   id: FontFamilyId;
@@ -45,8 +54,32 @@ export const FONT_FAMILIES: FontFamilyOption[] = [
     cssFamily: "'Oswald', sans-serif",
     supportsDevanagari: false,
   },
+  {
+    id: 'arimo',
+    label: 'Arimo — Arial-style (English only)',
+    cssFamily: "'Arimo', Arial, sans-serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'tinos',
+    label: 'Tinos — Times New Roman-style (English only)',
+    cssFamily: "'Tinos', 'Times New Roman', serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'carlito',
+    label: 'Carlito — Calibri-style (English only)',
+    cssFamily: "'Carlito', Calibri, sans-serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'gelasio',
+    label: 'Gelasio — Georgia-style (English only)',
+    cssFamily: "'Gelasio', Georgia, serif",
+    supportsDevanagari: false,
+  },
 ];
 
 /** The Google Fonts CSS2 URL that loads every non-default face for the browser preview. */
 export const GOOGLE_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Oswald:wght@400;700&display=swap';
+  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Oswald:wght@400;700&family=Arimo:wght@400;700&family=Tinos:wght@400;700&family=Carlito:wght@400;700&family=Gelasio:wght@400;700&display=swap';

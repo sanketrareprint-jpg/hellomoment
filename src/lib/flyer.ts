@@ -118,6 +118,22 @@ const NAMED_FONT_FILES: Record<string, { regular: string; bold: string }> = {
     regular: path.join(FONT_DIR, 'Oswald-Regular.ttf'),
     bold: path.join(FONT_DIR, 'Oswald-Bold.ttf'),
   },
+  arimo: {
+    regular: path.join(FONT_DIR, 'Arimo-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Arimo-Bold.ttf'),
+  },
+  tinos: {
+    regular: path.join(FONT_DIR, 'Tinos-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Tinos-Bold.ttf'),
+  },
+  carlito: {
+    regular: path.join(FONT_DIR, 'Carlito-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Carlito-Bold.ttf'),
+  },
+  gelasio: {
+    regular: path.join(FONT_DIR, 'Gelasio-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Gelasio-Bold.ttf'),
+  },
 };
 
 function fontFileFor(fontWeight: number | string | undefined, fontFamily?: string): string {
