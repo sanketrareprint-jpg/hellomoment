@@ -330,7 +330,7 @@ export default async function AdminBusinessDetailPage({
                   {walletTransactions.map((txn) => (
                     <tr key={txn.id}>
                       <td className="pr-4 py-1.5 text-gray-600 whitespace-nowrap">
-                        {new Date(txn.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                        {new Date(txn.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: business.timezone || 'Asia/Kolkata' })}
                       </td>
                       <td className="pr-4 py-1.5">
                         <span
@@ -388,7 +388,7 @@ export default async function AdminBusinessDetailPage({
                   {trialCoinTransactions.map((txn) => (
                     <tr key={txn.id}>
                       <td className="pr-4 py-1.5 text-gray-600 whitespace-nowrap">
-                        {new Date(txn.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                        {new Date(txn.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: business.timezone || 'Asia/Kolkata' })}
                       </td>
                       <td className="pr-4 py-1.5">
                         <span
@@ -607,7 +607,7 @@ export default async function AdminBusinessDetailPage({
                     </span>
                   </td>
                   <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
-                    {new Date(log.sentAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                    {new Date(log.sentAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: business.timezone || 'Asia/Kolkata' })}
                   </td>
                 </tr>
               ))}
