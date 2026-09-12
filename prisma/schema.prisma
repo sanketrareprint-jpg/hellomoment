@@ -54,6 +54,11 @@ model Business {
   walletBalancePaise Int @default(0)
   walletRatePaise    Int @default(500) // ₹5.00/message until a bigger recharge unlocks a lower rate
 
+  // Trial coins — a separate, non-monetary balance an admin can grant for
+  // free trial offers (see TrialCoinTransaction below). Spent before the ₹
+  // wallet on every send, at COINS_PER_SEND coins/message (src/lib/pricing.ts).
+  trialCoins Int @default(0)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -62,6 +67,7 @@ model Business {
   festivals           Festival[]
   sendLogs            SendLog[]
   walletTransactions  WalletTransaction[]
+  trialCoinTransactions TrialCoinTransaction[]
   rechargeOrders      RechargeOrder[]
   passwordResetTokens PasswordResetToken[]
 }
@@ -128,6 +134,27 @@ model WalletTransaction {
 
   rechargeOrderId String? // set for type=RECHARGE
   sendLogId       String? // set for type=DEBIT — which send this paid for
+
+  createdAt DateTime @default(now())
+
+  @@index([businessId, createdAt])
+}
+
+// One line of trial-coin history — an admin grant or a per-send debit.
+// Mirrors WalletTransaction but for the separate, non-monetary trialCoins
+// balance, so a free trial never gets mixed into the real ₹ wallet ledger.
+// coins is always stored positive; `type` says which direction it moved the
+// balance. type: "GRANT" | "DEBIT"
+model TrialCoinTransaction {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  type        String
+  coins       Int
+  description String?
+
+  sendLogId String? // set for type=DEBIT — which send this paid for
 
   createdAt DateTime @default(now())
 

@@ -54,6 +54,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <div className="text-sm font-bold text-brand-700">
               ₹{(business.walletBalancePaise / 100).toFixed(2)}
             </div>
+            {business.trialCoins > 0 && (
+              <div className="text-xs font-semibold text-amber-700 mt-0.5">{business.trialCoins} trial coins</div>
+            )}
           </Link>
           <div className="px-1">
             <div className="text-xs font-medium text-gray-700 truncate">{business.name}</div>

@@ -6,6 +6,7 @@ import { generateFlyer, TextPlaceholder, PhotoPlaceholder } from './flyer';
 import { sendAisensyCampaign } from './aisensy';
 import { servedUrlToAbsolutePath, STORAGE_DIR } from './uploads';
 import { formatDateForDisplay } from './dateUtils';
+import { COINS_PER_SEND } from './pricing';
 
 /**
  * The single place that turns "it's Priya's birthday" (or a festival) into
@@ -36,11 +37,13 @@ export async function sendWishForContact(params: {
 }) {
   const { business, contact, template, occasion } = params;
 
-  // Wallet gate: every send costs business.walletRatePaise (locked in at
-  // their last recharge — see src/lib/pricing.ts). If they can't cover even
-  // one more message, skip it rather than sending for free — the business
-  // sees exactly why in their Send logs / this contact's timeline.
-  if (business.walletBalancePaise < business.walletRatePaise) {
+  // Spending gate: a send is covered either by trial coins (spent first —
+  // see COINS_PER_SEND in src/lib/pricing.ts) or by business.walletRatePaise
+  // from the ₹ wallet (locked in at their last recharge). If neither can
+  // cover one more message, skip it rather than sending for free — the
+  // business sees exactly why in their Send logs / this contact's timeline.
+  const useCoins = business.trialCoins >= COINS_PER_SEND;
+  if (!useCoins && business.walletBalancePaise < business.walletRatePaise) {
     await prisma.sendLog.create({
       data: {
         businessId: business.id,
@@ -135,7 +138,7 @@ export async function sendWishForContact(params: {
   });
 
   if (status === 'SUCCESS') {
-    await debitWallet(business, sendLog.id, `${occasionWord} wish sent to ${contact.name}`);
+    await chargeForSend(business, sendLog.id, `${occasionWord} wish sent to ${contact.name}`, useCoins);
   }
 }
 
@@ -152,13 +155,15 @@ export async function sendWishForFestival(params: {
   const fromName = brandFirmNameText(business) || business.name;
 
   // Tracked locally rather than re-reading from the DB every iteration —
-  // this loop runs sequentially in one process, so a running total is
-  // enough to stop sending once the wallet can't cover the next message,
-  // even mid-batch.
+  // this loop runs sequentially in one process, so running totals are
+  // enough to stop sending once neither pool can cover the next message,
+  // even mid-batch. Trial coins are spent first, same as sendWishForContact.
   let remainingBalance = business.walletBalancePaise;
+  let remainingCoins = business.trialCoins;
 
   for (const contact of contacts) {
-    if (remainingBalance < business.walletRatePaise) {
+    const useCoins = remainingCoins >= COINS_PER_SEND;
+    if (!useCoins && remainingBalance < business.walletRatePaise) {
       await prisma.sendLog.create({
         data: {
           businessId: business.id,
@@ -221,8 +226,12 @@ export async function sendWishForFestival(params: {
     });
 
     if (status === 'SUCCESS') {
-      remainingBalance -= business.walletRatePaise;
-      await debitWallet(business, sendLog.id, `${festival.name} wish sent to ${contact.name}`);
+      if (useCoins) {
+        remainingCoins -= COINS_PER_SEND;
+      } else {
+        remainingBalance -= business.walletRatePaise;
+      }
+      await chargeForSend(business, sendLog.id, `${festival.name} wish sent to ${contact.name}`, useCoins);
     }
   }
 }
@@ -289,6 +298,34 @@ function insufficientBalanceMessage(business: Business): string {
     `Wallet balance too low (₹${(business.walletBalancePaise / 100).toFixed(2)}) to send at ` +
     `₹${(business.walletRatePaise / 100).toFixed(2)}/message — recharge your wallet to resume automatic sends.`
   );
+}
+
+/**
+ * Charges one send against whichever pool covers it — trial coins first
+ * (see COINS_PER_SEND in src/lib/pricing.ts), the ₹ wallet otherwise —
+ * logging to the matching transaction table so each balance keeps its own
+ * clean history.
+ */
+async function chargeForSend(business: Business, sendLogId: string, description: string, useCoins: boolean): Promise<void> {
+  if (useCoins) {
+    await prisma.$transaction([
+      prisma.business.update({
+        where: { id: business.id },
+        data: { trialCoins: { decrement: COINS_PER_SEND } },
+      }),
+      prisma.trialCoinTransaction.create({
+        data: {
+          businessId: business.id,
+          type: 'DEBIT',
+          coins: COINS_PER_SEND,
+          description,
+          sendLogId,
+        },
+      }),
+    ]);
+    return;
+  }
+  await debitWallet(business, sendLogId, description);
 }
 
 /** Deducts one message's cost from the business's wallet and logs the debit, tied to the SendLog it paid for. */

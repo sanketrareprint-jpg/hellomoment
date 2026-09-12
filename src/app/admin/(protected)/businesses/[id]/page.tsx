@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import DeleteBusinessButton from '@/components/DeleteBusinessButton';
+import AddCreditForm from '@/components/AddCreditForm';
+import AddTrialCoinsForm from '@/components/AddTrialCoinsForm';
 
 export const dynamic = 'force-dynamic';
 
@@ -171,7 +173,7 @@ export default async function AdminBusinessDetailPage({
   const contactsOrderBy = contactOrderBy(contactsSort, contactsDir);
   const sendLogsOrderBy = sendLogOrderBy(sendLogsSort, sendLogsDir);
 
-  const [contactsTotal, contacts, sendLogsTotal, sendLogs, sendStatusCounts] = await Promise.all([
+  const [contactsTotal, contacts, sendLogsTotal, sendLogs, sendStatusCounts, walletTransactions, trialCoinTransactions] = await Promise.all([
     prisma.contact.count({ where: contactsWhere }),
     prisma.contact.findMany({
       where: contactsWhere,
@@ -191,6 +193,16 @@ export default async function AdminBusinessDetailPage({
       by: ['status'],
       where: { businessId: business.id },
       _count: { _all: true },
+    }),
+    prisma.walletTransaction.findMany({
+      where: { businessId: business.id },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    }),
+    prisma.trialCoinTransaction.findMany({
+      where: { businessId: business.id },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
     }),
   ]);
 
@@ -285,6 +297,125 @@ export default async function AdminBusinessDetailPage({
             <Field label="Failed sends" value={statusMap.FAILED ?? 0} />
           </div>
         </div>
+      </div>
+
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="font-semibold text-gray-900">Wallet</h2>
+          <div className="text-sm text-gray-600">
+            Balance: <span className="font-bold text-gray-900">₹{(business.walletBalancePaise / 100).toFixed(2)}</span>
+            {' · '}
+            Rate: ₹{(business.walletRatePaise / 100).toFixed(2)}/message
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 -mt-2">
+          Add real ₹ credit — a goodwill top-up or refund. This doesn't change their locked-in per-message rate, only their balance.
+          For free trial offers, use Trial Coins below instead.
+        </p>
+        <AddCreditForm businessId={business.id} rateRupees={business.walletRatePaise / 100} />
+        {walletTransactions.length > 0 && (
+          <div className="pt-2 border-t border-gray-100">
+            <div className="text-xs font-medium text-gray-500 mb-2">Recent wallet activity</div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-gray-500 text-left">
+                  <tr>
+                    <th className="pr-4 py-1 font-medium">When</th>
+                    <th className="pr-4 py-1 font-medium">Type</th>
+                    <th className="pr-4 py-1 font-medium">Amount</th>
+                    <th className="pr-4 py-1 font-medium">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {walletTransactions.map((txn) => (
+                    <tr key={txn.id}>
+                      <td className="pr-4 py-1.5 text-gray-600 whitespace-nowrap">
+                        {new Date(txn.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                      </td>
+                      <td className="pr-4 py-1.5">
+                        <span
+                          className={
+                            'text-xs font-medium rounded-full px-2 py-0.5 ' +
+                            (txn.type === 'DEBIT' ? 'bg-gray-100 text-gray-600' : 'bg-green-100 text-green-700')
+                          }
+                        >
+                          {txn.type}
+                        </span>
+                      </td>
+                      <td
+                        className={
+                          'pr-4 py-1.5 font-medium whitespace-nowrap ' +
+                          (txn.type === 'DEBIT' ? 'text-gray-900' : 'text-green-700')
+                        }
+                      >
+                        {txn.type === 'DEBIT' ? '−' : '+'}₹{(txn.amountPaise / 100).toFixed(2)}
+                      </td>
+                      <td className="pr-4 py-1.5 text-gray-500">{txn.description || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <h2 className="font-semibold text-gray-900">Trial Coins</h2>
+          <div className="text-sm text-gray-600">
+            Balance: <span className="font-bold text-gray-900">{business.trialCoins}</span> coin{business.trialCoins === 1 ? '' : 's'}
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 -mt-2">
+          Free, non-monetary sends for a trial offer — spent automatically before their ₹ wallet on every birthday, anniversary, or festival send. Doesn't cost the business anything and never touches their wallet balance.
+        </p>
+        <AddTrialCoinsForm businessId={business.id} />
+        {trialCoinTransactions.length > 0 && (
+          <div className="pt-2 border-t border-gray-100">
+            <div className="text-xs font-medium text-gray-500 mb-2">Recent trial coin activity</div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-gray-500 text-left">
+                  <tr>
+                    <th className="pr-4 py-1 font-medium">When</th>
+                    <th className="pr-4 py-1 font-medium">Type</th>
+                    <th className="pr-4 py-1 font-medium">Coins</th>
+                    <th className="pr-4 py-1 font-medium">Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {trialCoinTransactions.map((txn) => (
+                    <tr key={txn.id}>
+                      <td className="pr-4 py-1.5 text-gray-600 whitespace-nowrap">
+                        {new Date(txn.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                      </td>
+                      <td className="pr-4 py-1.5">
+                        <span
+                          className={
+                            'text-xs font-medium rounded-full px-2 py-0.5 ' +
+                            (txn.type === 'DEBIT' ? 'bg-gray-100 text-gray-600' : 'bg-amber-100 text-amber-700')
+                          }
+                        >
+                          {txn.type}
+                        </span>
+                      </td>
+                      <td
+                        className={
+                          'pr-4 py-1.5 font-medium whitespace-nowrap ' +
+                          (txn.type === 'DEBIT' ? 'text-gray-900' : 'text-amber-700')
+                        }
+                      >
+                        {txn.type === 'DEBIT' ? '−' : '+'}{txn.coins}
+                      </td>
+                      <td className="pr-4 py-1.5 text-gray-500">{txn.description || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card overflow-hidden overflow-x-auto">

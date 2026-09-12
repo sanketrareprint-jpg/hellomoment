@@ -82,6 +82,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
               <th className="px-4 py-3 font-medium whitespace-nowrap">Contacts</th>
               <th className="px-4 py-3 font-medium whitespace-nowrap">Templates</th>
               <th className="px-4 py-3 font-medium whitespace-nowrap">Sends</th>
+              <th className="px-4 py-3 font-medium whitespace-nowrap">Wallet</th>
               <th className="px-4 py-3 font-medium whitespace-nowrap">Last send</th>
               <th className="px-4 py-3 font-medium whitespace-nowrap">AiSensy</th>
               <th className="px-4 py-3 font-medium whitespace-nowrap">Actions</th>
@@ -105,6 +106,14 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
                   <td className="px-4 py-3 text-gray-600">{b._count.contacts}</td>
                   <td className="px-4 py-3 text-gray-600">{b._count.templates}</td>
                   <td className="px-4 py-3 text-gray-600">{b._count.sendLogs}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={'font-medium ' + (b.walletBalancePaise < b.walletRatePaise ? 'text-red-600' : 'text-gray-900')}>
+                      ₹{(b.walletBalancePaise / 100).toFixed(2)}
+                    </span>
+                    {b.trialCoins > 0 && (
+                      <div className="text-xs font-medium text-amber-700">{b.trialCoins} trial coins</div>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
                     {lastSend ? new Date(lastSend).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : '—'}
                   </td>
@@ -130,7 +139,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
             })}
             {businesses.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-4 py-10 text-center text-gray-500">
+                <td colSpan={11} className="px-4 py-10 text-center text-gray-500">
                   {q ? 'No businesses match your search.' : 'No businesses have signed up yet.'}
                 </td>
               </tr>

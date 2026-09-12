@@ -41,6 +41,16 @@ export function paiseToRupees(paise: number): number {
  * pays more than the top tier's amount still just gets the top tier's
  * rate — there's no benefit modeled past ₹5000 yet.
  */
+/**
+ * Trial coins — a free, non-monetary credit an admin can grant a business
+ * (e.g. a free trial offer) that pays for sends before the ₹ wallet is
+ * touched. Kept as its own balance, completely separate from
+ * walletBalancePaise, so a trial grant never looks like — or gets counted
+ * as — a real Razorpay recharge.
+ */
+export const COINS_PER_SEND = 5; // trial coins spent per WhatsApp send — mirrors the ₹5 default wallet rate 1:1
+export const TRIAL_COIN_GRANT_PRESETS = [10, 25, 50, 100]; // quick-pick amounts on the admin "grant trial coins" form
+
 export function rateForRechargeAmount(amountRupees: number): number {
   let rate = RECHARGE_TIERS[0].pricePerMessageRupees;
   for (const tier of RECHARGE_TIERS) {
