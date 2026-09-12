@@ -2,22 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { getCurrentBusiness } from '@/lib/session';
 import LogoutButton from '@/components/LogoutButton';
-
-// Dashboard and Overview are the same page (/dashboard), so there is a
-// single "Dashboard" link rather than separate "Dashboard" / "Overview"
-// entries. Contacts, Flyer templates, Festivals, and Send logs are each
-// their own top-level row in the sidebar (no dropdown).
-const NAV = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/dashboard/contacts', label: 'Contacts' },
-  { href: '/dashboard/templates', label: 'Flyer templates' },
-  { href: '/dashboard/festivals', label: 'Festivals' },
-  { href: '/dashboard/logs', label: 'Send logs' },
-  { href: '/dashboard/wallet', label: 'Wallet' },
-  { href: '/dashboard/about', label: 'About us' },
-  { href: '/dashboard/contact-us', label: 'Contact us' },
-  { href: '/dashboard/settings', label: 'Settings' },
-];
+import DashboardNav from '@/components/DashboardNav';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const business = await getCurrentBusiness();
@@ -25,30 +10,20 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <div className="min-h-screen flex">
-      <aside className="w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col">
+      <aside className="w-64 shrink-0 bg-white/80 backdrop-blur border-r border-gray-200 flex flex-col">
         <div className="px-5 py-5 border-b border-gray-100">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="raregreet.com" width={30} height={30} className="rounded-lg" />
+            <img src="/logo.png" alt="raregreet.com" width={30} height={30} className="rounded-lg shadow-sm" />
             <div className="text-lg font-bold text-brand-700">
               raregreet<span className="text-gray-400">.com</span>
             </div>
           </div>
         </div>
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="block rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-brand-50 hover:text-brand-700"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        <DashboardNav />
         <div className="px-3 py-4 border-t border-gray-100 space-y-2">
           <Link
             href="/dashboard/wallet"
-            className="block rounded-lg px-3 py-2 bg-brand-50 hover:bg-brand-100"
+            className="block rounded-xl px-3 py-3 bg-gradient-to-br from-brand-50 to-fuchsia-50 border border-brand-100 hover:shadow-sm transition-shadow"
           >
             <div className="text-xs text-gray-500">Wallet balance</div>
             <div className="text-sm font-bold text-brand-700">
