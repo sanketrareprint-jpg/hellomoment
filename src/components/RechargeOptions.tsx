@@ -48,8 +48,7 @@ export default function RechargeOptions({
   }, []);
 
   // Uses MIN_RECHARGE_RUPEES (not the lowest tier button) so the custom-amount
-  // field always matches whatever the server will actually accept — this is
-  // currently lowered to ₹5 in src/lib/pricing.ts for live-mode testing.
+  // field always matches whatever the server will actually accept.
   const minAmount = MIN_RECHARGE_RUPEES;
   const amountRupees = customAmount ? Number(customAmount) : selected;
 
