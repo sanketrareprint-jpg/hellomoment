@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { RECHARGE_TIERS, MIN_RECHARGE_RUPEES } from '@/lib/pricing';
+import { RECHARGE_TIERS } from '@/lib/pricing';
 
 export const metadata = { title: 'Pricing — raregreet.com' };
 
@@ -76,7 +76,7 @@ export default function PricingPage() {
         <div className="card p-6">
           <h2 className="font-semibold text-gray-900 mb-3">How it works</h2>
           <ul className="text-sm text-gray-600 space-y-2 list-disc list-inside">
-            <li>Recharge any amount ₹{MIN_RECHARGE_RUPEES} or above — the recharge amount decides your rate per message from then on.</li>
+            <li>Recharge ₹500 or above — the recharge amount decides your rate per message from then on.</li>
             <li>Every automatic birthday, anniversary, or festival wish we generate and send costs exactly one message from your balance.</li>
             <li>Your balance doesn't expire — use it whenever your contacts' special days come up.</li>
             <li>No setup fees, no monthly charges. You only pay for messages you actually send.</li>
