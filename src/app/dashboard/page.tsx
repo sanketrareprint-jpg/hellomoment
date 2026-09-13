@@ -51,7 +51,7 @@ export default async function DashboardOverview() {
   const setupIncomplete = templateCount === 0;
 
   return (
-    <div className="space-y-8 max-w-5xl">
+    <div className="space-y-6 max-w-5xl">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
       </div>
@@ -79,16 +79,16 @@ export default async function DashboardOverview() {
       {/* "Upcoming (7 days)" used to be a 4th tile here too — removed since
           the "Upcoming this week" card below already shows the same thing,
           with actual names attached instead of just a count. */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         <StatCard label="Contacts" value={contactCount} href="/dashboard/contacts" />
         <StatCard label="Flyer templates" value={templateCount} href="/dashboard/templates" />
         <StatCard label="Active festivals" value={festivalCount} href="/dashboard/festivals" />
       </div>
 
-      <div className="card p-5">
-        <div className="flex items-center justify-between mb-4">
+      <div className="card p-4">
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="font-semibold text-gray-900">Promotional flyers</h2>
+            <h2 className="font-semibold text-gray-900 text-sm">Promotional flyers</h2>
             <p className="text-sm text-gray-500 mt-0.5">
               Your flyer designs, ready to send for birthdays, anniversaries and festivals.
             </p>
@@ -103,10 +103,10 @@ export default async function DashboardOverview() {
         {recentTemplates.length === 0 ? (
           <Link
             href="/dashboard/templates/new"
-            className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-lg py-10 text-gray-500 hover:border-brand-300 hover:text-brand-600 transition-colors"
+            className="flex flex-col items-center justify-center gap-1 border-2 border-dashed border-gray-200 rounded-lg py-6 text-gray-500 hover:border-brand-300 hover:text-brand-600 transition-colors"
           >
-            <span className="text-2xl leading-none">+</span>
-            <span className="text-sm font-medium">Add your first promotional flyer</span>
+            <span className="text-xl leading-none">+</span>
+            <span className="text-xs font-medium">Add your first promotional flyer</span>
           </Link>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
@@ -138,9 +138,9 @@ export default async function DashboardOverview() {
         )}
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-6">
-        <div className="card p-5">
-          <h2 className="font-semibold text-gray-900 mb-3">Upcoming this week</h2>
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div className="card p-4">
+          <h2 className="font-semibold text-gray-900 text-sm mb-2">Upcoming this week</h2>
           {upcoming.length === 0 ? (
             <p className="text-sm text-gray-500">Nothing coming up in the next 7 days.</p>
           ) : (
@@ -161,8 +161,8 @@ export default async function DashboardOverview() {
           )}
         </div>
 
-        <div className="card p-5">
-          <h2 className="font-semibold text-gray-900 mb-3">Recent sends</h2>
+        <div className="card p-4">
+          <h2 className="font-semibold text-gray-900 text-sm mb-2">Recent sends</h2>
           {recentLogs.length === 0 ? (
             <p className="text-sm text-gray-500">No wishes sent yet.</p>
           ) : (
@@ -200,9 +200,9 @@ export default async function DashboardOverview() {
 
 function StatCard({ label, value, href }: { label: string; value: number; href: string }) {
   return (
-    <Link href={href} className="card p-4 hover:border-brand-300 transition-colors">
-      <div className="text-2xl font-bold text-gray-900">{value}</div>
-      <div className="text-sm text-gray-500">{label}</div>
+    <Link href={href} className="card p-3 hover:border-brand-300 transition-colors">
+      <div className="text-xl font-bold text-gray-900">{value}</div>
+      <div className="text-xs text-gray-500">{label}</div>
     </Link>
   );
 }
