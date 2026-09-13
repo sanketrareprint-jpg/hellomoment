@@ -9,7 +9,7 @@ export default async function DashboardOverview() {
   const business = await getCurrentBusiness();
   if (!business) return null;
 
-  const [contactCount, templateCount, festivalCount, recentLogs, contacts] = await Promise.all([
+  const [contactCount, templateCount, festivalCount, recentLogs, contacts, recentTemplates] = await Promise.all([
     prisma.contact.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.count({ where: { businessId: business.id } }),
     prisma.festival.count({ where: { businessId: business.id, active: true } }),
@@ -20,6 +20,12 @@ export default async function DashboardOverview() {
       include: { contact: true, festival: true },
     }),
     prisma.contact.findMany({ where: { businessId: business.id } }),
+    prisma.flyerTemplate.findMany({
+      where: { businessId: business.id },
+      orderBy: { createdAt: 'desc' },
+      take: 8,
+      select: { id: true, name: true, occasion: true, backgroundUrl: true },
+    }),
   ]);
 
   const today = getTodayInTimezone(business.timezone);
@@ -78,6 +84,59 @@ export default async function DashboardOverview() {
         <StatCard label="Contacts" value={contactCount} href="/dashboard/contacts" />
         <StatCard label="Flyer templates" value={templateCount} href="/dashboard/templates" />
         <StatCard label="Active festivals" value={festivalCount} href="/dashboard/festivals" />
+      </div>
+
+      <div className="card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="font-semibold text-gray-900">Promotional flyers</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              Your flyer designs, ready to send for birthdays, anniversaries and festivals.
+            </p>
+          </div>
+          {recentTemplates.length > 0 && (
+            <Link href="/dashboard/templates" className="text-sm text-brand-600 font-medium whitespace-nowrap">
+              View all →
+            </Link>
+          )}
+        </div>
+
+        {recentTemplates.length === 0 ? (
+          <Link
+            href="/dashboard/templates/new"
+            className="flex flex-col items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-lg py-10 text-gray-500 hover:border-brand-300 hover:text-brand-600 transition-colors"
+          >
+            <span className="text-2xl leading-none">+</span>
+            <span className="text-sm font-medium">Add your first promotional flyer</span>
+          </Link>
+        ) : (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            {recentTemplates.map((t) => (
+              <Link
+                key={t.id}
+                href={`/dashboard/templates/${t.id}/edit`}
+                className="group relative aspect-square rounded-lg overflow-hidden border border-gray-100"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={t.backgroundUrl}
+                  alt={t.name}
+                  className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+                />
+                <span className="absolute inset-x-0 bottom-0 bg-black/50 text-white text-[10px] px-1.5 py-1 truncate">
+                  {t.name}
+                </span>
+              </Link>
+            ))}
+            <Link
+              href="/dashboard/templates/new"
+              className="aspect-square rounded-lg border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:border-brand-300 hover:text-brand-600 transition-colors"
+            >
+              <span className="text-xl leading-none">+</span>
+              <span className="text-[10px] font-medium mt-1">Add flyer</span>
+            </Link>
+          </div>
+        )}
       </div>
 
       <div className="grid sm:grid-cols-2 gap-6">
