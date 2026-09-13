@@ -21,7 +21,7 @@ export default async function DashboardOverview() {
     }),
     prisma.contact.findMany({ where: { businessId: business.id } }),
     prisma.flyerTemplate.findMany({
-      where: { businessId: business.id },
+      where: { businessId: business.id, source: { not: 'STARTER' } },
       orderBy: { createdAt: 'desc' },
       take: 8,
       select: { id: true, name: true, occasion: true, backgroundUrl: true },
