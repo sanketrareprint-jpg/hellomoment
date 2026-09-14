@@ -238,6 +238,23 @@ model FlyerTemplate {
 // A custom festival/occasion the business wants to broadcast wishes for
 // (Diwali, Eid, New Year, a company anniversary, etc). Recurring festivals
 // match on month+day every year.
+// A promotional banner shown as an auto-rotating slider at the top of every
+// business's dashboard overview (added/managed by Vrushali from the admin
+// panel — NOT something a business uploads themselves, unlike their own
+// flyer templates). Global, not per-business.
+model DashboardBanner {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  linkUrl   String? // optional; banner is clickable if set
+  order     Int      @default(0) // lower shows first
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, order])
+}
+
 model Festival {
   id         String   @id @default(cuid())
   businessId String

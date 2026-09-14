@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
 import { getTodayInTimezone, daysUntilNextOccurrence, formatDateForDisplay } from '@/lib/dateUtils';
 import Link from 'next/link';
+import DashboardBannerSlider from '@/components/DashboardBannerSlider';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,7 +10,7 @@ export default async function DashboardOverview() {
   const business = await getCurrentBusiness();
   if (!business) return null;
 
-  const [contactCount, templateCount, festivalCount, recentLogs, contacts, recentTemplates] = await Promise.all([
+  const [contactCount, templateCount, festivalCount, recentLogs, contacts, recentTemplates, banners] = await Promise.all([
     prisma.contact.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.count({ where: { businessId: business.id } }),
     prisma.festival.count({ where: { businessId: business.id, active: true } }),
@@ -25,6 +26,11 @@ export default async function DashboardOverview() {
       orderBy: { createdAt: 'desc' },
       take: 8,
       select: { id: true, name: true, occasion: true, backgroundUrl: true },
+    }),
+    prisma.dashboardBanner.findMany({
+      where: { isActive: true },
+      orderBy: { order: 'asc' },
+      select: { id: true, imageUrl: true, linkUrl: true },
     }),
   ]);
 
@@ -55,6 +61,8 @@ export default async function DashboardOverview() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
       </div>
+
+      {banners.length > 0 && <DashboardBannerSlider banners={banners} />}
 
       {setupIncomplete && (
         <div className="card p-4 border-amber-300 bg-amber-50 flex items-start gap-3">
