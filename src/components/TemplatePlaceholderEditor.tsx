@@ -677,7 +677,7 @@ export default function TemplatePlaceholderEditor({
             </div>
           )}
 
-          {form.useLogo && form.backgroundUrl && (
+          {form.useLogo && form.backgroundUrl && business?.logoUrl && (
             <div
               onPointerDown={startDrag('logo')}
               className="absolute border-2 border-dashed border-amber-500 cursor-move flex items-center justify-center overflow-hidden bg-white/10"
@@ -688,12 +688,8 @@ export default function TemplatePlaceholderEditor({
                 height: form.logoPlaceholder.size * scale,
               }}
             >
-              {business?.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={business.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain pointer-events-none" />
-              ) : (
-                <span className="text-[10px] font-medium text-amber-700">Logo</span>
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={business.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain pointer-events-none" />
             </div>
           )}
 
