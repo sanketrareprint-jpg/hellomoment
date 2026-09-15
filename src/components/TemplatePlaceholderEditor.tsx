@@ -631,7 +631,7 @@ export default function TemplatePlaceholderEditor({
         </div>
       </div>
 
-      <div>
+      <div className="lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
         <p className="text-sm text-gray-600 mb-2">
           Drag the labeled markers on the flyer to position them. Numbers below give exact control.
         </p>
