@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getCurrentBusiness } from '@/lib/session';
 import { redirect } from 'next/navigation';
+import HeroSlider from '@/components/HeroSlider';
 
 const FEATURES = [
   {
@@ -72,46 +73,28 @@ export default async function LandingPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-white overflow-hidden">
-      <header className="max-w-6xl mx-auto flex items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2">
+      <header className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-y-3 px-4 sm:px-6 py-4 sm:py-6">
+        <div className="flex items-center gap-2 shrink-0">
           <img src="/logo.png" alt="raregreet.com" width={36} height={36} className="rounded-lg shadow-sm" />
-          <div className="text-xl font-bold text-brand-700">raregreet<span className="text-gray-400">.com</span></div>
+          <div className="text-lg sm:text-xl font-bold text-brand-700 whitespace-nowrap">
+            raregreet<span className="text-gray-400">.com</span>
+          </div>
         </div>
-        <nav className="flex items-center gap-5">
-          <Link href="/pricing" className="text-sm font-medium text-gray-600 hover:text-brand-600">
+        <nav className="flex items-center gap-2 sm:gap-5 shrink-0">
+          <Link href="/pricing" className="hidden sm:inline text-sm font-medium text-gray-600 hover:text-brand-600">
             Pricing
           </Link>
-          <Link href="/login" className="btn-secondary">
+          <Link href="/login" className="btn-secondary text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap">
             Log in
           </Link>
-          <Link href="/register" className="btn-primary">
-            Get started free
+          <Link href="/register" className="btn-primary text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap">
+            <span className="sm:hidden">Get started</span>
+            <span className="hidden sm:inline">Get started free</span>
           </Link>
         </nav>
       </header>
 
-      <section className="relative max-w-4xl mx-auto text-center px-6 pt-16 pb-20">
-        <div className="pointer-events-none absolute -top-10 left-1/2 -translate-x-1/2 w-[36rem] h-[36rem] rounded-full bg-gradient-to-br from-brand-200/40 to-fuchsia-200/30 blur-3xl -z-10" />
-        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900">
-          Never miss a customer&rsquo;s{' '}
-          <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-fuchsia-600">
-            birthday, anniversary,
-          </span>{' '}
-          or festival again
-        </h1>
-        <p className="mt-5 text-lg text-gray-600 max-w-2xl mx-auto">
-          Add your customers once. raregreet.com automatically designs a personalized flyer with their name, date
-          and photo, and sends it on WhatsApp &mdash; to them and to you &mdash; the moment it&rsquo;s their day.
-        </p>
-        <div className="mt-8 flex items-center justify-center gap-4">
-          <Link href="/register" className="btn-primary text-base px-6 py-3">
-            Create your free account
-          </Link>
-          <Link href="/login" className="btn-secondary text-base px-6 py-3">
-            I already have an account
-          </Link>
-        </div>
-      </section>
+      <HeroSlider />
 
       <section className="max-w-5xl mx-auto px-6 pb-16">
         <p className="text-center text-xs font-semibold text-brand-600 uppercase tracking-wide mb-2">How it works</p>
