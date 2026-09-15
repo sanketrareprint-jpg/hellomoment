@@ -21,7 +21,8 @@ interface TextPlaceholder {
 interface PhotoPlaceholder {
   x: number;
   y: number;
-  size: number;
+  width: number;
+  height: number;
   shape: 'circle' | 'square' | 'rounded' | 'hexagon';
 }
 
@@ -107,7 +108,8 @@ function defaultsFor(width: number, height: number): Pick<
     photoPlaceholder: {
       x: Math.round(width * 0.36),
       y: Math.round(height * 0.12),
-      size: Math.round(width * 0.28),
+      width: Math.round(width * 0.28),
+      height: Math.round(width * 0.28),
       shape: 'circle',
     },
     // Business branding block — grouped as one cluster in the bottom-left
@@ -190,7 +192,7 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
 };
 
 const PREVIEW_WIDTH = 420;
-type DragTarget = 'name' | 'date' | 'photo' | 'logo' | 'firmName' | 'phone' | 'address' | 'products' | null;
+type DragTarget = 'name' | 'date' | 'photo' | 'photo-resize' | 'logo' | 'firmName' | 'phone' | 'address' | 'products' | null;
 
 export default function TemplatePlaceholderEditor({
   initial,
@@ -279,8 +281,17 @@ export default function TemplatePlaceholderEditor({
             ...f,
             photoPlaceholder: {
               ...f.photoPlaceholder,
-              x: Math.round(x - f.photoPlaceholder.size / 2),
-              y: Math.round(y - f.photoPlaceholder.size / 2),
+              x: Math.round(x - f.photoPlaceholder.width / 2),
+              y: Math.round(y - f.photoPlaceholder.height / 2),
+            },
+          };
+        case 'photo-resize':
+          return {
+            ...f,
+            photoPlaceholder: {
+              ...f.photoPlaceholder,
+              width: Math.max(20, Math.round(x - f.photoPlaceholder.x)),
+              height: Math.max(20, Math.round(y - f.photoPlaceholder.y)),
             },
           };
         case 'logo':
@@ -462,17 +473,28 @@ export default function TemplatePlaceholderEditor({
           {form.usePhoto && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="label">Size (px)</label>
+                <label className="label">Width (px)</label>
                 <input
                   className="input"
                   type="number"
-                  value={form.photoPlaceholder.size}
+                  value={form.photoPlaceholder.width}
                   onChange={(e) =>
-                    setForm({ ...form, photoPlaceholder: { ...form.photoPlaceholder, size: Number(e.target.value) } })
+                    setForm({ ...form, photoPlaceholder: { ...form.photoPlaceholder, width: Number(e.target.value) } })
                   }
                 />
               </div>
               <div>
+                <label className="label">Height (px)</label>
+                <input
+                  className="input"
+                  type="number"
+                  value={form.photoPlaceholder.height}
+                  onChange={(e) =>
+                    setForm({ ...form, photoPlaceholder: { ...form.photoPlaceholder, height: Number(e.target.value) } })
+                  }
+                />
+              </div>
+              <div className="col-span-2">
                 <label className="label">Shape</label>
                 <select
                   className="input"
@@ -493,6 +515,9 @@ export default function TemplatePlaceholderEditor({
                   <option value="hexagon">Hexagon</option>
                 </select>
               </div>
+              <p className="col-span-2 text-xs text-gray-500">
+                Tip: drag the dot at the photo box&rsquo;s bottom-right corner in the preview to stretch it freely.
+              </p>
             </div>
           )}
         </div>
@@ -659,8 +684,8 @@ export default function TemplatePlaceholderEditor({
               style={{
                 left: form.photoPlaceholder.x * scale,
                 top: form.photoPlaceholder.y * scale,
-                width: form.photoPlaceholder.size * scale,
-                height: form.photoPlaceholder.size * scale,
+                width: form.photoPlaceholder.width * scale,
+                height: form.photoPlaceholder.height * scale,
                 borderRadius:
                   form.photoPlaceholder.shape === 'circle'
                     ? '9999px'
@@ -674,6 +699,14 @@ export default function TemplatePlaceholderEditor({
               }}
             >
               Photo
+              <div
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  startDrag('photo-resize')(e);
+                }}
+                className="absolute -right-1.5 -bottom-1.5 w-3.5 h-3.5 rounded-full bg-brand-600 border-2 border-white cursor-nwse-resize"
+                title="Drag to stretch"
+              />
             </div>
           )}
 

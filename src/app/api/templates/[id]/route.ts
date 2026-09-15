@@ -14,6 +14,8 @@ const placeholderSchema = z.object({
   maxWidth: z.number().optional(),
   maxLines: z.number().optional(),
   size: z.number().optional(),
+  width: z.number().optional(),
+  height: z.number().optional(),
   shape: z.enum(['circle', 'square', 'rounded', 'hexagon']).optional(),
 });
 

@@ -28,7 +28,13 @@ export interface TextPlaceholder {
 export interface PhotoPlaceholder {
   x: number;
   y: number;
-  size: number; // diameter (circle) or side length (square/rounded/hexagon)
+  // Preferred: independent width/height, so the photo box can be a
+  // non-square rectangle. `size` is kept for older templates saved before
+  // width/height existed — used as a fallback for whichever of the two is
+  // missing.
+  size?: number; // legacy: diameter (circle) or side length (square/rounded/hexagon)
+  width?: number;
+  height?: number;
   shape?: 'circle' | 'square' | 'rounded' | 'hexagon';
   borderColor?: string;
   borderWidth?: number;
@@ -243,27 +249,29 @@ async function buildPhotoComposite(
   photoPath: string,
   placeholder: PhotoPlaceholder
 ): Promise<{ input: Buffer; left: number; top: number }> {
-  const size = Math.round(placeholder.size);
+  // width/height win when set; `size` (legacy, always square) is the
+  // fallback for either dimension that's missing.
+  const w = Math.round(placeholder.width ?? placeholder.size ?? 0);
+  const h = Math.round(placeholder.height ?? placeholder.size ?? 0);
   const shape = placeholder.shape ?? 'circle';
 
-  let photo = sharp(photoPath).resize(size, size, { fit: 'cover' });
+  let photo = sharp(photoPath).resize(w, h, { fit: 'cover' });
 
   if (shape === 'circle') {
+    // Non-square box → ellipse, so it still fills the whole box edge-to-edge.
     const maskSvg = Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><circle cx="${size / 2}" cy="${
-        size / 2
-      }" r="${size / 2}" fill="#fff"/></svg>`
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><ellipse cx="${w / 2}" cy="${
+        h / 2
+      }" rx="${w / 2}" ry="${h / 2}" fill="#fff"/></svg>`
     );
     photo = photo.composite([{ input: maskSvg, blend: 'dest-in' }]);
   } else if (shape === 'rounded') {
-    const radius = Math.round(size * 0.18);
+    const radius = Math.round(Math.min(w, h) * 0.18);
     const maskSvg = Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${size}" height="${size}" rx="${radius}" ry="${radius}" fill="#fff"/></svg>`
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${radius}" ry="${radius}" fill="#fff"/></svg>`
     );
     photo = photo.composite([{ input: maskSvg, blend: 'dest-in' }]);
   } else if (shape === 'hexagon') {
-    const w = size;
-    const h = size;
     const points = [
       [w * 0.25, 0],
       [w * 0.75, 0],

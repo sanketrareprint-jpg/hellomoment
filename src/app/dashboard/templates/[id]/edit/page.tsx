@@ -12,7 +12,17 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
 
   const namePlaceholder = template.namePlaceholder ? JSON.parse(template.namePlaceholder) : null;
   const datePlaceholder = template.datePlaceholder ? JSON.parse(template.datePlaceholder) : null;
-  const photoPlaceholder = template.photoPlaceholder ? JSON.parse(template.photoPlaceholder) : null;
+  const rawPhotoPlaceholder = template.photoPlaceholder ? JSON.parse(template.photoPlaceholder) : null;
+  // Older templates were saved with a single `size` (square only) before
+  // width/height existed — fill both in from it so the editor always has
+  // concrete width/height to work with.
+  const photoPlaceholder = rawPhotoPlaceholder
+    ? {
+        ...rawPhotoPlaceholder,
+        width: rawPhotoPlaceholder.width ?? rawPhotoPlaceholder.size,
+        height: rawPhotoPlaceholder.height ?? rawPhotoPlaceholder.size,
+      }
+    : null;
   const logoPlaceholder = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
   const firmNamePlaceholder = template.firmNamePlaceholder ? JSON.parse(template.firmNamePlaceholder) : null;
   const phonePlaceholder = template.phonePlaceholder ? JSON.parse(template.phonePlaceholder) : null;
