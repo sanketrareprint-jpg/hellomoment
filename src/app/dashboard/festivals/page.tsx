@@ -7,6 +7,12 @@ import AddCommonFestivalsButton from '@/components/AddCommonFestivalsButton';
 
 export const dynamic = 'force-dynamic';
 
+// Shorter date for the narrow mobile column ("15 Jan" vs. the full
+// "15 January" used everywhere else via formatDateForDisplay).
+function formatShortDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(date);
+}
+
 export default async function FestivalsPage() {
   const business = await getCurrentBusiness();
   if (!business) return null;
@@ -33,33 +39,36 @@ export default async function FestivalsPage() {
       </div>
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs sm:text-sm table-fixed sm:table-auto">
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Date</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3"></th>
+              <th className="pl-3 pr-1 py-2.5 sm:px-4 sm:py-3 font-medium w-[32%] sm:w-auto">Name</th>
+              <th className="px-1 py-2.5 sm:px-4 sm:py-3 font-medium w-[22%] sm:w-auto">Date</th>
+              <th className="px-1 py-2.5 sm:px-4 sm:py-3 font-medium w-[18%] sm:w-auto">Status</th>
+              <th className="pl-1 pr-2 py-2.5 sm:px-4 sm:py-3 w-[28%] sm:w-auto"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {festivals.map((f) => (
               <tr key={f.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">
+                <td className="pl-3 pr-1 py-2 sm:px-4 sm:py-3 font-medium text-gray-900 truncate">
                   <Link href={`/dashboard/festivals/${f.id}/edit`}>{f.name}</Link>
                 </td>
-                <td className="px-4 py-3 text-gray-600">{formatDateForDisplay(f.date)}</td>
-                <td className="px-4 py-3">
+                <td className="px-1 py-2 sm:px-4 sm:py-3 text-gray-600 whitespace-nowrap">
+                  <span className="sm:hidden">{formatShortDate(f.date)}</span>
+                  <span className="hidden sm:inline">{formatDateForDisplay(f.date)}</span>
+                </td>
+                <td className="px-1 py-2 sm:px-4 sm:py-3">
                   <span
                     className={
-                      'text-xs font-medium rounded-full px-2 py-0.5 ' +
+                      'text-xs font-medium rounded-full px-1.5 sm:px-2 py-0.5 ' +
                       (f.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600')
                     }
                   >
                     {f.active ? 'Active' : 'Paused'}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-right space-x-3">
+                <td className="pl-1 pr-2 py-2 sm:px-4 sm:py-3 text-right space-x-1.5 sm:space-x-3 whitespace-nowrap">
                   <Link href={`/dashboard/festivals/${f.id}/edit`} className="text-brand-600 font-medium">
                     Edit
                   </Link>
