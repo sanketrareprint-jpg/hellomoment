@@ -56,7 +56,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-brand-50 px-4">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-brand-50 px-4 gap-4">
       <div className="card w-full max-w-md p-8">
         <div className="flex items-center gap-2 mb-1">
           <img src="/logo.png" alt="raregreet.com" width={36} height={36} className="rounded-lg" />
@@ -118,6 +118,13 @@ export default function LoginPage() {
           </Link>
         </p>
       </div>
+
+      <p className="text-xs text-gray-500 text-center">
+        Need help? Contact us on WhatsApp:{' '}
+        <a href="https://wa.me/919270299601" className="text-brand-600 font-medium">
+          +91 92702 99601
+        </a>
+      </p>
     </main>
   );
 }
