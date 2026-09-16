@@ -42,16 +42,16 @@ export default async function FestivalsPage() {
         <table className="w-full text-xs sm:text-sm table-fixed sm:table-auto">
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>
-              <th className="pl-3 pr-1 py-2.5 sm:px-4 sm:py-3 font-medium w-[32%] sm:w-auto">Name</th>
-              <th className="px-1 py-2.5 sm:px-4 sm:py-3 font-medium w-[22%] sm:w-auto">Date</th>
-              <th className="px-1 py-2.5 sm:px-4 sm:py-3 font-medium w-[18%] sm:w-auto">Status</th>
-              <th className="pl-1 pr-2 py-2.5 sm:px-4 sm:py-3 w-[28%] sm:w-auto"></th>
+              <th className="pl-3 pr-1 py-2.5 sm:px-4 sm:py-3 font-medium w-[38%] sm:w-auto">Name</th>
+              <th className="px-1 py-2.5 sm:px-4 sm:py-3 font-medium w-[20%] sm:w-auto">Date</th>
+              <th className="px-1 py-2.5 sm:px-4 sm:py-3 font-medium w-[16%] sm:w-auto">Status</th>
+              <th className="pl-1 pr-2 py-2.5 sm:px-4 sm:py-3 w-[26%] sm:w-auto"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {festivals.map((f) => (
               <tr key={f.id} className="hover:bg-gray-50">
-                <td className="pl-3 pr-1 py-2 sm:px-4 sm:py-3 font-medium text-gray-900 truncate">
+                <td className="pl-3 pr-1 py-2 sm:px-4 sm:py-3 font-medium text-gray-900 break-words">
                   <Link href={`/dashboard/festivals/${f.id}/edit`}>{f.name}</Link>
                 </td>
                 <td className="px-1 py-2 sm:px-4 sm:py-3 text-gray-600 whitespace-nowrap">
