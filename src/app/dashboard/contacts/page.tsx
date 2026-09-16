@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic';
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="card p-4">
-      <div className="text-2xl font-bold text-gray-900">{value}</div>
-      <div className="text-sm text-gray-500">{label}</div>
+    <div className="card p-3 sm:p-4">
+      <div className="text-lg sm:text-2xl font-bold text-gray-900">{value}</div>
+      <div className="text-xs sm:text-sm text-gray-500">{label}</div>
     </div>
   );
 }
@@ -62,19 +62,16 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
 
   return (
     <div className="max-w-5xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
-          <p className="text-gray-600 mt-1">{total} people in your list</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Contacts</h1>
+        <div className="flex flex-wrap items-center gap-2">
           <Link href="/dashboard/contacts/import" className="btn-secondary">
             Bulk import
           </Link>
           <a
             href="/sample-contacts.csv"
             download
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:text-brand-700 whitespace-nowrap"
           >
             ⬇ Download sample file
           </a>
@@ -84,7 +81,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 mb-4">
         <StatCard label="Total contacts" value={allContacts.length} />
         <StatCard label="New this month" value={newThisMonth} />
         <StatCard label="Birthdays this month" value={birthdaysThisMonth} />
