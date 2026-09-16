@@ -14,7 +14,6 @@ export default async function FestivalsPage() {
   const festivals = await prisma.festival.findMany({
     where: { businessId: business.id },
     orderBy: { date: 'asc' },
-    include: { template: true },
   });
 
   return (
@@ -39,8 +38,6 @@ export default async function FestivalsPage() {
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Date</th>
-              <th className="px-4 py-3 font-medium">Repeats yearly</th>
-              <th className="px-4 py-3 font-medium">Template</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -52,8 +49,6 @@ export default async function FestivalsPage() {
                   <Link href={`/dashboard/festivals/${f.id}/edit`}>{f.name}</Link>
                 </td>
                 <td className="px-4 py-3 text-gray-600">{formatDateForDisplay(f.date)}</td>
-                <td className="px-4 py-3 text-gray-600">{f.recurring ? 'Yes' : 'No'}</td>
-                <td className="px-4 py-3 text-gray-600">{f.template?.name ?? 'Default festival template'}</td>
                 <td className="px-4 py-3">
                   <span
                     className={
@@ -74,7 +69,7 @@ export default async function FestivalsPage() {
             ))}
             {festivals.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-gray-500">
+                <td colSpan={4} className="px-4 py-10 text-center text-gray-500">
                   No festivals yet.{' '}
                   <Link href="/dashboard/festivals/new" className="text-brand-600 font-medium">
                     Add your first one
