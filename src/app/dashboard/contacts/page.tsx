@@ -123,7 +123,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
         />
       </form>
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>

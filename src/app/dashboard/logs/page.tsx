@@ -27,7 +27,7 @@ export default async function LogsPage({ searchParams }: { searchParams: { page?
       <h1 className="text-2xl font-bold text-gray-900 mb-1">Send logs</h1>
       <p className="text-gray-600 mb-6">Every flyer generated and WhatsApp send attempt, most recent first.</p>
 
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>

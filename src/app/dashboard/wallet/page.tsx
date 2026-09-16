@@ -117,7 +117,7 @@ export default async function WalletPage({ searchParams }: { searchParams: { pag
       </div>
 
       <h2 className="text-sm font-semibold text-gray-900 mb-3">Transaction history</h2>
-      <div className="card overflow-hidden">
+      <div className="card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>
