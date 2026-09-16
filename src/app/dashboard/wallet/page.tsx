@@ -43,23 +43,23 @@ export default async function WalletPage({ searchParams }: { searchParams: { pag
         bigger recharge unlocks a cheaper rate per message.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="card p-5">
-          <div className="text-xs text-gray-500 mb-1">Current balance</div>
-          <div className="text-2xl font-bold text-gray-900">₹{balanceRupees.toFixed(2)}</div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 mb-6">
+        <div className="card p-3 sm:p-5">
+          <div className="text-xs text-gray-500 mb-0.5 sm:mb-1">Current balance</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900">₹{balanceRupees.toFixed(2)}</div>
           {lowBalance && (
             <div className="text-xs text-red-600 font-medium mt-1">
               Too low to send — recharge to resume sends.
             </div>
           )}
         </div>
-        <div className="card p-5">
-          <div className="text-xs text-gray-500 mb-1">Your rate</div>
-          <div className="text-2xl font-bold text-gray-900">₹{rateRupees.toFixed(2)}<span className="text-sm font-normal text-gray-500">/message</span></div>
+        <div className="card p-3 sm:p-5">
+          <div className="text-xs text-gray-500 mb-0.5 sm:mb-1">Your rate</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900">₹{rateRupees.toFixed(2)}<span className="text-xs sm:text-sm font-normal text-gray-500">/message</span></div>
         </div>
-        <div className="card p-5">
-          <div className="text-xs text-gray-500 mb-1">Messages left at this rate</div>
-          <div className="text-2xl font-bold text-gray-900">{messagesLeft}</div>
+        <div className="card p-3 sm:p-5">
+          <div className="text-xs text-gray-500 mb-0.5 sm:mb-1">Messages left at this rate</div>
+          <div className="text-lg sm:text-2xl font-bold text-gray-900">{messagesLeft}</div>
         </div>
       </div>
 
