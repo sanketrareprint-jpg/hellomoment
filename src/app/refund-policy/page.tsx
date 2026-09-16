@@ -4,19 +4,20 @@ export const metadata = { title: 'Refund & Delivery Policy — raregreet.com' };
 
 function SiteHeader() {
   return (
-    <header className="max-w-6xl mx-auto flex items-center justify-between px-6 py-6">
-      <Link href="/" className="flex items-center gap-2">
+    <header className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-y-3 px-4 sm:px-6 py-4 sm:py-6">
+      <Link href="/" className="flex items-center gap-2 shrink-0">
         <img src="/logo.png" alt="raregreet.com" width={36} height={36} className="rounded-lg" />
-        <div className="text-xl font-bold text-brand-700">
+        <div className="text-lg sm:text-xl font-bold text-brand-700 whitespace-nowrap">
           raregreet<span className="text-gray-400">.com</span>
         </div>
       </Link>
-      <nav className="flex gap-3">
-        <Link href="/login" className="btn-secondary">
+      <nav className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <Link href="/login" className="btn-secondary text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap">
           Log in
         </Link>
-        <Link href="/register" className="btn-primary">
-          Get started free
+        <Link href="/register" className="btn-primary text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap">
+          <span className="sm:hidden">Get started</span>
+          <span className="hidden sm:inline">Get started free</span>
         </Link>
       </nav>
     </header>
