@@ -60,6 +60,12 @@ export default function ContactPage() {
             </a>
           </div>
           <div>
+            <div className="text-xs text-gray-500">WhatsApp</div>
+            <a href="https://wa.me/919270299601" className="text-brand-600 font-medium">
+              WhatsApp: +91 92702 99601
+            </a>
+          </div>
+          <div>
             <div className="text-xs text-gray-500">Response time</div>
             <div className="text-sm text-gray-700">We typically reply within 24–48 hours.</div>
           </div>
