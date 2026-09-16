@@ -68,6 +68,9 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
           <Link href="/dashboard/contacts/import" className="btn-secondary">
             Bulk import
           </Link>
+          <Link href="/dashboard/contacts/photos" className="btn-secondary">
+            Add photos
+          </Link>
           <a
             href="/sample-contacts.csv"
             download
