@@ -15,6 +15,12 @@ export default function DashboardContactUsPage() {
             WhatsApp: +91 92702 99601
           </a>
         </div>
+        <div>
+          <div className="text-xs text-gray-500">Address</div>
+          <div className="text-sm text-gray-700">
+            RAREPRINT IN, Behind Nutan Gym, Tukdoji Square, Ghutkala Ward, Chandrapur, Maharashtra
+          </div>
+        </div>
       </div>
     </div>
   );
