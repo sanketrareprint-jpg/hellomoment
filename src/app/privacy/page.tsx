@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
 
 export const metadata = { title: 'Privacy Policy — raregreet.com' };
 
@@ -134,6 +135,7 @@ export default function PrivacyPage() {
       </section>
 
       <SiteFooter />
+      <WhatsAppFloatButton />
     </main>
   );
 }

@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { getCurrentBusiness } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import HeroSlider from '@/components/HeroSlider';
+import { RECHARGE_TIERS } from '@/lib/pricing';
+import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
 
 const FEATURES = [
   {
@@ -135,6 +137,38 @@ export default async function LandingPage() {
         </div>
       </section>
 
+      <section id="pricing" className="max-w-5xl mx-auto px-6 pb-24">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Simple, pay-as-you-go pricing</h2>
+          <p className="mt-2 text-gray-600 max-w-xl mx-auto">
+            No monthly subscription. Recharge your wallet whenever you like — every wish just draws down your
+            balance, and bigger recharges unlock a cheaper rate per message.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-6">
+          {RECHARGE_TIERS.map((tier, i) => (
+            <div key={tier.amountRupees} className={'card p-6 text-center ' + (i === 1 ? 'ring-2 ring-brand-500' : '')}>
+              {i === 1 && (
+                <div className="text-xs font-semibold text-brand-600 uppercase tracking-wide mb-2">Most popular</div>
+              )}
+              <div className="text-3xl font-extrabold text-gray-900">₹{tier.amountRupees}</div>
+              <div className="text-sm text-gray-500 mt-1">recharge</div>
+              <div className="mt-4 text-lg font-semibold text-brand-700">₹{tier.pricePerMessageRupees}/message</div>
+              <p className="mt-3 text-sm text-gray-600">
+                That's about {Math.floor((tier.amountRupees * 100) / (tier.pricePerMessageRupees * 100))} WhatsApp
+                wishes sent automatically — birthdays, anniversaries, and festivals.
+              </p>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-sm text-gray-500 mt-8">
+          No setup fees, no monthly charges — you only pay for messages you actually send.{' '}
+          <Link href="/pricing" className="text-brand-600 font-medium hover:underline">
+            Full pricing details
+          </Link>
+        </p>
+      </section>
+
       <footer className="max-w-6xl mx-auto px-6 py-10 border-t border-gray-100">
         <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center mb-3">About us</div>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 justify-center">
@@ -148,6 +182,7 @@ export default async function LandingPage() {
           &copy; {new Date().getFullYear()} RAREPRINT IN, operating raregreet.com. All rights reserved.
         </p>
       </footer>
+      <WhatsAppFloatButton />
     </main>
   );
 }

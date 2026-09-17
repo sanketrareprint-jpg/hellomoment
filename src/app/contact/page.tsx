@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
 
 export const metadata = { title: 'Contact — raregreet.com' };
 
@@ -67,6 +68,12 @@ export default function ContactPage() {
             </a>
           </div>
           <div>
+            <div className="text-xs text-gray-500">Address</div>
+            <div className="text-sm text-gray-700">
+              RAREPRINT IN, Behind Nutan Gym, Tukdoji Square, Ghutkala Ward, Chandrapur, Maharashtra
+            </div>
+          </div>
+          <div>
             <div className="text-xs text-gray-500">Response time</div>
             <div className="text-sm text-gray-700">We typically reply within 4 hours.</div>
           </div>
@@ -74,6 +81,7 @@ export default function ContactPage() {
       </section>
 
       <SiteFooter />
+      <WhatsAppFloatButton />
     </main>
   );
 }

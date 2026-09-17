@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
 
 export const metadata = { title: 'Terms & Conditions — raregreet.com' };
 
@@ -157,6 +158,7 @@ export default function TermsPage() {
       </section>
 
       <SiteFooter />
+      <WhatsAppFloatButton />
     </main>
   );
 }

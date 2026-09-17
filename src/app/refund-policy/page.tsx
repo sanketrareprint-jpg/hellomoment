@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
 
 export const metadata = { title: 'Refund & Delivery Policy — raregreet.com' };
 
@@ -108,6 +109,7 @@ export default function RefundPolicyPage() {
       </section>
 
       <SiteFooter />
+      <WhatsAppFloatButton />
     </main>
   );
 }

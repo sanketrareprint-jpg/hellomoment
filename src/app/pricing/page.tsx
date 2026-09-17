@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { RECHARGE_TIERS, MIN_RECHARGE_RUPEES } from '@/lib/pricing';
+import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
 
 export const metadata = { title: 'Pricing — raregreet.com' };
 
@@ -87,6 +88,7 @@ export default function PricingPage() {
       </section>
 
       <SiteFooter />
+      <WhatsAppFloatButton />
     </main>
   );
 }
