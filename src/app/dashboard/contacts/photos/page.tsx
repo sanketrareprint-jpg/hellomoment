@@ -22,6 +22,7 @@ interface PhotoItem {
   results: ContactHit[];
   searching: boolean;
   selected: ContactHit | null;
+  autoMatched: boolean;
   target: 'photoUrl' | 'anniversaryPhotoUrl';
   saved: boolean;
   saveError: string | null;
@@ -29,6 +30,36 @@ interface PhotoItem {
 
 function makeKey() {
   return Math.random().toString(36).slice(2);
+}
+
+// Turns a filename like "Rahul_Sharma.jpg" or "9876543210.jpg" into a
+// plain search string: "Rahul Sharma" / "9876543210".
+function guessFromFilename(file: File): string {
+  const base = file.name.replace(/\.[^./]+$/, '');
+  return base.replace(/[_-]+/g, ' ').trim();
+}
+
+function normalize(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function digitsOnly(s: string): string {
+  return s.replace(/\D/g, '');
+}
+
+// A filename guess counts as a confident match only if it clearly points
+// to one specific contact — an exact name match, or the digits in the
+// filename match the end of a contact's WhatsApp number. Anything weaker
+// is left for the person to confirm by hand rather than risk pairing the
+// wrong photo with the wrong customer.
+function isConfidentMatch(guess: string, contact: ContactHit): boolean {
+  const normGuess = normalize(guess);
+  if (!normGuess) return false;
+  if (normalize(contact.name) === normGuess) return true;
+  const guessDigits = digitsOnly(guess);
+  const contactDigits = digitsOnly(contact.whatsapp);
+  if (guessDigits.length >= 8 && contactDigits.endsWith(guessDigits)) return true;
+  return false;
 }
 
 export default function BulkPhotoAssignPage() {
@@ -57,6 +88,34 @@ export default function BulkPhotoAssignPage() {
     }
   }
 
+  // Tries to pair a freshly-added photo with a contact automatically by
+  // matching its filename against contact names/numbers. Runs in parallel
+  // with the upload so a whole folder of already-named photos can finish
+  // matched with zero typing.
+  async function tryAutoMatch(item: PhotoItem) {
+    const guess = guessFromFilename(item.file);
+    if (!guess) return;
+    try {
+      const res = await fetch(`/api/contacts?q=${encodeURIComponent(guess)}`);
+      const data = await res.json();
+      const hits: ContactHit[] = data.contacts ?? [];
+      const confident = hits.filter((c) => isConfidentMatch(guess, c));
+      if (confident.length === 1) {
+        setItems((prev) =>
+          prev.map((i) =>
+            i.key === item.key ? { ...i, selected: confident[0], query: confident[0].name, autoMatched: true } : i,
+          ),
+        );
+      } else {
+        // Not confident enough to auto-select, but pre-fill the search box
+        // with the guess so there's less to type by hand.
+        setItems((prev) => (prev.some((i) => i.key === item.key && i.query) ? prev : prev.map((i) => (i.key === item.key ? { ...i, query: guess, results: hits } : i))));
+      }
+    } catch {
+      // Silently fall back to manual search — this is a convenience pass only.
+    }
+  }
+
   function onFilesChosen(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) return;
     const newItems: PhotoItem[] = Array.from(fileList).map((file) => ({
@@ -70,12 +129,16 @@ export default function BulkPhotoAssignPage() {
       results: [],
       searching: false,
       selected: null,
+      autoMatched: false,
       target: 'photoUrl',
       saved: false,
       saveError: null,
     }));
     setItems((prev) => [...prev, ...newItems]);
-    newItems.forEach((item) => uploadOne(item));
+    newItems.forEach((item) => {
+      uploadOne(item);
+      tryAutoMatch(item);
+    });
     if (fileRef.current) fileRef.current.value = '';
   }
 
@@ -98,8 +161,14 @@ export default function BulkPhotoAssignPage() {
 
   function selectContact(key: string, contact: ContactHit) {
     setItems((prev) =>
-      prev.map((i) => (i.key === key ? { ...i, selected: contact, results: [], query: contact.name } : i)),
+      prev.map((i) =>
+        i.key === key ? { ...i, selected: contact, results: [], query: contact.name, autoMatched: false } : i,
+      ),
     );
+  }
+
+  function clearMatch(key: string) {
+    setItems((prev) => prev.map((i) => (i.key === key ? { ...i, selected: null, query: '', autoMatched: false } : i)));
   }
 
   function setTarget(key: string, target: 'photoUrl' | 'anniversaryPhotoUrl') {
@@ -138,13 +207,16 @@ export default function BulkPhotoAssignPage() {
 
   const readyToSave = items.filter((i) => i.uploadedUrl && i.selected && !i.saved).length;
   const savedCount = items.filter((i) => i.saved).length;
+  const autoMatchedCount = items.filter((i) => i.autoMatched && !i.saved).length;
 
   return (
     <div className="max-w-3xl">
       <h1 className="text-2xl font-bold text-gray-900 mb-2">Add photos to contacts</h1>
       <p className="text-gray-600 mb-6">
-        Select all the customer photos you have at once, then match each one to the right contact below. Use this
-        when you already have photos saved but they&rsquo;re not worth uploading one contact at a time.
+        Select all the customer photos you have at once. If a photo&rsquo;s filename is the customer&rsquo;s name or
+        WhatsApp number (e.g. &ldquo;Rahul Sharma.jpg&rdquo;), it&rsquo;s matched automatically — otherwise search for
+        the right contact below. Renaming photos to the customer&rsquo;s name before selecting them is the fastest
+        way through a big batch.
       </p>
 
       <div className="card p-6 mb-6">
@@ -158,6 +230,13 @@ export default function BulkPhotoAssignPage() {
         <p className="text-xs text-gray-500 mt-2">JPG, PNG, or WebP. Up to 10MB each.</p>
       </div>
 
+      {autoMatchedCount > 0 && (
+        <p className="text-sm text-brand-700 mb-4">
+          ✓ {autoMatchedCount} photo{autoMatchedCount === 1 ? '' : 's'} matched automatically by filename — check
+          them below, then save.
+        </p>
+      )}
+
       {items.length > 0 && (
         <div className="space-y-4 mb-6">
           {items.map((item) => (
@@ -170,41 +249,44 @@ export default function BulkPhotoAssignPage() {
 
                 {item.uploadedUrl && !item.saved && (
                   <>
-                    <div className="relative">
-                      <input
-                        className="input"
-                        placeholder="Search contact by name or WhatsApp number…"
-                        value={item.query}
-                        onChange={(e) => {
-                          searchContacts(item.key, e.target.value);
-                          setItems((prev) => prev.map((i) => (i.key === item.key ? { ...i, selected: null } : i)));
-                        }}
-                      />
-                      {item.results.length > 0 && (
-                        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
-                          {item.results.map((c) => (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() => selectContact(item.key, c)}
-                              className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
-                            >
-                              <span className="font-medium text-gray-900">{c.name}</span>{' '}
-                              <span className="text-gray-500">{c.whatsapp}</span>
-                              {(c.photoUrl || c.anniversaryPhotoUrl) && (
-                                <span className="text-xs text-amber-600 ml-2">already has a photo</span>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                    {!item.selected && (
+                      <div className="relative">
+                        <input
+                          className="input"
+                          placeholder="Search contact by name or WhatsApp number…"
+                          value={item.query}
+                          onChange={(e) => searchContacts(item.key, e.target.value)}
+                        />
+                        {item.results.length > 0 && (
+                          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-y-auto">
+                            {item.results.map((c) => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => selectContact(item.key, c)}
+                                className="w-full text-left px-3 py-2 hover:bg-gray-50 text-sm"
+                              >
+                                <span className="font-medium text-gray-900">{c.name}</span>{' '}
+                                <span className="text-gray-500">{c.whatsapp}</span>
+                                {(c.photoUrl || c.anniversaryPhotoUrl) && (
+                                  <span className="text-xs text-amber-600 ml-2">already has a photo</span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {item.selected && (
-                      <div className="flex items-center gap-4 mt-2 text-sm">
-                        <span className="text-green-700">
-                          ✓ Matched to <strong>{item.selected.name}</strong>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                        <span className={item.autoMatched ? 'text-brand-700' : 'text-green-700'}>
+                          {item.autoMatched ? '⚡ Auto-matched to' : '✓ Matched to'} <strong>{item.selected.name}</strong>{' '}
+                          <span className="text-gray-500">{item.selected.whatsapp}</span>
                         </span>
+                        <button type="button" onClick={() => clearMatch(item.key)} className="text-gray-400 hover:text-gray-600 underline">
+                          not this contact?
+                        </button>
                         <label className="flex items-center gap-1.5">
                           <input
                             type="radio"
