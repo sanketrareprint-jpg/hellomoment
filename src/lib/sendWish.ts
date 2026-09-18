@@ -111,11 +111,13 @@ export async function sendWishForContact(params: {
     }
 
     // The business owner gets notified on a separate approved AiSensy
-    // campaign ("userupdate") whose body reads "Hello {{1}} — Today is
-    // {{2}}'s {{3}}!", so the variable order is different from the
-    // contact-facing template: {{1}} the owner/business name being
-    // greeted, {{2}} the contact's name, {{3}} the occasion word.
-    const ownerTemplateParams = [fromName, contact.name, occasionWord];
+    // campaign ("userupdate") whose approved body has 5 variables:
+    // "Hello {{1}} — Today is {{2}}'s {{3}}! Don't forget to wish them
+    // Happy {{4}}. Here's their WhatsApp number: {{5}}" — confirmed from
+    // the live template in the AiSensy dashboard (Test Campaign panel).
+    // {{1}} business name, {{2}} contact name, {{3}}/{{4}} the occasion
+    // word (used twice), {{5}} the contact's WhatsApp number.
+    const ownerTemplateParams = [fromName, contact.name, occasionWord, occasionWord, contact.whatsapp];
     const ownerResult = await sendAisensyCampaign({
       apiKey,
       campaignName: ADMIN_UPDATE_CAMPAIGN,
