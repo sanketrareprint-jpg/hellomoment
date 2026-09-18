@@ -19,6 +19,11 @@ import { COINS_PER_SEND } from './pricing';
 // union type is the app-level source of truth for the valid literal values.
 export type Occasion = 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL';
 
+// Approved AiSensy campaign used to notify the business owner that a
+// wish went out, separate from the contact-facing campaign (see
+// sendWishForContact below). Same 3 body variables as the contact template.
+const ADMIN_UPDATE_CAMPAIGN = 'userupdate';
+
 interface SendWishParams {
   business: Business;
   occasion: Occasion;
@@ -105,9 +110,12 @@ export async function sendWishForContact(params: {
       errorMessage = `AiSensy rejected the send to the contact (HTTP ${contactResult.status}).`;
     }
 
+    // The business owner gets notified on a separate approved AiSensy
+    // campaign ("userupdate") rather than the contact-facing one — same 3
+    // template variables (name/occasion/from), different campaign name.
     const ownerResult = await sendAisensyCampaign({
       apiKey,
-      campaignName,
+      campaignName: ADMIN_UPDATE_CAMPAIGN,
       destination: business.ownerWhatsapp,
       userName: business.name,
       templateParams,
