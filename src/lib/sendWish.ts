@@ -111,22 +111,29 @@ export async function sendWishForContact(params: {
     }
 
     // The business owner gets notified on a separate approved AiSensy
-    // campaign ("userupdate") rather than the contact-facing one — same 3
-    // template variables (name/occasion/from), different campaign name.
+    // campaign ("userupdate") whose body reads "Hello {{1}} — Today is
+    // {{2}}'s {{3}}!", so the variable order is different from the
+    // contact-facing template: {{1}} the owner/business name being
+    // greeted, {{2}} the contact's name, {{3}} the occasion word.
+    const ownerTemplateParams = [fromName, contact.name, occasionWord];
     const ownerResult = await sendAisensyCampaign({
       apiKey,
       campaignName: ADMIN_UPDATE_CAMPAIGN,
       destination: business.ownerWhatsapp,
       userName: business.name,
-      templateParams,
+      templateParams: ownerTemplateParams,
       media,
     });
     sentToOwner = ownerResult.ok;
     aisensyResponse = { ...((aisensyResponse as object) ?? {}), toOwner: ownerResult.body };
     if (!ownerResult.ok && status === 'SUCCESS') {
       // Sending to the contact succeeded even if notifying the owner failed —
-      // don't mark the whole send as FAILED for that, but do note it.
-      errorMessage = `Sent to contact, but notifying the business owner failed (HTTP ${ownerResult.status}).`;
+      // don't mark the whole send as FAILED for that, but do note it. Include
+      // AiSensy's own response body (truncated) so the real rejection reason
+      // (bad campaign name, wrong param count, template not live, etc.) shows
+      // up directly in Settings > Send logs instead of just an HTTP code.
+      const bodySnippet = JSON.stringify(ownerResult.body ?? {}).slice(0, 300);
+      errorMessage = `Sent to contact, but notifying the business owner failed (HTTP ${ownerResult.status}): ${bodySnippet}`;
     }
   }
 
