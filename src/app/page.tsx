@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { getCurrentBusiness } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import HeroSlider from '@/components/HeroSlider';
+import DashboardBannerSlider from '@/components/DashboardBannerSlider';
+import { prisma } from '@/lib/db';
 import { RECHARGE_TIERS } from '@/lib/pricing';
 import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
 import SiteFooter from '@/components/SiteFooter';
@@ -74,6 +76,12 @@ export default async function LandingPage() {
   const business = await getCurrentBusiness();
   if (business) redirect('/dashboard');
 
+  const banners = await prisma.dashboardBanner.findMany({
+    where: { isActive: true },
+    orderBy: { order: 'asc' },
+    select: { id: true, imageUrl: true, linkUrl: true },
+  });
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-white overflow-hidden">
       <header className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-y-3 px-4 sm:px-6 py-4 sm:py-6">
@@ -98,6 +106,12 @@ export default async function LandingPage() {
       </header>
 
       <HeroSlider />
+
+      {banners.length > 0 && (
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-8">
+          <DashboardBannerSlider banners={banners} />
+        </section>
+      )}
 
       <section id="how-it-works" className="max-w-5xl mx-auto px-6 pb-16 scroll-mt-20">
         <p className="text-center text-xs font-semibold text-brand-600 uppercase tracking-wide mb-2">How it works</p>
