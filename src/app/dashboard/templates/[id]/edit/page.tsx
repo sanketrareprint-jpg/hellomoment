@@ -46,6 +46,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit flyer template</h1>
       <TemplatePlaceholderEditor
         business={brand}
+        showBranding={template.source === 'STARTER'}
         initial={{
           id: template.id,
           name: template.name,

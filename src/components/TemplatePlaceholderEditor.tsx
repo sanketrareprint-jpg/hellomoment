@@ -294,9 +294,15 @@ const BRAND_FIELDS: { key: FieldKey; label: string; icon: string }[] = [
 export default function TemplatePlaceholderEditor({
   initial,
   business,
+  showBranding = true,
 }: {
   initial?: TemplateFormValues;
   business?: BrandInfo;
+  // Business branding (logo/firm name/phone/address/products) only makes
+  // sense to overlay on a bundled Starter template — a business's own
+  // uploaded artwork ("My templates") already has its branding drawn into
+  // the image, so offering these fields there would just duplicate it.
+  showBranding?: boolean;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<TemplateFormValues>(initial ?? EMPTY_TEMPLATE);
@@ -348,15 +354,15 @@ export default function TemplatePlaceholderEditor({
       case 'photo':
         return form.usePhoto;
       case 'logo':
-        return form.useLogo;
+        return showBranding && form.useLogo;
       case 'firmName':
-        return form.useFirmName;
+        return showBranding && form.useFirmName;
       case 'phone':
-        return form.usePhone;
+        return showBranding && form.usePhone;
       case 'address':
-        return form.useAddress;
+        return showBranding && form.useAddress;
       case 'products':
-        return form.useProducts;
+        return showBranding && form.useProducts;
       default:
         return false;
     }
@@ -576,11 +582,11 @@ export default function TemplatePlaceholderEditor({
         designationPlaceholder: form.useDesignation ? form.designationPlaceholder : null,
         datePlaceholder: form.useDate ? form.datePlaceholder : null,
         photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
-        logoPlaceholder: form.useLogo ? form.logoPlaceholder : null,
-        firmNamePlaceholder: form.useFirmName ? form.firmNamePlaceholder : null,
-        phonePlaceholder: form.usePhone ? form.phonePlaceholder : null,
-        addressPlaceholder: form.useAddress ? form.addressPlaceholder : null,
-        productsPlaceholder: form.useProducts ? form.productsPlaceholder : null,
+        logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
+        firmNamePlaceholder: isFieldOn('firmName') ? form.firmNamePlaceholder : null,
+        phonePlaceholder: isFieldOn('phone') ? form.phonePlaceholder : null,
+        addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
+        productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
       };
       const url = form.id ? `/api/templates/${form.id}` : '/api/templates';
       const method = form.id ? 'PUT' : 'POST';
@@ -714,14 +720,16 @@ export default function TemplatePlaceholderEditor({
             </div>
           </div>
 
-          <div>
-            <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Your business branding</h3>
-            <div className="grid grid-cols-5 gap-1.5">
-              {BRAND_FIELDS.map((def) => (
-                <ToolbarButton key={def.key} def={def} />
-              ))}
+          {showBranding && (
+            <div>
+              <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Your business branding</h3>
+              <div className="grid grid-cols-5 gap-1.5">
+                {BRAND_FIELDS.map((def) => (
+                  <ToolbarButton key={def.key} def={def} />
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {selected && selectedDef && (
             <div className="border-t border-gray-100 pt-2">
@@ -884,7 +892,7 @@ export default function TemplatePlaceholderEditor({
             </div>
           )}
 
-          {form.useLogo && form.backgroundUrl && business?.logoUrl && (
+          {isFieldOn('logo') && form.backgroundUrl && business?.logoUrl && (
             <div
               onPointerDown={startDrag('logo')}
               className="absolute border-2 border-dashed border-amber-500 cursor-move flex items-center justify-center overflow-hidden bg-white/10"
