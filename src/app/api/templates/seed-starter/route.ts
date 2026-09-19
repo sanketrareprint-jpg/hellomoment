@@ -110,6 +110,12 @@ const STARTERS: { name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL
   { name: 'Starter — Birthday: Party Hats', occasion: 'BIRTHDAY', file: 'birthday-2.jpg' },
   { name: 'Starter — Birthday: Pastel Sprinkles', occasion: 'BIRTHDAY', file: 'birthday-3.jpg' },
   { name: 'Starter — Birthday: Starry Night', occasion: 'BIRTHDAY', file: 'birthday-4.jpg' },
+  // Birthday — Modern Luxury: 4 arched-frame styles, deep emerald green +
+  // metallic gold foil, floating starburst accents, subtle paper texture
+  { name: 'Starter — Birthday: Emerald Luxury — Round Arch', occasion: 'BIRTHDAY', file: 'birthday-5.jpg' },
+  { name: 'Starter — Birthday: Emerald Luxury — Gothic Arch', occasion: 'BIRTHDAY', file: 'birthday-6.jpg' },
+  { name: 'Starter — Birthday: Emerald Luxury — Flat Arch', occasion: 'BIRTHDAY', file: 'birthday-7.jpg' },
+  { name: 'Starter — Birthday: Emerald Luxury — Ogee Arch', occasion: 'BIRTHDAY', file: 'birthday-8.jpg' },
   // Anniversary — 4 styles
   { name: 'Starter — Anniversary: Rose Hearts', occasion: 'ANNIVERSARY', file: 'anniversary-1.jpg' },
   { name: 'Starter — Anniversary: Gold Elegance', occasion: 'ANNIVERSARY', file: 'anniversary-2.jpg' },

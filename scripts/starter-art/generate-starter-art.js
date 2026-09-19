@@ -19,7 +19,7 @@
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
-const { OCCASIONS, PREFIX_TO_OCCASION, PALETTES } = require('./gen_config.js');
+const { OCCASIONS, PREFIX_TO_OCCASION, PALETTES, LUXURY_PALETTE, OCCASION_BIRTHDAY_LUXURY, ARCH_STYLES } = require('./gen_config.js');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || process.cwd();
 const FONT_DIR = path.join(PROJECT_ROOT, 'assets', 'fonts');
@@ -233,6 +233,15 @@ function iconSplash(colors) {
   return `<g>${dots}</g>`;
 }
 
+// Minimalist floating four-point starburst — a single thin diamond-cross,
+// distinct from the small gold sparkle() accents used across every design.
+function iconStarburst(gold) {
+  return `
+    <line x1="0" y1="-30" x2="0" y2="30" stroke="${gold}" stroke-width="1.4" opacity="0.85"/>
+    <line x1="-30" y1="0" x2="30" y2="0" stroke="${gold}" stroke-width="1.4" opacity="0.85"/>
+    <path d="M0,-9 L3,0 L0,9 L-3,0 Z" fill="${gold}"/>`;
+}
+
 function buildIcon(type, palette) {
   const { gold, light } = palette;
   switch (type) {
@@ -258,6 +267,8 @@ function buildIcon(type, palette) {
       return iconBauble(light, gold);
     case 'splash':
       return iconSplash(['#ffd166', '#06d6a0', '#ef476f', '#118ab2', '#ffffff']);
+    case 'starburst':
+      return iconStarburst(gold);
     default:
       return iconHeart(light);
   }
@@ -320,11 +331,121 @@ function buildBackgroundSvg(palette, iconType) {
   </svg>`;
 }
 
-async function renderOne({ file, occasionKey, variantIndex, subdir }) {
-  const occ = OCCASIONS[occasionKey];
+// ---------- "Modern Luxury" birthday variant: arched frame, gold foil double
+// lines, floating starburst accents, subtle paper-grain texture. Distinct
+// from buildBackgroundSvg's shared circle-frame layout used by every other
+// occasion, so it can't regress those when regenerated. ----------
+
+const FRAME_HALF_W = CIRCLE_R + 45;
+const FRAME_BOTTOM = CIRCLE_CY + CIRCLE_R + 55;
+const ARCH_SPRING_Y = CIRCLE_CY - CIRCLE_R + 40;
+const ARCH_TOP_Y = CIRCLE_CY - CIRCLE_R - 150;
+
+function archTopPath(style, cx, left, right, springY, archTop) {
+  switch (style) {
+    case 'pointArch':
+      return `M ${left},${springY} Q ${left},${archTop} ${cx},${archTop} Q ${right},${archTop} ${right},${springY}`;
+    case 'flatArch': {
+      const shallowTop = springY - (springY - archTop) * 0.35;
+      return `M ${left},${springY} A ${right - cx},${springY - shallowTop} 0 0 1 ${right},${springY}`;
+    }
+    case 'ogeeArch': {
+      // Onion-dome profile: flares outward past the frame edges to a
+      // "shoulder", then curves back inward to a pinched point — distinct
+      // from roundArch's single smooth curve.
+      const bulge = 30;
+      const shoulderY = springY - (springY - archTop) * 0.42;
+      const apexEase = 22;
+      const outerLeft = left - bulge;
+      const outerRight = right + bulge;
+      return (
+        `M ${left},${springY} ` +
+        `C ${left - bulge * 0.6},${springY - (springY - shoulderY) * 0.5} ${outerLeft},${shoulderY + (springY - shoulderY) * 0.15} ${outerLeft},${shoulderY} ` +
+        `C ${outerLeft},${shoulderY - (shoulderY - archTop) * 0.55} ${cx - apexEase},${archTop} ${cx},${archTop} ` +
+        `C ${cx + apexEase},${archTop} ${outerRight},${shoulderY - (shoulderY - archTop) * 0.55} ${outerRight},${shoulderY} ` +
+        `C ${outerRight},${shoulderY + (springY - shoulderY) * 0.15} ${right + bulge * 0.6},${springY - (springY - shoulderY) * 0.5} ${right},${springY}`
+      );
+    }
+    case 'roundArch':
+    default:
+      return `M ${left},${springY} A ${right - cx},${springY - archTop} 0 0 1 ${right},${springY}`;
+  }
+}
+
+function archFrame(gold, style) {
+  const cx = CIRCLE_CX;
+  const left = cx - FRAME_HALF_W;
+  const right = cx + FRAME_HALF_W;
+  const outerTop = archTopPath(style, cx, left, right, ARCH_SPRING_Y, ARCH_TOP_Y);
+  const outerPath = `${outerTop} L ${right},${FRAME_BOTTOM} L ${left},${FRAME_BOTTOM} Z`;
+
+  // Inset a second arch outline just inside the first — the "double foil
+  // line" effect — instead of drawing an actually-thicker single stroke.
+  const inset = 10;
+  const innerLeft = left + inset;
+  const innerRight = right - inset;
+  const innerTop = archTopPath(style, cx, innerLeft, innerRight, ARCH_SPRING_Y, ARCH_TOP_Y + inset);
+  const innerPath = `${innerTop} L ${innerRight},${FRAME_BOTTOM - inset} L ${innerLeft},${FRAME_BOTTOM - inset} Z`;
+
+  return `
+    <path d="${outerPath}" fill="black" opacity="0.22" filter="url(#blur18)" transform="translate(0,10)"/>
+    <path d="${outerPath}" fill="none" stroke="${gold}" stroke-width="3" opacity="0.9"/>
+    <path d="${innerPath}" fill="none" stroke="${gold}" stroke-width="1.2" opacity="0.55"/>
+    ${photoFrame(gold)}
+  `;
+}
+
+function buildLuxuryBirthdaySvg(archStyle) {
+  const { top, bottom, gold } = LUXURY_PALETTE;
+  return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="0.3" y2="1">
+        <stop offset="0" stop-color="${top}"/>
+        <stop offset="1" stop-color="${bottom}"/>
+      </linearGradient>
+      <filter id="blur18" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="18"/>
+      </filter>
+      <filter id="blur40" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="40"/>
+      </filter>
+      <filter id="paperNoise" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise"/>
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.045 0"/>
+      </filter>
+    </defs>
+
+    <rect width="${W}" height="${H}" fill="url(#bg)"/>
+    <rect width="${W}" height="${H}" filter="url(#paperNoise)"/>
+
+    ${bokeh(920, 140, 160, '#ffffff', 0.04)}
+    ${bokeh(120, 980, 220, '#ffffff', 0.04)}
+    ${bokeh(980, 950, 120, gold, 0.08)}
+    ${bokeh(80, 200, 90, gold, 0.06)}
+
+    ${scatterIcons('starburst', LUXURY_PALETTE)}
+
+    ${archFrame(gold, archStyle)}
+
+    ${sparkle(940, 470, 8, gold)}
+    ${sparkle(150, 500, 6, gold)}
+    ${sparkle(880, 640, 5, '#ffffff')}
+
+    <rect x="24" y="24" width="${W - 48}" height="${H - 48}" fill="none" stroke="${gold}" stroke-width="2" opacity="0.8"/>
+    <rect x="34" y="34" width="${W - 68}" height="${H - 68}" fill="none" stroke="${gold}" stroke-width="1" opacity="0.45"/>
+
+    ${cornerOrnament(56, 56, 0, gold)}
+    ${cornerOrnament(1024, 56, 90, gold)}
+    ${cornerOrnament(1024, 1024, 180, gold)}
+    ${cornerOrnament(56, 1024, 270, gold)}
+  </svg>`;
+}
+
+async function renderOne({ file, occasionKey, variantIndex, subdir, archStyle }) {
+  const isLuxury = occasionKey === 'birthdayLuxury';
+  const occ = isLuxury ? OCCASION_BIRTHDAY_LUXURY : OCCASIONS[occasionKey];
   if (!occ) throw new Error(`Unknown occasion key: ${occasionKey}`);
-  const paletteIndex = ((occ.paletteStart || 0) + variantIndex) % PALETTES.length;
-  const palette = PALETTES[paletteIndex];
+  const palette = isLuxury ? LUXURY_PALETTE : PALETTES[((occ.paletteStart || 0) + variantIndex) % PALETTES.length];
 
   // Measure text FIRST so the ribbon banner can be sized to snugly wrap the
   // kicker + headline exactly, instead of guessing where they'll land.
@@ -361,7 +482,7 @@ async function renderOne({ file, occasionKey, variantIndex, subdir }) {
   const bannerY0 = kickerTop - 16;
   const bannerH = headlineBottom + 14 - bannerY0;
 
-  const bgSvg = buildBackgroundSvg(palette, occ.icon);
+  const bgSvg = isLuxury ? buildLuxuryBirthdaySvg(archStyle) : buildBackgroundSvg(palette, occ.icon);
   const bannerSvg = ribbonBannerSvg(bannerY0, bannerH, palette.gold, palette.bottom);
 
   const composites = [
@@ -414,6 +535,21 @@ async function main() {
     for (let i = 1; i <= n; i++) {
       jobs.push({ file: `${prefix}-${i}.jpg`, occasionKey, variantIndex: i - 1, subdir });
     }
+  }
+
+  // 4 additional "Modern Luxury" birthday designs (birthday-5..8.jpg),
+  // alongside the original 4 balloon-themed ones — same folder/prefix, a
+  // distinct emerald + gold arched-frame style per ARCH_STYLES.
+  if (!ONLY.length || ONLY.includes('birthday')) {
+    ARCH_STYLES.forEach((archStyle, idx) => {
+      jobs.push({
+        file: `birthday-${5 + idx}.jpg`,
+        occasionKey: 'birthdayLuxury',
+        variantIndex: idx,
+        subdir: 'birthday',
+        archStyle,
+      });
+    });
   }
 
   console.log(`Rendering ${jobs.length} images to ${OUT_DIR} ...`);

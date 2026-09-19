@@ -53,4 +53,27 @@ const PALETTES = [
   { top: '#8a1c2e', bottom: '#2a0509', light: '#d97186', gold: '#f0c674', name: 'crimson' }, // red/maroon
 ];
 
-module.exports = { OCCASIONS, PREFIX_TO_OCCASION, PALETTES };
+// Single fixed palette for the "Modern Luxury" birthday variants (deep
+// emerald green + metallic gold foil), kept OUT of PALETTES above so it
+// never shifts the % PALETTES.length rotation used by every other occasion.
+const LUXURY_PALETTE = {
+  top: '#0e3a2c',
+  bottom: '#031310',
+  light: '#3f7f66',
+  gold: '#d8b968',
+  name: 'emerald-gold-luxury',
+};
+
+// The 4 "Modern Luxury" birthday variants share one occasion brief but each
+// gets a differently-shaped arch frame so the 4 templates read as distinct
+// designs, per the "4 different blank birthday card templates" brief.
+const OCCASION_BIRTHDAY_LUXURY = {
+  icon: 'starburst',
+  kicker: 'MODERN LUXURY',
+  headline: 'Happy Birthday',
+  subtitle: 'Wishing you an elegant celebration',
+};
+
+const ARCH_STYLES = ['roundArch', 'pointArch', 'flatArch', 'ogeeArch'];
+
+module.exports = { OCCASIONS, PREFIX_TO_OCCASION, PALETTES, LUXURY_PALETTE, OCCASION_BIRTHDAY_LUXURY, ARCH_STYLES };
