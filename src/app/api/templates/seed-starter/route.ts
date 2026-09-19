@@ -104,7 +104,10 @@ function corePlaceholders() {
   };
 }
 
-const STARTERS: { name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY'; file: string }[] = [
+// Exported so the one-off admin cleanup route (cleanup-old-starters) can
+// delete any previously-seeded FlyerTemplate whose name no longer appears
+// here, without duplicating this list.
+export const STARTERS: { name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY'; file: string }[] = [
   // Birthday — Modern Luxury: 4 arched-frame styles, deep emerald green +
   // metallic gold foil, floating starburst accents, subtle paper texture
   { name: 'Starter — Birthday: Emerald Luxury — Round Arch', occasion: 'BIRTHDAY', file: 'birthday-1.jpg' },
