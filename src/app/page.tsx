@@ -113,6 +113,20 @@ export default async function LandingPage() {
 
       <HeroSlider />
 
+      <section className="max-w-md sm:max-w-lg lg:max-w-xl mx-auto px-4 sm:px-6 pb-16">
+        <img
+          src="/raregreet-flyer.webp"
+          srcSet="/raregreet-flyer-640.webp 640w, /raregreet-flyer.webp 1254w"
+          sizes="(max-width: 640px) calc(100vw - 2rem), 576px"
+          width={1254}
+          height={1254}
+          alt="RareGreet — automate your birthday and anniversary wishes on WhatsApp"
+          loading="lazy"
+          decoding="async"
+          className="block w-full h-auto rounded-2xl shadow-xl ring-1 ring-brand-100"
+        />
+      </section>
+
       <section id="how-it-works" className="max-w-5xl mx-auto px-6 pb-16 scroll-mt-20">
         <p className="text-center text-xs font-semibold text-brand-600 uppercase tracking-wide mb-2">How it works</p>
         <div className="grid sm:grid-cols-3 gap-6">
