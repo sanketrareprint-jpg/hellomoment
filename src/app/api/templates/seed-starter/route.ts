@@ -121,6 +121,12 @@ const STARTERS: { name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL
   { name: 'Starter — Anniversary: Gold Elegance', occasion: 'ANNIVERSARY', file: 'anniversary-2.jpg' },
   { name: 'Starter — Anniversary: Deep Romance', occasion: 'ANNIVERSARY', file: 'anniversary-3.jpg' },
   { name: 'Starter — Anniversary: Soft Blush', occasion: 'ANNIVERSARY', file: 'anniversary-4.jpg' },
+  // Anniversary — Modern Editorial: 4 deckled-paper placeholder styles,
+  // warm terracotta/cream/olive palette, botanical line art, grain texture
+  { name: 'Starter — Anniversary: Editorial Terracotta — Torn Paper', occasion: 'ANNIVERSARY', file: 'anniversary-5.jpg' },
+  { name: 'Starter — Anniversary: Editorial Terracotta — Soft Rounded', occasion: 'ANNIVERSARY', file: 'anniversary-6.jpg' },
+  { name: 'Starter — Anniversary: Editorial Terracotta — Arched Paper', occasion: 'ANNIVERSARY', file: 'anniversary-7.jpg' },
+  { name: 'Starter — Anniversary: Editorial Terracotta — Scalloped', occasion: 'ANNIVERSARY', file: 'anniversary-8.jpg' },
   // Diwali — 4 styles
   { name: 'Starter — Diwali: Diya Lights', occasion: 'FESTIVAL', file: 'diwali-1.jpg' },
   { name: 'Starter — Diwali: Golden Rangoli', occasion: 'FESTIVAL', file: 'diwali-2.jpg' },

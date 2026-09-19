@@ -19,7 +19,16 @@
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
-const { OCCASIONS, PREFIX_TO_OCCASION, PALETTES, LUXURY_PALETTE, OCCASION_BIRTHDAY_LUXURY, ARCH_STYLES } = require('./gen_config.js');
+const {
+  OCCASIONS,
+  PREFIX_TO_OCCASION,
+  PALETTES,
+  LUXURY_PALETTE,
+  OCCASION_BIRTHDAY_LUXURY,
+  ARCH_STYLES,
+  EDITORIAL_PALETTE,
+  DECKLE_STYLES,
+} = require('./gen_config.js');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || process.cwd();
 const FONT_DIR = path.join(PROJECT_ROOT, 'assets', 'fonts');
@@ -242,6 +251,20 @@ function iconStarburst(gold) {
     <path d="M0,-9 L3,0 L0,9 L-3,0 Z" fill="${gold}"/>`;
 }
 
+// Delicate continuous-line botanical sprig — a single stroked stem with
+// alternating open leaf loops, unfilled (stroke only) for the "editorial
+// line art" look, unlike every other icon here which is filled shapes.
+function iconLeafSprig(color) {
+  return `
+    <g fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" opacity="0.8">
+      <path d="M0,44 C -3,20 3,-12 0,-44"/>
+      <path d="M0,-30 C 11,-36 21,-31 25,-20 C 14,-21 6,-25 0,-30"/>
+      <path d="M0,-10 C -11,-17 -21,-13 -25,-3 C -14,-3 -6,-7 0,-10"/>
+      <path d="M0,10 C 11,3 21,7 25,18 C 14,18 6,13 0,10"/>
+      <path d="M0,30 C -11,23 -21,27 -25,38 C -14,38 -6,33 0,30"/>
+    </g>`;
+}
+
 function buildIcon(type, palette) {
   const { gold, light } = palette;
   switch (type) {
@@ -269,6 +292,8 @@ function buildIcon(type, palette) {
       return iconSplash(['#ffd166', '#06d6a0', '#ef476f', '#118ab2', '#ffffff']);
     case 'starburst':
       return iconStarburst(gold);
+    case 'leafSprig':
+      return iconLeafSprig(light);
     default:
       return iconHeart(light);
   }
@@ -441,11 +466,181 @@ function buildLuxuryBirthdaySvg(archStyle) {
   </svg>`;
 }
 
-async function renderOne({ file, occasionKey, variantIndex, subdir, archStyle }) {
+// ---------- "Modern Editorial" anniversary variant: deckled-edge paper
+// placeholder, continuous-line botanical sprigs, grainy texture, minimalist
+// cream/terracotta/olive palette with dark ink text (the only light-
+// background design here, so it carries its own text colors). ----------
+
+// Deterministic PRNG (not Math.random()) so re-running the generator always
+// produces the same "torn paper" jitter for a given seed.
+function seededRandom(seed) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return function next() {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+// Closed path approximating a torn deckled-paper edge: samples points along
+// a rectangle's (optionally rounded-corner) perimeter and jitters each one
+// outward/inward along that edge's normal.
+function deckledRectPath(cx, cy, halfW, halfH, seed, { amplitude = 7, step = 16, cornerRadius = 0 } = {}) {
+  const rand = seededRandom(seed);
+  const pts = [];
+  const addEdge = (x0, y0, x1, y1, nx, ny) => {
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    const n = Math.max(2, Math.round(len / step));
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const x = x0 + (x1 - x0) * t;
+      const y = y0 + (y1 - y0) * t;
+      const jitter = (rand() - 0.5) * 2 * amplitude;
+      pts.push([x + nx * jitter, y + ny * jitter]);
+    }
+  };
+  const left = cx - halfW;
+  const right = cx + halfW;
+  const top = cy - halfH;
+  const bottom = cy + halfH;
+  addEdge(left + cornerRadius, top, right - cornerRadius, top, 0, -1);
+  addEdge(right, top + cornerRadius, right, bottom - cornerRadius, 1, 0);
+  addEdge(right - cornerRadius, bottom, left + cornerRadius, bottom, 0, 1);
+  addEdge(left, bottom - cornerRadius, left, top + cornerRadius, -1, 0);
+  return `M ${pts[0][0]},${pts[0][1]} ` + pts.slice(1).map((p) => `L ${p[0]},${p[1]}`).join(' ') + ' Z';
+}
+
+// Same torn-edge treatment, but around an ellipse — for the organic "blob"
+// variant, distinct from the rectangular ones.
+function deckledEllipsePath(cx, cy, rx, ry, seed, { amplitude = 8, points = 40 } = {}) {
+  const rand = seededRandom(seed);
+  const pts = [];
+  for (let i = 0; i < points; i++) {
+    const a = (Math.PI * 2 * i) / points;
+    const jitter = (rand() - 0.5) * 2 * amplitude;
+    const r = 1 + jitter / Math.max(rx, ry);
+    pts.push([cx + rx * r * Math.cos(a), cy + ry * r * Math.sin(a)]);
+  }
+  return `M ${pts[0][0]},${pts[0][1]} ` + pts.slice(1).map((p) => `L ${p[0]},${p[1]}`).join(' ') + ' Z';
+}
+
+// A smooth (un-jittered) semi-ellipse arch top, joined to deckled straight
+// side + bottom edges — a torn paper card with a clean arched top edge.
+function deckledArchPath(cx, springY, halfW, archTop, bottom, seed, { amplitude = 7, step = 16 } = {}) {
+  const pts = [];
+  const archSteps = 24;
+  for (let i = 0; i <= archSteps; i++) {
+    const t = i / archSteps;
+    const angle = Math.PI - t * Math.PI; // left (PI) -> apex (PI/2) -> right (0)
+    pts.push([cx + halfW * Math.cos(angle), springY - (springY - archTop) * Math.sin(angle)]);
+  }
+  const rand = seededRandom(seed);
+  const addEdge = (x0, y0, x1, y1, nx, ny) => {
+    const len = Math.hypot(x1 - x0, y1 - y0);
+    const n = Math.max(2, Math.round(len / step));
+    for (let i = 0; i <= n; i++) {
+      const t = i / n;
+      const x = x0 + (x1 - x0) * t;
+      const y = y0 + (y1 - y0) * t;
+      const jitter = (rand() - 0.5) * 2 * amplitude;
+      pts.push([x + nx * jitter, y + ny * jitter]);
+    }
+  };
+  const left = cx - halfW;
+  const right = cx + halfW;
+  addEdge(right, springY, right, bottom, 1, 0);
+  addEdge(right, bottom, left, bottom, 0, 1);
+  addEdge(left, bottom, left, springY, -1, 0);
+  return `M ${pts[0][0]},${pts[0][1]} ` + pts.slice(1).map((p) => `L ${p[0]},${p[1]}`).join(' ') + ' Z';
+}
+
+const PAPER_HALF_W = CIRCLE_R + 55;
+const PAPER_HALF_H = CIRCLE_R + 75;
+
+function buildDeckledPaper(style, paperColor) {
+  const cx = CIRCLE_CX;
+  const cy = CIRCLE_CY;
+  let d;
+  switch (style) {
+    case 'deckleRounded':
+      d = deckledRectPath(cx, cy, PAPER_HALF_W, PAPER_HALF_H, 1002, { amplitude: 5, step: 20, cornerRadius: 34 });
+      break;
+    case 'deckleArch':
+      d = deckledArchPath(cx, cy - CIRCLE_R + 40, PAPER_HALF_W, cy - CIRCLE_R - 90, cy + PAPER_HALF_H - 20, 1003);
+      break;
+    case 'deckleBlob':
+      d = deckledEllipsePath(cx, cy + 10, PAPER_HALF_W + 15, PAPER_HALF_H + 15, 1004, { amplitude: 10, points: 44 });
+      break;
+    case 'deckleRect':
+    default:
+      d = deckledRectPath(cx, cy, PAPER_HALF_W, PAPER_HALF_H, 1001, { amplitude: 8, step: 14 });
+  }
+  return `
+    <path d="${d}" fill="black" opacity="0.10" filter="url(#blur18)" transform="translate(0,10)"/>
+    <path d="${d}" fill="${paperColor}" stroke="#00000022" stroke-width="1"/>
+  `;
+}
+
+// A restrained ring around the photo circle in a dark ink tone — the shared
+// photoFrame()'s white ring would have almost no contrast against this
+// design's light cream background.
+function photoFrameEditorial(ink) {
+  return `
+    <circle cx="${CIRCLE_CX}" cy="${CIRCLE_CY}" r="${CIRCLE_R + 10}" fill="none" stroke="${ink}" stroke-width="1" opacity="0.45"/>
+    <circle cx="${CIRCLE_CX}" cy="${CIRCLE_CY}" r="${CIRCLE_R}" fill="none" stroke="${ink}" stroke-width="2.5"/>
+    <circle cx="${CIRCLE_CX}" cy="${CIRCLE_CY}" r="${CIRCLE_R}" fill="rgba(0,0,0,0.03)"/>
+  `;
+}
+
+function buildEditorialAnniversarySvg(deckleStyle) {
+  const { top, bottom, ink, terracotta, olive, paper } = EDITORIAL_PALETTE;
+  const leafSpots = [
+    { x: 130, y: 860, s: 0.95, r: -14 },
+    { x: 950, y: 860, s: 0.95, r: 14 },
+    { x: 145, y: 210, s: 0.6, r: 200 },
+    { x: 935, y: 210, s: 0.6, r: 160 },
+  ];
+  const leaves = leafSpots
+    .map((p) => `<g transform="translate(${p.x},${p.y}) scale(${p.s}) rotate(${p.r})">${iconLeafSprig(olive)}</g>`)
+    .join('\n');
+
+  return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="0.25" y2="1">
+        <stop offset="0" stop-color="${top}"/>
+        <stop offset="1" stop-color="${bottom}"/>
+      </linearGradient>
+      <filter id="blur18" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="18"/>
+      </filter>
+      <filter id="paperNoise" x="0" y="0" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" result="noise"/>
+        <feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.3  0 0 0 0 0.2  0 0 0 0 0.1  0 0 0 0.05 0"/>
+      </filter>
+    </defs>
+
+    <rect width="${W}" height="${H}" fill="url(#bg)"/>
+    <rect width="${W}" height="${H}" filter="url(#paperNoise)"/>
+
+    ${leaves}
+
+    ${buildDeckledPaper(deckleStyle, paper)}
+    ${photoFrameEditorial(ink)}
+
+    <rect x="40" y="40" width="${W - 80}" height="${H - 80}" fill="none" stroke="${terracotta}" stroke-width="1" opacity="0.35"/>
+  </svg>`;
+}
+
+async function renderOne({ file, occasionKey, variantIndex, subdir, archStyle, deckleStyle }) {
   const isLuxury = occasionKey === 'birthdayLuxury';
-  const occ = isLuxury ? OCCASION_BIRTHDAY_LUXURY : OCCASIONS[occasionKey];
+  const isEditorial = occasionKey === 'anniversaryEditorial';
+  const occ = isLuxury ? OCCASION_BIRTHDAY_LUXURY : isEditorial ? OCCASIONS.anniversary : OCCASIONS[occasionKey];
   if (!occ) throw new Error(`Unknown occasion key: ${occasionKey}`);
-  const palette = isLuxury ? LUXURY_PALETTE : PALETTES[((occ.paletteStart || 0) + variantIndex) % PALETTES.length];
+  const palette = isLuxury
+    ? LUXURY_PALETTE
+    : isEditorial
+      ? EDITORIAL_PALETTE
+      : PALETTES[((occ.paletteStart || 0) + variantIndex) % PALETTES.length];
 
   // Measure text FIRST so the ribbon banner can be sized to snugly wrap the
   // kicker + headline exactly, instead of guessing where they'll land.
@@ -454,26 +649,29 @@ async function renderOne({ file, occasionKey, variantIndex, subdir, archStyle })
     fontfile: FONT.poppinsBold,
     fontFamily: 'Poppins',
     size: 22,
-    color: palette.gold,
+    color: isEditorial ? EDITORIAL_PALETTE.terracotta : palette.gold,
   });
   const headline = await textBuffer({
     text: occ.headline,
     fontfile: FONT.playfairBold,
     fontFamily: 'Playfair Display',
     size: 64,
-    color: '#ffffff',
+    color: isEditorial ? EDITORIAL_PALETTE.ink : '#ffffff',
   });
   const subtitle = await textBuffer({
     text: occ.subtitle,
     fontfile: FONT.poppinsRegular,
     fontFamily: 'Poppins',
     size: 25,
-    color: '#f5f0e6',
+    color: isEditorial ? EDITORIAL_PALETTE.olive : '#f5f0e6',
   });
 
   const centerX = (info) => Math.round(W / 2 - info.width / 2);
 
-  const blockTop = 452;
+  // The editorial design has no ribbon banner and its deckled paper card
+  // extends lower than the shared circle-frame layout, so its text block
+  // starts further down to clear it.
+  const blockTop = isEditorial ? 560 : 452;
   const kickerTop = blockTop;
   const headlineTop = kickerTop + kicker.info.height + 2;
   const headlineBottom = headlineTop + headline.info.height;
@@ -482,15 +680,21 @@ async function renderOne({ file, occasionKey, variantIndex, subdir, archStyle })
   const bannerY0 = kickerTop - 16;
   const bannerH = headlineBottom + 14 - bannerY0;
 
-  const bgSvg = isLuxury ? buildLuxuryBirthdaySvg(archStyle) : buildBackgroundSvg(palette, occ.icon);
-  const bannerSvg = ribbonBannerSvg(bannerY0, bannerH, palette.gold, palette.bottom);
+  const bgSvg = isLuxury
+    ? buildLuxuryBirthdaySvg(archStyle)
+    : isEditorial
+      ? buildEditorialAnniversarySvg(deckleStyle)
+      : buildBackgroundSvg(palette, occ.icon);
 
   const composites = [
-    { input: Buffer.from(bannerSvg), left: 0, top: 0 },
     { input: kicker.data, left: centerX(kicker.info), top: kickerTop },
     { input: headline.data, left: centerX(headline.info), top: headlineTop },
     { input: subtitle.data, left: centerX(subtitle.info), top: subtitleTop },
   ];
+  if (!isEditorial) {
+    const bannerSvg = ribbonBannerSvg(bannerY0, bannerH, palette.gold, palette.bottom);
+    composites.unshift({ input: Buffer.from(bannerSvg), left: 0, top: 0 });
+  }
 
   const outPath = path.join(OUT_DIR, subdir, file);
   await sharp(Buffer.from(bgSvg))
@@ -548,6 +752,21 @@ async function main() {
         variantIndex: idx,
         subdir: 'birthday',
         archStyle,
+      });
+    });
+  }
+
+  // 4 additional "Modern Editorial" anniversary designs (anniversary-5..8.jpg),
+  // alongside the original 4 heart-themed ones — same folder/prefix, a
+  // distinct deckled-paper placeholder shape per DECKLE_STYLES.
+  if (!ONLY.length || ONLY.includes('anniversary')) {
+    DECKLE_STYLES.forEach((deckleStyle, idx) => {
+      jobs.push({
+        file: `anniversary-${5 + idx}.jpg`,
+        occasionKey: 'anniversaryEditorial',
+        variantIndex: idx,
+        subdir: 'anniversary',
+        deckleStyle,
       });
     });
   }

@@ -76,4 +76,36 @@ const OCCASION_BIRTHDAY_LUXURY = {
 
 const ARCH_STYLES = ['roundArch', 'pointArch', 'flatArch', 'ogeeArch'];
 
-module.exports = { OCCASIONS, PREFIX_TO_OCCASION, PALETTES, LUXURY_PALETTE, OCCASION_BIRTHDAY_LUXURY, ARCH_STYLES };
+// Single fixed palette for the "Modern Editorial" anniversary variants
+// (warm terracotta, cream, olive) — kept OUT of PALETTES for the same
+// reason as LUXURY_PALETTE above. Unlike every other design (dark
+// gradient + light text), this one is a light cream background, so it
+// carries its own text-ink colors instead of reusing the shared
+// white-headline / gold-kicker convention.
+const EDITORIAL_PALETTE = {
+  top: '#f5ead9', // warm cream
+  bottom: '#e6d0ad', // deeper warm cream/tan
+  ink: '#4a3327', // deep espresso — headline text + photo ring
+  terracotta: '#bd6640', // kicker text + botanical line accents + hairline border
+  olive: '#6f7247', // botanical leaf line art + subtitle text
+  paper: '#f1e4cc', // deckled-edge paper placeholder fill
+  name: 'terracotta-cream-olive-editorial',
+};
+
+// The 4 "Modern Editorial" anniversary variants share one occasion brief
+// (reusing OCCASIONS.anniversary's copy) but each gets a differently
+// shaped deckled-edge paper placeholder so the 4 templates read as
+// distinct designs, per the "4 different blank anniversary card
+// templates" brief.
+const DECKLE_STYLES = ['deckleRect', 'deckleRounded', 'deckleArch', 'deckleBlob'];
+
+module.exports = {
+  OCCASIONS,
+  PREFIX_TO_OCCASION,
+  PALETTES,
+  LUXURY_PALETTE,
+  OCCASION_BIRTHDAY_LUXURY,
+  ARCH_STYLES,
+  EDITORIAL_PALETTE,
+  DECKLE_STYLES,
+};
