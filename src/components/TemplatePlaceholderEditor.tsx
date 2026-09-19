@@ -2,35 +2,10 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { FONT_FAMILIES, type FontFamilyId } from '@/lib/fontFamilies';
+import { FONT_FAMILIES } from '@/lib/fontFamilies';
+import { defaultsFor, type Align, type TemplateFormValues, type TextPlaceholder } from '@/lib/flyerPlaceholders';
 
-type Align = 'left' | 'center' | 'right';
-
-interface TextPlaceholder {
-  x: number;
-  y: number;
-  fontSize: number;
-  color: string;
-  fontWeight: number;
-  fontFamily?: FontFamilyId;
-  align: Align;
-  maxWidth: number;
-  maxLines: number;
-}
-
-interface PhotoPlaceholder {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  shape: 'circle' | 'square' | 'rounded' | 'hexagon';
-}
-
-interface LogoPlaceholder {
-  x: number;
-  y: number;
-  size: number;
-}
+export type { TemplateFormValues };
 
 // The business's saved Brand kit (Settings → Brand kit for flyers), passed
 // in so the editor can preview the *actual* logo/firm name/phone/address
@@ -46,156 +21,11 @@ export interface BrandInfo {
   firmNameMarathi: string | null;
 }
 
-export interface TemplateFormValues {
-  id?: string;
-  name: string;
-  occasion: 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL';
-  isDefault: boolean;
-  aisensyCampaignName: string;
-  backgroundUrl: string;
-  canvasWidth: number;
-  canvasHeight: number;
-  useName: boolean;
-  namePlaceholder: TextPlaceholder;
-  useTitle: boolean;
-  titlePlaceholder: TextPlaceholder;
-  useDesignation: boolean;
-  designationPlaceholder: TextPlaceholder;
-  useDate: boolean;
-  datePlaceholder: TextPlaceholder;
-  usePhoto: boolean;
-  photoPlaceholder: PhotoPlaceholder;
-  useLogo: boolean;
-  logoPlaceholder: LogoPlaceholder;
-  useFirmName: boolean;
-  firmNamePlaceholder: TextPlaceholder;
-  usePhone: boolean;
-  phonePlaceholder: TextPlaceholder;
-  useAddress: boolean;
-  addressPlaceholder: TextPlaceholder;
-  useProducts: boolean;
-  productsPlaceholder: TextPlaceholder;
-}
-
 // Fields whose placeholder is a plain TextPlaceholder (font/size/color/align
 // etc.) — i.e. everything except the photo box and the logo image, which
 // each have their own shape.
-type TextFieldKey = 'name' | 'title' | 'designation' | 'date' | 'firmName' | 'phone' | 'address' | 'products';
+type TextFieldKey = 'name' | 'designation' | 'date' | 'firmName' | 'phone' | 'address' | 'products';
 type FieldKey = TextFieldKey | 'photo' | 'logo';
-
-function defaultsFor(width: number, height: number): Pick<
-  TemplateFormValues,
-  | 'namePlaceholder'
-  | 'titlePlaceholder'
-  | 'designationPlaceholder'
-  | 'datePlaceholder'
-  | 'photoPlaceholder'
-  | 'logoPlaceholder'
-  | 'firmNamePlaceholder'
-  | 'phonePlaceholder'
-  | 'addressPlaceholder'
-  | 'productsPlaceholder'
-> {
-  return {
-    titlePlaceholder: {
-      x: Math.round(width / 2),
-      y: Math.round(height * 0.715),
-      fontSize: Math.round(width * 0.035),
-      color: '#ffffff',
-      fontWeight: 600,
-      align: 'center',
-      maxWidth: Math.round(width * 0.85),
-      maxLines: 1,
-    },
-    namePlaceholder: {
-      x: Math.round(width / 2),
-      y: Math.round(height * 0.78),
-      fontSize: Math.round(width * 0.05),
-      color: '#ffffff',
-      fontWeight: 700,
-      align: 'center',
-      maxWidth: Math.round(width * 0.85),
-      maxLines: 2,
-    },
-    designationPlaceholder: {
-      x: Math.round(width / 2),
-      y: Math.round(height * 0.825),
-      fontSize: Math.round(width * 0.028),
-      color: '#ffffff',
-      fontWeight: 400,
-      align: 'center',
-      maxWidth: Math.round(width * 0.85),
-      maxLines: 1,
-    },
-    datePlaceholder: {
-      x: Math.round(width / 2),
-      y: Math.round(height * 0.86),
-      fontSize: Math.round(width * 0.03),
-      color: '#ffffff',
-      fontWeight: 400,
-      align: 'center',
-      maxWidth: Math.round(width * 0.85),
-      maxLines: 1,
-    },
-    photoPlaceholder: {
-      x: Math.round(width * 0.36),
-      y: Math.round(height * 0.12),
-      width: Math.round(width * 0.28),
-      height: Math.round(width * 0.28),
-      shape: 'circle',
-    },
-    // Business branding block — grouped as one cluster in the bottom-left
-    // corner (logo on top, firm name/phone/address/products stacked
-    // left-aligned underneath), like a business card corner. Every element
-    // is independently draggable, so this is just a sensible starting
-    // point.
-    logoPlaceholder: {
-      x: Math.round(width * 0.05),
-      y: Math.round(height * 0.76),
-      size: Math.round(width * 0.13),
-    },
-    firmNamePlaceholder: {
-      x: Math.round(width * 0.05),
-      y: Math.round(height * 0.895),
-      fontSize: Math.round(width * 0.04),
-      color: '#ffffff',
-      fontWeight: 800,
-      align: 'left',
-      maxWidth: Math.round(width * 0.55),
-      maxLines: 1,
-    },
-    phonePlaceholder: {
-      x: Math.round(width * 0.05),
-      y: Math.round(height * 0.925),
-      fontSize: Math.round(width * 0.026),
-      color: '#ffffff',
-      fontWeight: 400,
-      align: 'left',
-      maxWidth: Math.round(width * 0.55),
-      maxLines: 1,
-    },
-    addressPlaceholder: {
-      x: Math.round(width * 0.05),
-      y: Math.round(height * 0.95),
-      fontSize: Math.round(width * 0.022),
-      color: '#ffffff',
-      fontWeight: 400,
-      align: 'left',
-      maxWidth: Math.round(width * 0.55),
-      maxLines: 2,
-    },
-    productsPlaceholder: {
-      x: Math.round(width * 0.05),
-      y: Math.round(height * 0.978),
-      fontSize: Math.round(width * 0.02),
-      color: '#ffffff',
-      fontWeight: 600,
-      align: 'left',
-      maxWidth: Math.round(width * 0.55),
-      maxLines: 1,
-    },
-  };
-}
 
 export const EMPTY_TEMPLATE: TemplateFormValues = {
   name: '',
@@ -210,12 +40,11 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
   usePhoto: true,
   // Name and logo default to on (nearly every flyer wants both), but — like
   // everything else here — the business can turn either off per template.
-  // Title / designation / firm name / phone / address / products default to
-  // OFF: most flyer artwork (including the bundled starter designs) already
-  // has its own decorative footer, and stacking more text on top of it
-  // collided with the art. The business can still switch any of these on
-  // per template and drag them into a clear spot.
-  useTitle: false,
+  // Designation / firm name / phone / address / products default to OFF:
+  // most flyer artwork (including the bundled starter designs) already has
+  // its own decorative footer, and stacking more text on top of it collided
+  // with the art. The business can still switch any of these on per
+  // template and drag them into a clear spot.
   useDesignation: false,
   useLogo: true,
   useFirmName: false,
@@ -240,11 +69,6 @@ const CONTACT_FIELDS: { key: FieldKey; label: string; icon: string }[] = [
     key: 'name',
     label: 'Name',
     icon: 'M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z',
-  },
-  {
-    key: 'title',
-    label: 'Title',
-    icon: 'M2.25 8.25h19.5M2.25 8.25v10.5a1.5 1.5 0 001.5 1.5h16.5a1.5 1.5 0 001.5-1.5V8.25M2.25 8.25l1.72-3.44a1.5 1.5 0 011.342-.81h13.376a1.5 1.5 0 011.342.81l1.72 3.44M6 15h4',
   },
   {
     key: 'designation',
@@ -345,8 +169,6 @@ export default function TemplatePlaceholderEditor({
     switch (key) {
       case 'name':
         return form.useName;
-      case 'title':
-        return form.useTitle;
       case 'designation':
         return form.useDesignation;
       case 'date':
@@ -373,8 +195,6 @@ export default function TemplatePlaceholderEditor({
       switch (key) {
         case 'name':
           return { ...f, useName: value };
-        case 'title':
-          return { ...f, useTitle: value };
         case 'designation':
           return { ...f, useDesignation: value };
         case 'date':
@@ -401,8 +221,6 @@ export default function TemplatePlaceholderEditor({
     switch (key) {
       case 'name':
         return form.namePlaceholder;
-      case 'title':
-        return form.titlePlaceholder;
       case 'designation':
         return form.designationPlaceholder;
       case 'date':
@@ -423,8 +241,6 @@ export default function TemplatePlaceholderEditor({
       switch (key) {
         case 'name':
           return { ...f, namePlaceholder: p };
-        case 'title':
-          return { ...f, titlePlaceholder: p };
         case 'designation':
           return { ...f, designationPlaceholder: p };
         case 'date':
@@ -448,6 +264,8 @@ export default function TemplatePlaceholderEditor({
   // for it — surfaced as a note in the properties panel rather than
   // disabling the button outright, so it stays discoverable.
   function missingBrandDataNote(key: FieldKey): string | null {
+    if (key === 'name')
+      return 'If a contact has a Title saved (e.g. "Mr.", "Dr."), it\'s shown automatically right before their name here — contacts without one just show their name.';
     if (key === 'logo' && !business?.logoUrl) return 'Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.';
     if (key === 'phone' && !business?.phoneDisplay) return 'Add a phone number in Settings → Brand kit for flyers first.';
     if (key === 'address' && !business?.addressText) return 'Add an address in Settings → Brand kit for flyers first.';
@@ -458,9 +276,7 @@ export default function TemplatePlaceholderEditor({
   function previewTextFor(key: TextFieldKey): string {
     switch (key) {
       case 'name':
-        return 'Sample Name';
-      case 'title':
-        return 'Mr.';
+        return 'Mr. Sample Name';
       case 'designation':
         return 'Manager';
       case 'date':
@@ -578,7 +394,6 @@ export default function TemplatePlaceholderEditor({
         isDefault: form.isDefault,
         aisensyCampaignName: form.aisensyCampaignName || null,
         namePlaceholder: form.useName ? form.namePlaceholder : null,
-        titlePlaceholder: form.useTitle ? form.titlePlaceholder : null,
         designationPlaceholder: form.useDesignation ? form.designationPlaceholder : null,
         datePlaceholder: form.useDate ? form.datePlaceholder : null,
         photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
@@ -908,10 +723,10 @@ export default function TemplatePlaceholderEditor({
             </div>
           )}
 
-          {(['name', 'title', 'designation', 'date', 'firmName', 'phone', 'address', 'products'] as TextFieldKey[]).map((key) => {
+          {(['name', 'designation', 'date', 'firmName', 'phone', 'address', 'products'] as TextFieldKey[]).map((key) => {
             if (!isFieldOn(key) || !form.backgroundUrl) return null;
             const p = getTextPlaceholder(key);
-            const minFontPx = key === 'name' ? 10 : key === 'date' || key === 'title' ? 9 : 8;
+            const minFontPx = key === 'name' ? 10 : key === 'date' ? 9 : 8;
             return (
               <div
                 key={key}

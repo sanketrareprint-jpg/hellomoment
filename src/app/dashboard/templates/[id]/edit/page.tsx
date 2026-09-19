@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
-import TemplatePlaceholderEditor, { EMPTY_TEMPLATE, TemplateFormValues, BrandInfo } from '@/components/TemplatePlaceholderEditor';
+import TemplatePlaceholderEditor, { TemplateFormValues, BrandInfo } from '@/components/TemplatePlaceholderEditor';
+import { defaultsFor } from '@/lib/flyerPlaceholders';
 
 export default async function EditTemplatePage({ params }: { params: { id: string } }) {
   const business = await getCurrentBusiness();
@@ -10,8 +11,14 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
   const template = await prisma.flyerTemplate.findUnique({ where: { id: params.id } });
   if (!template || template.businessId !== business.id) notFound();
 
+  // Scaled to *this* template's own canvas size — not a fixed 1080×1080
+  // guess — so a field a business is switching on for the first time (e.g.
+  // Designation, never dragged before) lands in a sensible spot relative to
+  // the actual background image instead of wherever a mismatched canvas
+  // size would put it.
+  const defaults = defaultsFor(template.canvasWidth, template.canvasHeight);
+
   const namePlaceholder = template.namePlaceholder ? JSON.parse(template.namePlaceholder) : null;
-  const titlePlaceholder = template.titlePlaceholder ? JSON.parse(template.titlePlaceholder) : null;
   const designationPlaceholder = template.designationPlaceholder ? JSON.parse(template.designationPlaceholder) : null;
   const datePlaceholder = template.datePlaceholder ? JSON.parse(template.datePlaceholder) : null;
   const rawPhotoPlaceholder = template.photoPlaceholder ? JSON.parse(template.photoPlaceholder) : null;
@@ -57,25 +64,23 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
           canvasWidth: template.canvasWidth,
           canvasHeight: template.canvasHeight,
           useName: Boolean(namePlaceholder),
-          namePlaceholder: { ...EMPTY_TEMPLATE.namePlaceholder, ...(namePlaceholder ?? {}) },
-          useTitle: Boolean(titlePlaceholder),
-          titlePlaceholder: { ...EMPTY_TEMPLATE.titlePlaceholder, ...(titlePlaceholder ?? {}) },
+          namePlaceholder: { ...defaults.namePlaceholder, ...(namePlaceholder ?? {}) },
           useDesignation: Boolean(designationPlaceholder),
-          designationPlaceholder: { ...EMPTY_TEMPLATE.designationPlaceholder, ...(designationPlaceholder ?? {}) },
+          designationPlaceholder: { ...defaults.designationPlaceholder, ...(designationPlaceholder ?? {}) },
           useDate: Boolean(datePlaceholder),
-          datePlaceholder: { ...EMPTY_TEMPLATE.datePlaceholder, ...(datePlaceholder ?? {}) },
+          datePlaceholder: { ...defaults.datePlaceholder, ...(datePlaceholder ?? {}) },
           usePhoto: Boolean(photoPlaceholder),
-          photoPlaceholder: { ...EMPTY_TEMPLATE.photoPlaceholder, ...(photoPlaceholder ?? {}) },
+          photoPlaceholder: { ...defaults.photoPlaceholder, ...(photoPlaceholder ?? {}) },
           useLogo: Boolean(logoPlaceholder),
-          logoPlaceholder: { ...EMPTY_TEMPLATE.logoPlaceholder, ...(logoPlaceholder ?? {}) },
+          logoPlaceholder: { ...defaults.logoPlaceholder, ...(logoPlaceholder ?? {}) },
           useFirmName: Boolean(firmNamePlaceholder),
-          firmNamePlaceholder: { ...EMPTY_TEMPLATE.firmNamePlaceholder, ...(firmNamePlaceholder ?? {}) },
+          firmNamePlaceholder: { ...defaults.firmNamePlaceholder, ...(firmNamePlaceholder ?? {}) },
           usePhone: Boolean(phonePlaceholder),
-          phonePlaceholder: { ...EMPTY_TEMPLATE.phonePlaceholder, ...(phonePlaceholder ?? {}) },
+          phonePlaceholder: { ...defaults.phonePlaceholder, ...(phonePlaceholder ?? {}) },
           useAddress: Boolean(addressPlaceholder),
-          addressPlaceholder: { ...EMPTY_TEMPLATE.addressPlaceholder, ...(addressPlaceholder ?? {}) },
+          addressPlaceholder: { ...defaults.addressPlaceholder, ...(addressPlaceholder ?? {}) },
           useProducts: Boolean(productsPlaceholder),
-          productsPlaceholder: { ...EMPTY_TEMPLATE.productsPlaceholder, ...(productsPlaceholder ?? {}) },
+          productsPlaceholder: { ...defaults.productsPlaceholder, ...(productsPlaceholder ?? {}) },
         }}
       />
     </div>
