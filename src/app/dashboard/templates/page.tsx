@@ -112,8 +112,8 @@ export default async function TemplatesPage({
             )
           ) : starterTemplates.length === 0 ? (
             <p className="text-gray-500 text-sm">
-              Click <strong>+ Add / refresh starter flyer designs</strong> above for ready-made birthday, anniversary,
-              and festival flyers — no designing or uploading needed.
+              Click <strong>+ Add / refresh starter flyer designs</strong> above for ready-made birthday and
+              anniversary flyers — no designing or uploading needed.
             </p>
           ) : (
             <TemplatesGrid templates={starterTemplates} />
