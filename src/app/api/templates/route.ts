@@ -26,6 +26,8 @@ const templateSchema = z.object({
   canvasWidth: z.number().int().positive(),
   canvasHeight: z.number().int().positive(),
   namePlaceholder: placeholderSchema.nullable().optional(),
+  titlePlaceholder: placeholderSchema.nullable().optional(),
+  designationPlaceholder: placeholderSchema.nullable().optional(),
   datePlaceholder: placeholderSchema.nullable().optional(),
   photoPlaceholder: placeholderSchema.nullable().optional(),
   logoPlaceholder: placeholderSchema.nullable().optional(),
@@ -59,6 +61,8 @@ export async function POST(req: NextRequest) {
   }
   const {
     namePlaceholder,
+    titlePlaceholder,
+    designationPlaceholder,
     datePlaceholder,
     photoPlaceholder,
     logoPlaceholder,
@@ -83,6 +87,8 @@ export async function POST(req: NextRequest) {
       businessId: business.id,
       isDefault: Boolean(isDefault),
       namePlaceholder: namePlaceholder ? JSON.stringify(namePlaceholder) : null,
+      titlePlaceholder: titlePlaceholder ? JSON.stringify(titlePlaceholder) : null,
+      designationPlaceholder: designationPlaceholder ? JSON.stringify(designationPlaceholder) : null,
       datePlaceholder: datePlaceholder ? JSON.stringify(datePlaceholder) : null,
       photoPlaceholder: photoPlaceholder ? JSON.stringify(photoPlaceholder) : null,
       logoPlaceholder: logoPlaceholder ? JSON.stringify(logoPlaceholder) : null,

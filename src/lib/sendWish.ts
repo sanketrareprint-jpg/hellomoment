@@ -71,7 +71,7 @@ export async function sendWishForContact(params: {
   // otherwise — birthdays always use the regular photo.
   const photoForFlyer = occasion === 'ANNIVERSARY' ? contact.anniversaryPhotoUrl || contact.photoUrl : contact.photoUrl;
 
-  const flyerUrl = await renderFlyer(business, template, contact.name, dateText, photoForFlyer);
+  const flyerUrl = await renderFlyer(business, template, contact.name, dateText, photoForFlyer, contact.title, contact.designation);
 
   let status: 'SUCCESS' | 'FAILED' = 'SUCCESS';
   let errorMessage: string | null = null;
@@ -195,7 +195,7 @@ export async function sendWishForFestival(params: {
       continue;
     }
 
-    const flyerUrl = await renderFlyer(business, template, contact.name, dateText, contact.photoUrl);
+    const flyerUrl = await renderFlyer(business, template, contact.name, dateText, contact.photoUrl, contact.title, contact.designation);
 
     let status: 'SUCCESS' | 'FAILED' = 'SUCCESS';
     let errorMessage: string | null = null;
@@ -273,12 +273,16 @@ async function renderFlyer(
   template: FlyerTemplate,
   name: string,
   dateText: string,
-  photoUrl: string | null
+  photoUrl: string | null,
+  title?: string | null,
+  designation?: string | null
 ): Promise<string> {
   const outputName = `${uuid()}.jpg`;
   const outputPath = path.join(STORAGE_DIR, 'generated', outputName);
 
   const logoPlaceholder = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
+  const titlePlaceholder = template.titlePlaceholder ? JSON.parse(template.titlePlaceholder) : null;
+  const designationPlaceholder = template.designationPlaceholder ? JSON.parse(template.designationPlaceholder) : null;
   const firmNamePlaceholder = template.firmNamePlaceholder ? JSON.parse(template.firmNamePlaceholder) : null;
   const phonePlaceholder = template.phonePlaceholder ? JSON.parse(template.phonePlaceholder) : null;
   const addressPlaceholder = template.addressPlaceholder ? JSON.parse(template.addressPlaceholder) : null;
@@ -290,6 +294,10 @@ async function renderFlyer(
     canvasHeight: template.canvasHeight,
     namePlaceholder: template.namePlaceholder ? (JSON.parse(template.namePlaceholder) as TextPlaceholder) : null,
     name,
+    titlePlaceholder: titlePlaceholder as TextPlaceholder | null,
+    titleText: title || null,
+    designationPlaceholder: designationPlaceholder as TextPlaceholder | null,
+    designationText: designation || null,
     datePlaceholder: template.datePlaceholder ? (JSON.parse(template.datePlaceholder) as TextPlaceholder) : null,
     dateText,
     photoPlaceholder: template.photoPlaceholder ? (JSON.parse(template.photoPlaceholder) as PhotoPlaceholder) : null,

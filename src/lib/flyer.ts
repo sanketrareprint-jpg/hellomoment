@@ -52,6 +52,10 @@ export interface GenerateFlyerOptions {
   canvasHeight: number;
   namePlaceholder?: TextPlaceholder | null;
   name?: string | null;
+  titlePlaceholder?: TextPlaceholder | null;
+  titleText?: string | null;
+  designationPlaceholder?: TextPlaceholder | null;
+  designationText?: string | null;
   datePlaceholder?: TextPlaceholder | null;
   dateText?: string | null;
   photoPlaceholder?: PhotoPlaceholder | null;
@@ -378,6 +382,12 @@ export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string>
   const textEntries: { placeholder: TextPlaceholder; text: string }[] = [];
   if (opts.namePlaceholder && opts.name) {
     textEntries.push({ placeholder: opts.namePlaceholder, text: opts.name });
+  }
+  if (opts.titlePlaceholder && opts.titleText) {
+    textEntries.push({ placeholder: opts.titlePlaceholder, text: opts.titleText });
+  }
+  if (opts.designationPlaceholder && opts.designationText) {
+    textEntries.push({ placeholder: opts.designationPlaceholder, text: opts.designationText });
   }
   if (opts.datePlaceholder && opts.dateText) {
     textEntries.push({ placeholder: opts.datePlaceholder, text: opts.dateText });

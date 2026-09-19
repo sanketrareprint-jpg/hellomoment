@@ -57,6 +57,10 @@ export interface TemplateFormValues {
   canvasHeight: number;
   useName: boolean;
   namePlaceholder: TextPlaceholder;
+  useTitle: boolean;
+  titlePlaceholder: TextPlaceholder;
+  useDesignation: boolean;
+  designationPlaceholder: TextPlaceholder;
   useDate: boolean;
   datePlaceholder: TextPlaceholder;
   usePhoto: boolean;
@@ -73,9 +77,17 @@ export interface TemplateFormValues {
   productsPlaceholder: TextPlaceholder;
 }
 
+// Fields whose placeholder is a plain TextPlaceholder (font/size/color/align
+// etc.) — i.e. everything except the photo box and the logo image, which
+// each have their own shape.
+type TextFieldKey = 'name' | 'title' | 'designation' | 'date' | 'firmName' | 'phone' | 'address' | 'products';
+type FieldKey = TextFieldKey | 'photo' | 'logo';
+
 function defaultsFor(width: number, height: number): Pick<
   TemplateFormValues,
   | 'namePlaceholder'
+  | 'titlePlaceholder'
+  | 'designationPlaceholder'
   | 'datePlaceholder'
   | 'photoPlaceholder'
   | 'logoPlaceholder'
@@ -85,6 +97,16 @@ function defaultsFor(width: number, height: number): Pick<
   | 'productsPlaceholder'
 > {
   return {
+    titlePlaceholder: {
+      x: Math.round(width / 2),
+      y: Math.round(height * 0.715),
+      fontSize: Math.round(width * 0.035),
+      color: '#ffffff',
+      fontWeight: 600,
+      align: 'center',
+      maxWidth: Math.round(width * 0.85),
+      maxLines: 1,
+    },
     namePlaceholder: {
       x: Math.round(width / 2),
       y: Math.round(height * 0.78),
@@ -94,6 +116,16 @@ function defaultsFor(width: number, height: number): Pick<
       align: 'center',
       maxWidth: Math.round(width * 0.85),
       maxLines: 2,
+    },
+    designationPlaceholder: {
+      x: Math.round(width / 2),
+      y: Math.round(height * 0.825),
+      fontSize: Math.round(width * 0.028),
+      color: '#ffffff',
+      fontWeight: 400,
+      align: 'center',
+      maxWidth: Math.round(width * 0.85),
+      maxLines: 1,
     },
     datePlaceholder: {
       x: Math.round(width / 2),
@@ -178,11 +210,13 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
   usePhoto: true,
   // Name and logo default to on (nearly every flyer wants both), but — like
   // everything else here — the business can turn either off per template.
-  // Firm name / phone / address / products default to OFF: most flyer
-  // artwork (including the bundled starter designs) already has its own
-  // decorative footer, and stacking this text block on top of it collided
-  // with the art. The business can still switch any of these on per
-  // template and drag them into a clear spot.
+  // Title / designation / firm name / phone / address / products default to
+  // OFF: most flyer artwork (including the bundled starter designs) already
+  // has its own decorative footer, and stacking more text on top of it
+  // collided with the art. The business can still switch any of these on
+  // per template and drag them into a clear spot.
+  useTitle: false,
+  useDesignation: false,
   useLogo: true,
   useFirmName: false,
   usePhone: false,
@@ -192,7 +226,70 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
 };
 
 const PREVIEW_WIDTH = 420;
-type DragTarget = 'name' | 'date' | 'photo' | 'photo-resize' | 'logo' | 'firmName' | 'phone' | 'address' | 'products' | null;
+type DragTarget = FieldKey | 'photo-resize' | null;
+
+// One toolbar button per placeable element, icon-first like a Word/Photoshop
+// tool strip — grouped into "Contact details" (comes from each contact's own
+// record) and "Your business branding" (comes from Settings → Brand kit).
+// Every field added here just needs a matching case in the small switch
+// helpers below (isFieldOn/setFieldOn/getTextPlaceholder/setTextPlaceholder)
+// — the toolbar, the single properties panel, and the live preview markers
+// are all driven off this one list plus those switches.
+const CONTACT_FIELDS: { key: FieldKey; label: string; icon: string }[] = [
+  {
+    key: 'name',
+    label: 'Name',
+    icon: 'M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z',
+  },
+  {
+    key: 'title',
+    label: 'Title',
+    icon: 'M2.25 8.25h19.5M2.25 8.25v10.5a1.5 1.5 0 001.5 1.5h16.5a1.5 1.5 0 001.5-1.5V8.25M2.25 8.25l1.72-3.44a1.5 1.5 0 011.342-.81h13.376a1.5 1.5 0 011.342.81l1.72 3.44M6 15h4',
+  },
+  {
+    key: 'designation',
+    label: 'Designation',
+    icon: 'M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 00.75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 00-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0112 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 01-.673-.38m0 0A2.18 2.18 0 013 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 013.413-.387m7.5 0V5.25A2.25 2.25 0 0013.5 3h-3a2.25 2.25 0 00-2.25 2.25v.894m7.5 0a48.667 48.667 0 00-7.5 0',
+  },
+  {
+    key: 'date',
+    label: 'Date',
+    icon: 'M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5',
+  },
+  {
+    key: 'photo',
+    label: 'Photo',
+    icon: 'M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 4.5h16.5a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5v-12a1.5 1.5 0 011.5-1.5zM9 9.75a.75.75 0 11-1.5 0 .75.75 0 011.5 0z',
+  },
+];
+
+const BRAND_FIELDS: { key: FieldKey; label: string; icon: string }[] = [
+  {
+    key: 'logo',
+    label: 'Logo',
+    icon: 'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z',
+  },
+  {
+    key: 'firmName',
+    label: 'Firm name',
+    icon: 'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21',
+  },
+  {
+    key: 'phone',
+    label: 'Phone',
+    icon: 'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z',
+  },
+  {
+    key: 'address',
+    label: 'Address',
+    icon: 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z',
+  },
+  {
+    key: 'products',
+    label: 'Products',
+    icon: 'M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3zM6 6h.008v.008H6V6z',
+  },
+];
 
 export default function TemplatePlaceholderEditor({
   initial,
@@ -211,6 +308,10 @@ export default function TemplatePlaceholderEditor({
   // on every template just confuses people. Auto-open it if a template
   // being edited already has a value set, so it isn't silently hidden.
   const [showAdvanced, setShowAdvanced] = useState(Boolean(initial?.aisensyCampaignName));
+  // Which single toolbar item is "selected" — its settings show in the one
+  // shared properties panel below the toolbar, Word/Photoshop-style,
+  // instead of every field's settings being permanently expanded at once.
+  const [selected, setSelected] = useState<FieldKey | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
 
@@ -229,6 +330,145 @@ export default function TemplatePlaceholderEditor({
       ? business.firmNameMarathi || business.name
       : business.name.toUpperCase()
     : 'YOUR FIRM NAME';
+
+  // --- Small generic switches shared by the toolbar, the properties panel
+  // and the live preview, so every field lives in exactly one place above
+  // (CONTACT_FIELDS / BRAND_FIELDS) instead of being hand-wired N times. ---
+
+  function isFieldOn(key: FieldKey): boolean {
+    switch (key) {
+      case 'name':
+        return form.useName;
+      case 'title':
+        return form.useTitle;
+      case 'designation':
+        return form.useDesignation;
+      case 'date':
+        return form.useDate;
+      case 'photo':
+        return form.usePhoto;
+      case 'logo':
+        return form.useLogo;
+      case 'firmName':
+        return form.useFirmName;
+      case 'phone':
+        return form.usePhone;
+      case 'address':
+        return form.useAddress;
+      case 'products':
+        return form.useProducts;
+      default:
+        return false;
+    }
+  }
+
+  function setFieldOn(key: FieldKey, value: boolean) {
+    setForm((f) => {
+      switch (key) {
+        case 'name':
+          return { ...f, useName: value };
+        case 'title':
+          return { ...f, useTitle: value };
+        case 'designation':
+          return { ...f, useDesignation: value };
+        case 'date':
+          return { ...f, useDate: value };
+        case 'photo':
+          return { ...f, usePhoto: value };
+        case 'logo':
+          return { ...f, useLogo: value };
+        case 'firmName':
+          return { ...f, useFirmName: value };
+        case 'phone':
+          return { ...f, usePhone: value };
+        case 'address':
+          return { ...f, useAddress: value };
+        case 'products':
+          return { ...f, useProducts: value };
+        default:
+          return f;
+      }
+    });
+  }
+
+  function getTextPlaceholder(key: TextFieldKey): TextPlaceholder {
+    switch (key) {
+      case 'name':
+        return form.namePlaceholder;
+      case 'title':
+        return form.titlePlaceholder;
+      case 'designation':
+        return form.designationPlaceholder;
+      case 'date':
+        return form.datePlaceholder;
+      case 'firmName':
+        return form.firmNamePlaceholder;
+      case 'phone':
+        return form.phonePlaceholder;
+      case 'address':
+        return form.addressPlaceholder;
+      case 'products':
+        return form.productsPlaceholder;
+    }
+  }
+
+  function setTextPlaceholder(key: TextFieldKey, p: TextPlaceholder) {
+    setForm((f) => {
+      switch (key) {
+        case 'name':
+          return { ...f, namePlaceholder: p };
+        case 'title':
+          return { ...f, titlePlaceholder: p };
+        case 'designation':
+          return { ...f, designationPlaceholder: p };
+        case 'date':
+          return { ...f, datePlaceholder: p };
+        case 'firmName':
+          return { ...f, firmNamePlaceholder: p };
+        case 'phone':
+          return { ...f, phonePlaceholder: p };
+        case 'address':
+          return { ...f, addressPlaceholder: p };
+        case 'products':
+          return { ...f, productsPlaceholder: p };
+        default:
+          return f;
+      }
+    });
+  }
+
+  // A field a business hasn't filled in yet (Settings → Brand kit) can still
+  // be switched on and dragged into place, but there's nothing real to show
+  // for it — surfaced as a note in the properties panel rather than
+  // disabling the button outright, so it stays discoverable.
+  function missingBrandDataNote(key: FieldKey): string | null {
+    if (key === 'logo' && !business?.logoUrl) return 'Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.';
+    if (key === 'phone' && !business?.phoneDisplay) return 'Add a phone number in Settings → Brand kit for flyers first.';
+    if (key === 'address' && !business?.addressText) return 'Add an address in Settings → Brand kit for flyers first.';
+    if (key === 'products' && !business?.productsText) return 'Add a products/services line in Settings → Brand kit for flyers first.';
+    return null;
+  }
+
+  function previewTextFor(key: TextFieldKey): string {
+    switch (key) {
+      case 'name':
+        return 'Sample Name';
+      case 'title':
+        return 'Mr.';
+      case 'designation':
+        return 'Manager';
+      case 'date':
+        return '25 August';
+      case 'firmName':
+        return firmNamePreviewText;
+      case 'phone':
+        return business?.phoneDisplay || 'Your phone number';
+      case 'address':
+        return business?.addressText || 'Your address';
+      case 'products':
+        return business?.productsText || 'Your products / services';
+    }
+  }
 
   async function onBackgroundChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -270,51 +510,44 @@ export default function TemplatePlaceholderEditor({
     const x = Math.round(px / scale);
     const y = Math.round(py / scale);
 
-    setForm((f) => {
-      switch (dragTarget.current) {
-        case 'name':
-          return { ...f, namePlaceholder: { ...f.namePlaceholder, x, y } };
-        case 'date':
-          return { ...f, datePlaceholder: { ...f.datePlaceholder, x, y } };
-        case 'photo':
-          return {
-            ...f,
-            photoPlaceholder: {
-              ...f.photoPlaceholder,
-              x: Math.round(x - f.photoPlaceholder.width / 2),
-              y: Math.round(y - f.photoPlaceholder.height / 2),
-            },
-          };
-        case 'photo-resize':
-          return {
-            ...f,
-            photoPlaceholder: {
-              ...f.photoPlaceholder,
-              width: Math.max(20, Math.round(x - f.photoPlaceholder.x)),
-              height: Math.max(20, Math.round(y - f.photoPlaceholder.y)),
-            },
-          };
-        case 'logo':
-          return {
-            ...f,
-            logoPlaceholder: {
-              ...f.logoPlaceholder,
-              x: Math.round(x - f.logoPlaceholder.size / 2),
-              y: Math.round(y - f.logoPlaceholder.size / 2),
-            },
-          };
-        case 'firmName':
-          return { ...f, firmNamePlaceholder: { ...f.firmNamePlaceholder, x, y } };
-        case 'phone':
-          return { ...f, phonePlaceholder: { ...f.phonePlaceholder, x, y } };
-        case 'address':
-          return { ...f, addressPlaceholder: { ...f.addressPlaceholder, x, y } };
-        case 'products':
-          return { ...f, productsPlaceholder: { ...f.productsPlaceholder, x, y } };
-        default:
-          return f;
-      }
-    });
+    const target = dragTarget.current;
+    if (target === 'photo') {
+      setForm((f) => ({
+        ...f,
+        photoPlaceholder: {
+          ...f.photoPlaceholder,
+          x: Math.round(x - f.photoPlaceholder.width / 2),
+          y: Math.round(y - f.photoPlaceholder.height / 2),
+        },
+      }));
+      return;
+    }
+    if (target === 'photo-resize') {
+      setForm((f) => ({
+        ...f,
+        photoPlaceholder: {
+          ...f.photoPlaceholder,
+          width: Math.max(20, Math.round(x - f.photoPlaceholder.x)),
+          height: Math.max(20, Math.round(y - f.photoPlaceholder.y)),
+        },
+      }));
+      return;
+    }
+    if (target === 'logo') {
+      setForm((f) => ({
+        ...f,
+        logoPlaceholder: {
+          ...f.logoPlaceholder,
+          x: Math.round(x - f.logoPlaceholder.size / 2),
+          y: Math.round(y - f.logoPlaceholder.size / 2),
+        },
+      }));
+      return;
+    }
+    if (target) {
+      const key = target as TextFieldKey;
+      setTextPlaceholder(key, { ...getTextPlaceholder(key), x, y });
+    }
   }
 
   function onPointerUp() {
@@ -339,6 +572,8 @@ export default function TemplatePlaceholderEditor({
         isDefault: form.isDefault,
         aisensyCampaignName: form.aisensyCampaignName || null,
         namePlaceholder: form.useName ? form.namePlaceholder : null,
+        titlePlaceholder: form.useTitle ? form.titlePlaceholder : null,
+        designationPlaceholder: form.useDesignation ? form.designationPlaceholder : null,
         datePlaceholder: form.useDate ? form.datePlaceholder : null,
         photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
         logoPlaceholder: form.useLogo ? form.logoPlaceholder : null,
@@ -364,6 +599,40 @@ export default function TemplatePlaceholderEditor({
       setLoading(false);
     }
   }
+
+  function selectAndEnable(key: FieldKey) {
+    setSelected(key);
+    if (!isFieldOn(key)) setFieldOn(key, true);
+  }
+
+  function ToolbarButton({ def }: { def: { key: FieldKey; label: string; icon: string } }) {
+    const on = isFieldOn(def.key);
+    const isSelected = selected === def.key;
+    return (
+      <button
+        type="button"
+        onClick={() => selectAndEnable(def.key)}
+        title={def.label}
+        className={[
+          'relative flex flex-col items-center justify-center gap-0.5 rounded-lg border px-1.5 py-1.5 text-[10px] font-medium leading-tight transition-colors',
+          isSelected
+            ? 'border-brand-500 bg-brand-50 text-brand-700 ring-1 ring-brand-500'
+            : on
+              ? 'border-brand-200 bg-brand-50/60 text-brand-700 hover:border-brand-400'
+              : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50',
+        ].join(' ')}
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={def.icon} />
+        </svg>
+        <span>{def.label}</span>
+        {on && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-brand-500" />}
+      </button>
+    );
+  }
+
+  const selectedDef = selected ? [...CONTACT_FIELDS, ...BRAND_FIELDS].find((d) => d.key === selected) : null;
+  const selectedNote = selected ? missingBrandDataNote(selected) : null;
 
   return (
     <form onSubmit={onSubmit} className="compact-form grid lg:grid-cols-2 gap-4">
@@ -435,213 +704,118 @@ export default function TemplatePlaceholderEditor({
           </div>
         </div>
 
-        <div className="card p-2 space-y-1.5">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
-            <input type="checkbox" checked={form.useName} onChange={(e) => setForm({ ...form, useName: e.target.checked })} />
-            Print the contact&rsquo;s name on the flyer
-          </label>
-          {form.useName && (
-            <PlaceholderControls
-              title=""
-              placeholder={form.namePlaceholder}
-              onChange={(p) => setForm({ ...form, namePlaceholder: p })}
-              compact
-            />
-          )}
-        </div>
+        <div className="card p-2 space-y-2">
+          <div>
+            <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Contact details</h3>
+            <div className="grid grid-cols-5 gap-1.5">
+              {CONTACT_FIELDS.map((def) => (
+                <ToolbarButton key={def.key} def={def} />
+              ))}
+            </div>
+          </div>
 
-        <div className="card p-2 space-y-1.5">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
-            <input type="checkbox" checked={form.useDate} onChange={(e) => setForm({ ...form, useDate: e.target.checked })} />
-            Print the date on the flyer
-          </label>
-          {form.useDate && (
-            <PlaceholderControls
-              title=""
-              placeholder={form.datePlaceholder}
-              onChange={(p) => setForm({ ...form, datePlaceholder: p })}
-              compact
-            />
-          )}
-        </div>
+          <div>
+            <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Your business branding</h3>
+            <div className="grid grid-cols-5 gap-1.5">
+              {BRAND_FIELDS.map((def) => (
+                <ToolbarButton key={def.key} def={def} />
+              ))}
+            </div>
+          </div>
 
-        <div className="card p-2 space-y-1.5">
-          <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
-            <input type="checkbox" checked={form.usePhoto} onChange={(e) => setForm({ ...form, usePhoto: e.target.checked })} />
-            Overlay the contact&rsquo;s photo
-          </label>
-          {form.usePhoto && (
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="label">Width (px)</label>
-                <input
-                  className="input"
-                  type="number"
-                  value={form.photoPlaceholder.width}
-                  onChange={(e) =>
-                    setForm({ ...form, photoPlaceholder: { ...form.photoPlaceholder, width: Number(e.target.value) } })
-                  }
+          {selected && selectedDef && (
+            <div className="border-t border-gray-100 pt-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-sm font-semibold text-gray-900">{selectedDef.label}</span>
+                <label className="flex items-center gap-1.5 text-xs text-gray-600">
+                  <input
+                    type="checkbox"
+                    checked={isFieldOn(selected)}
+                    onChange={(e) => setFieldOn(selected, e.target.checked)}
+                  />
+                  Show on flyer
+                </label>
+              </div>
+
+              {selectedNote && <p className="text-xs text-amber-600 mb-1.5">{selectedNote}</p>}
+
+              {isFieldOn(selected) && selected === 'photo' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Width (px)</label>
+                    <input
+                      className="input"
+                      type="number"
+                      value={form.photoPlaceholder.width}
+                      onChange={(e) =>
+                        setForm({ ...form, photoPlaceholder: { ...form.photoPlaceholder, width: Number(e.target.value) } })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Height (px)</label>
+                    <input
+                      className="input"
+                      type="number"
+                      value={form.photoPlaceholder.height}
+                      onChange={(e) =>
+                        setForm({ ...form, photoPlaceholder: { ...form.photoPlaceholder, height: Number(e.target.value) } })
+                      }
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="label">Shape</label>
+                    <select
+                      className="input"
+                      value={form.photoPlaceholder.shape}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          photoPlaceholder: {
+                            ...form.photoPlaceholder,
+                            shape: e.target.value as 'circle' | 'square' | 'rounded' | 'hexagon',
+                          },
+                        })
+                      }
+                    >
+                      <option value="circle">Circle</option>
+                      <option value="square">Square</option>
+                      <option value="rounded">Rounded square</option>
+                      <option value="hexagon">Hexagon</option>
+                    </select>
+                  </div>
+                  <p className="col-span-2 text-xs text-gray-500">
+                    Tip: drag the dot at the photo box&rsquo;s bottom-right corner in the preview to stretch it freely.
+                  </p>
+                </div>
+              )}
+
+              {isFieldOn(selected) && selected === 'logo' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="label">Size (px)</label>
+                    <input
+                      className="input"
+                      type="number"
+                      value={form.logoPlaceholder.size}
+                      onChange={(e) =>
+                        setForm({ ...form, logoPlaceholder: { ...form.logoPlaceholder, size: Number(e.target.value) } })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+
+              {isFieldOn(selected) && selected !== 'photo' && selected !== 'logo' && (
+                <PlaceholderControls
+                  title=""
+                  placeholder={getTextPlaceholder(selected)}
+                  onChange={(p) => setTextPlaceholder(selected, p)}
+                  compact
                 />
-              </div>
-              <div>
-                <label className="label">Height (px)</label>
-                <input
-                  className="input"
-                  type="number"
-                  value={form.photoPlaceholder.height}
-                  onChange={(e) =>
-                    setForm({ ...form, photoPlaceholder: { ...form.photoPlaceholder, height: Number(e.target.value) } })
-                  }
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="label">Shape</label>
-                <select
-                  className="input"
-                  value={form.photoPlaceholder.shape}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      photoPlaceholder: {
-                        ...form.photoPlaceholder,
-                        shape: e.target.value as 'circle' | 'square' | 'rounded' | 'hexagon',
-                      },
-                    })
-                  }
-                >
-                  <option value="circle">Circle</option>
-                  <option value="square">Square</option>
-                  <option value="rounded">Rounded square</option>
-                  <option value="hexagon">Hexagon</option>
-                </select>
-              </div>
-              <p className="col-span-2 text-xs text-gray-500">
-                Tip: drag the dot at the photo box&rsquo;s bottom-right corner in the preview to stretch it freely.
-              </p>
+              )}
             </div>
           )}
-        </div>
-
-        <div className="card p-2 space-y-1.5">
-          <h3 className="font-semibold text-gray-900 text-sm">Your business branding</h3>
-          <p className="text-[11px] leading-snug text-gray-500">
-            From Settings → Brand kit. Logo always shows; the rest is optional — toggle and drag into place.
-          </p>
-
-          <div className="space-y-1 border-t border-gray-100 pt-1.5">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
-              <input type="checkbox" checked={form.useLogo} onChange={(e) => setForm({ ...form, useLogo: e.target.checked })} />
-              Show your logo
-            </label>
-            {!business?.logoUrl && (
-              <p className="text-xs text-amber-600">
-                Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.
-              </p>
-            )}
-            {form.useLogo && (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label">Size (px)</label>
-                  <input
-                    className="input"
-                    type="number"
-                    value={form.logoPlaceholder.size}
-                    onChange={(e) =>
-                      setForm({ ...form, logoPlaceholder: { ...form.logoPlaceholder, size: Number(e.target.value) } })
-                    }
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-1 border-t border-gray-100 pt-1.5">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
-              <input
-                type="checkbox"
-                checked={form.useFirmName}
-                onChange={(e) => setForm({ ...form, useFirmName: e.target.checked })}
-              />
-              Show firm name ({business?.firmNameScript === 'MARATHI' ? 'Marathi' : 'English caps'})
-            </label>
-            {form.useFirmName && (
-              <PlaceholderControls
-                title=""
-                placeholder={form.firmNamePlaceholder}
-                onChange={(p) => setForm({ ...form, firmNamePlaceholder: p })}
-                compact
-              />
-            )}
-          </div>
-
-          <div className="space-y-1 border-t border-gray-100 pt-1.5">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
-              <input
-                type="checkbox"
-                checked={form.usePhone}
-                disabled={!business?.phoneDisplay}
-                onChange={(e) => setForm({ ...form, usePhone: e.target.checked })}
-              />
-              Show phone number
-            </label>
-            {!business?.phoneDisplay && (
-              <p className="text-xs text-amber-600">Add a phone number in Settings → Brand kit for flyers first.</p>
-            )}
-            {form.usePhone && (
-              <PlaceholderControls
-                title=""
-                placeholder={form.phonePlaceholder}
-                onChange={(p) => setForm({ ...form, phonePlaceholder: p })}
-                compact
-              />
-            )}
-          </div>
-
-          <div className="space-y-1 border-t border-gray-100 pt-1.5">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
-              <input
-                type="checkbox"
-                checked={form.useAddress}
-                disabled={!business?.addressText}
-                onChange={(e) => setForm({ ...form, useAddress: e.target.checked })}
-              />
-              Show address
-            </label>
-            {!business?.addressText && (
-              <p className="text-xs text-amber-600">Add an address in Settings → Brand kit for flyers first.</p>
-            )}
-            {form.useAddress && (
-              <PlaceholderControls
-                title=""
-                placeholder={form.addressPlaceholder}
-                onChange={(p) => setForm({ ...form, addressPlaceholder: p })}
-                compact
-              />
-            )}
-          </div>
-
-          <div className="space-y-1 border-t border-gray-100 pt-1.5">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-900">
-              <input
-                type="checkbox"
-                checked={form.useProducts}
-                disabled={!business?.productsText}
-                onChange={(e) => setForm({ ...form, useProducts: e.target.checked })}
-              />
-              Show products / services line
-            </label>
-            {!business?.productsText && (
-              <p className="text-xs text-amber-600">Add a products/services line in Settings → Brand kit for flyers first.</p>
-            )}
-            {form.useProducts && (
-              <PlaceholderControls
-                title=""
-                placeholder={form.productsPlaceholder}
-                onChange={(p) => setForm({ ...form, productsPlaceholder: p })}
-                compact
-              />
-            )}
-          </div>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -726,149 +900,32 @@ export default function TemplatePlaceholderEditor({
             </div>
           )}
 
-          {form.useName && form.backgroundUrl && (
-            <div
-              onPointerDown={startDrag('name')}
-              className="absolute cursor-move px-1 whitespace-nowrap"
-              style={{
-                left: form.namePlaceholder.x * scale,
-                top: form.namePlaceholder.y * scale,
-                transform:
-                  form.namePlaceholder.align === 'center'
-                    ? 'translate(-50%, -50%)'
-                    : form.namePlaceholder.align === 'right'
-                      ? 'translate(-100%, -50%)'
-                      : 'translate(0, -50%)',
-                fontSize: Math.max(10, form.namePlaceholder.fontSize * scale),
-                fontWeight: form.namePlaceholder.fontWeight,
-                fontFamily: cssFontFamilyFor(form.namePlaceholder.fontFamily),
-                color: form.namePlaceholder.color,
-                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
-              }}
-            >
-              Sample Name
-            </div>
-          )}
-
-          {form.useDate && form.backgroundUrl && (
-            <div
-              onPointerDown={startDrag('date')}
-              className="absolute cursor-move px-1 whitespace-nowrap"
-              style={{
-                left: form.datePlaceholder.x * scale,
-                top: form.datePlaceholder.y * scale,
-                transform:
-                  form.datePlaceholder.align === 'center'
-                    ? 'translate(-50%, -50%)'
-                    : form.datePlaceholder.align === 'right'
-                      ? 'translate(-100%, -50%)'
-                      : 'translate(0, -50%)',
-                fontSize: Math.max(9, form.datePlaceholder.fontSize * scale),
-                fontWeight: form.datePlaceholder.fontWeight,
-                fontFamily: cssFontFamilyFor(form.datePlaceholder.fontFamily),
-                color: form.datePlaceholder.color,
-                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
-              }}
-            >
-              25 August
-            </div>
-          )}
-
-          {form.useFirmName && form.backgroundUrl && (
-            <div
-              onPointerDown={startDrag('firmName')}
-              className="absolute cursor-move px-1 whitespace-nowrap"
-              style={{
-                left: form.firmNamePlaceholder.x * scale,
-                top: form.firmNamePlaceholder.y * scale,
-                transform:
-                  form.firmNamePlaceholder.align === 'center'
-                    ? 'translate(-50%, -50%)'
-                    : form.firmNamePlaceholder.align === 'right'
-                      ? 'translate(-100%, -50%)'
-                      : 'translate(0, -50%)',
-                fontSize: Math.max(9, form.firmNamePlaceholder.fontSize * scale),
-                fontWeight: form.firmNamePlaceholder.fontWeight,
-                fontFamily: cssFontFamilyFor(form.firmNamePlaceholder.fontFamily),
-                color: form.firmNamePlaceholder.color,
-                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
-              }}
-            >
-              {firmNamePreviewText}
-            </div>
-          )}
-
-          {form.usePhone && form.backgroundUrl && (
-            <div
-              onPointerDown={startDrag('phone')}
-              className="absolute cursor-move px-1 whitespace-nowrap"
-              style={{
-                left: form.phonePlaceholder.x * scale,
-                top: form.phonePlaceholder.y * scale,
-                transform:
-                  form.phonePlaceholder.align === 'center'
-                    ? 'translate(-50%, -50%)'
-                    : form.phonePlaceholder.align === 'right'
-                      ? 'translate(-100%, -50%)'
-                      : 'translate(0, -50%)',
-                fontSize: Math.max(8, form.phonePlaceholder.fontSize * scale),
-                fontWeight: form.phonePlaceholder.fontWeight,
-                fontFamily: cssFontFamilyFor(form.phonePlaceholder.fontFamily),
-                color: form.phonePlaceholder.color,
-                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
-              }}
-            >
-              {business?.phoneDisplay || 'Your phone number'}
-            </div>
-          )}
-
-          {form.useAddress && form.backgroundUrl && (
-            <div
-              onPointerDown={startDrag('address')}
-              className="absolute cursor-move px-1 whitespace-nowrap"
-              style={{
-                left: form.addressPlaceholder.x * scale,
-                top: form.addressPlaceholder.y * scale,
-                transform:
-                  form.addressPlaceholder.align === 'center'
-                    ? 'translate(-50%, -50%)'
-                    : form.addressPlaceholder.align === 'right'
-                      ? 'translate(-100%, -50%)'
-                      : 'translate(0, -50%)',
-                fontSize: Math.max(8, form.addressPlaceholder.fontSize * scale),
-                fontWeight: form.addressPlaceholder.fontWeight,
-                fontFamily: cssFontFamilyFor(form.addressPlaceholder.fontFamily),
-                color: form.addressPlaceholder.color,
-                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
-              }}
-            >
-              {business?.addressText || 'Your address'}
-            </div>
-          )}
-
-          {form.useProducts && form.backgroundUrl && (
-            <div
-              onPointerDown={startDrag('products')}
-              className="absolute cursor-move px-1 whitespace-nowrap"
-              style={{
-                left: form.productsPlaceholder.x * scale,
-                top: form.productsPlaceholder.y * scale,
-                transform:
-                  form.productsPlaceholder.align === 'center'
-                    ? 'translate(-50%, -50%)'
-                    : form.productsPlaceholder.align === 'right'
-                      ? 'translate(-100%, -50%)'
-                      : 'translate(0, -50%)',
-                fontSize: Math.max(8, form.productsPlaceholder.fontSize * scale),
-                fontWeight: form.productsPlaceholder.fontWeight,
-                fontFamily: cssFontFamilyFor(form.productsPlaceholder.fontFamily),
-                color: form.productsPlaceholder.color,
-                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
-              }}
-            >
-              {business?.productsText || 'Your products / services'}
-            </div>
-          )}
+          {(['name', 'title', 'designation', 'date', 'firmName', 'phone', 'address', 'products'] as TextFieldKey[]).map((key) => {
+            if (!isFieldOn(key) || !form.backgroundUrl) return null;
+            const p = getTextPlaceholder(key);
+            const minFontPx = key === 'name' ? 10 : key === 'date' || key === 'title' ? 9 : 8;
+            return (
+              <div
+                key={key}
+                onPointerDown={startDrag(key)}
+                className="absolute cursor-move px-1 whitespace-nowrap"
+                style={{
+                  left: p.x * scale,
+                  top: p.y * scale,
+                  transform:
+                    p.align === 'center' ? 'translate(-50%, -50%)' : p.align === 'right' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
+                  fontSize: Math.max(minFontPx, p.fontSize * scale),
+                  fontWeight: p.fontWeight,
+                  fontFamily: cssFontFamilyFor(p.fontFamily),
+                  color: p.color,
+                  textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+                  outline: selected === key ? '1px dashed rgba(255,255,255,0.8)' : undefined,
+                }}
+              >
+                {previewTextFor(key)}
+              </div>
+            );
+          })}
         </div>
       </div>
     </form>

@@ -11,6 +11,8 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
   if (!template || template.businessId !== business.id) notFound();
 
   const namePlaceholder = template.namePlaceholder ? JSON.parse(template.namePlaceholder) : null;
+  const titlePlaceholder = template.titlePlaceholder ? JSON.parse(template.titlePlaceholder) : null;
+  const designationPlaceholder = template.designationPlaceholder ? JSON.parse(template.designationPlaceholder) : null;
   const datePlaceholder = template.datePlaceholder ? JSON.parse(template.datePlaceholder) : null;
   const rawPhotoPlaceholder = template.photoPlaceholder ? JSON.parse(template.photoPlaceholder) : null;
   // Older templates were saved with a single `size` (square only) before
@@ -55,6 +57,10 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
           canvasHeight: template.canvasHeight,
           useName: Boolean(namePlaceholder),
           namePlaceholder: { ...EMPTY_TEMPLATE.namePlaceholder, ...(namePlaceholder ?? {}) },
+          useTitle: Boolean(titlePlaceholder),
+          titlePlaceholder: { ...EMPTY_TEMPLATE.titlePlaceholder, ...(titlePlaceholder ?? {}) },
+          useDesignation: Boolean(designationPlaceholder),
+          designationPlaceholder: { ...EMPTY_TEMPLATE.designationPlaceholder, ...(designationPlaceholder ?? {}) },
           useDate: Boolean(datePlaceholder),
           datePlaceholder: { ...EMPTY_TEMPLATE.datePlaceholder, ...(datePlaceholder ?? {}) },
           usePhoto: Boolean(photoPlaceholder),
