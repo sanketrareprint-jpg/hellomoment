@@ -112,6 +112,12 @@ export default async function LandingPage() {
           </section>
         )}
 
+        <div className="flex justify-center px-4 pt-4 sm:pt-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-600 to-fuchsia-600 px-4 py-1.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-brand-500/30 animate-wiggle">
+            🎁 Sign up today — get 50 free coins, on us
+          </span>
+        </div>
+
         <HeroSlider />
 
         <section className="order-first sm:hidden max-w-md mx-auto px-4 pb-6">
