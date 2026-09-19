@@ -10,6 +10,10 @@
  * doesn't depend on system fontconfig resolving family names — it loads our own
  * bundled TTFs directly, guaranteeing consistent rendering everywhere this script runs.
  *
+ * Output goes under <outDir>/<birthday|anniversary|festivals>/, matching
+ * the subfolder each occasion is served from (see OCCASION_SUBDIR below and
+ * src/app/api/templates/seed-starter/route.ts).
+ *
  * Usage: node generate-starter-art.js [outDir] [only=birthday,diwali,...]
  */
 const path = require('path');
@@ -21,6 +25,14 @@ const PROJECT_ROOT = process.env.PROJECT_ROOT || process.cwd();
 const FONT_DIR = path.join(PROJECT_ROOT, 'assets', 'fonts');
 const OUT_DIR = process.argv[2] || path.join(PROJECT_ROOT, 'assets', 'starter-templates');
 const ONLY = (process.argv[3] || '').replace(/^only=/, '').split(',').filter(Boolean);
+
+const OCCASION_SUBDIR = {
+  birthday: 'birthday',
+  anniversary: 'anniversary',
+};
+function subdirFor(prefix) {
+  return OCCASION_SUBDIR[prefix] || 'festivals';
+}
 
 const W = 1080;
 const H = 1080;
@@ -308,7 +320,7 @@ function buildBackgroundSvg(palette, iconType) {
   </svg>`;
 }
 
-async function renderOne({ file, occasionKey, variantIndex }) {
+async function renderOne({ file, occasionKey, variantIndex, subdir }) {
   const occ = OCCASIONS[occasionKey];
   if (!occ) throw new Error(`Unknown occasion key: ${occasionKey}`);
   const paletteIndex = ((occ.paletteStart || 0) + variantIndex) % PALETTES.length;
@@ -359,7 +371,7 @@ async function renderOne({ file, occasionKey, variantIndex }) {
     { input: subtitle.data, left: centerX(subtitle.info), top: subtitleTop },
   ];
 
-  const outPath = path.join(OUT_DIR, file);
+  const outPath = path.join(OUT_DIR, subdir, file);
   await sharp(Buffer.from(bgSvg))
     .resize(W, H)
     .composite(composites)
@@ -390,21 +402,24 @@ async function main() {
     christmas: 4,
   };
 
-  fs.mkdirSync(OUT_DIR, { recursive: true });
+  for (const dir of new Set([...Object.keys(OCCASION_SUBDIR), 'festivals'])) {
+    fs.mkdirSync(path.join(OUT_DIR, dir), { recursive: true });
+  }
 
   const jobs = [];
   for (const [prefix, occasionKey] of Object.entries(PREFIX_TO_OCCASION)) {
     if (ONLY.length && !ONLY.includes(prefix)) continue;
     const n = COUNTS[prefix];
+    const subdir = subdirFor(prefix);
     for (let i = 1; i <= n; i++) {
-      jobs.push({ file: `${prefix}-${i}.jpg`, occasionKey, variantIndex: i - 1 });
+      jobs.push({ file: `${prefix}-${i}.jpg`, occasionKey, variantIndex: i - 1, subdir });
     }
   }
 
   console.log(`Rendering ${jobs.length} images to ${OUT_DIR} ...`);
   for (const job of jobs) {
     await renderOne(job);
-    console.log('  ok:', job.file);
+    console.log('  ok:', path.join(job.subdir, job.file));
   }
   console.log('Done.');
 }

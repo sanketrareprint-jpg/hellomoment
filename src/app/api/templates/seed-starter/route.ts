@@ -19,6 +19,9 @@ import { STORAGE_DIR } from '@/lib/uploads';
  * are the exact same "business card corner" defaults used by
  * TemplatePlaceholderEditor.tsx, so an art background made against those
  * coordinates lines up correctly.
+ *
+ * The bundled art lives under assets/starter-templates/<birthday|anniversary|festivals>/,
+ * one subfolder per occasion category — see OCCASION_SUBDIR below.
  */
 
 const CANVAS = 1080;
@@ -191,6 +194,12 @@ const STARTERS: { name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL
 
 const ASSET_DIR = path.join(process.cwd(), 'assets', 'starter-templates');
 
+const OCCASION_SUBDIR: Record<'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL', string> = {
+  BIRTHDAY: 'birthday',
+  ANNIVERSARY: 'anniversary',
+  FESTIVAL: 'festivals',
+};
+
 export async function POST(req: NextRequest) {
   const business = await requireApiBusiness(req);
   if (business instanceof NextResponse) return business;
@@ -219,7 +228,7 @@ export async function POST(req: NextRequest) {
   };
 
   for (const starter of STARTERS) {
-    const sourcePath = path.join(ASSET_DIR, starter.file);
+    const sourcePath = path.join(ASSET_DIR, OCCASION_SUBDIR[starter.occasion], starter.file);
     const ext = path.extname(starter.file).replace('.', '') || 'jpg';
     const filename = `${uuid()}.${ext}`;
     const destDir = path.join(STORAGE_DIR, 'templates');
