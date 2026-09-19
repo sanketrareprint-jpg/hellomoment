@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { requireApiAdmin } from '@/lib/session';
-import { STARTERS } from '@/app/api/templates/seed-starter/route';
+import { STARTERS } from '@/lib/starterTemplates';
 
 /**
  * ONE-OFF admin cleanup: seed-starter/route.ts's STARTERS list was reduced
