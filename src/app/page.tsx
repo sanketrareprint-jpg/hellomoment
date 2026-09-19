@@ -41,8 +41,8 @@ const CAPABILITIES = [
     icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
   },
   {
-    title: '68 ready-made designs',
-    body: 'Starter flyers for every major birthday, anniversary and festival occasion, organized separately from your own uploads — usable the moment you sign up.',
+    title: '8 ready-made designs',
+    body: 'Starter flyers for birthday and anniversary occasions, organized separately from your own uploads — usable the moment you sign up.',
     icon: 'M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z',
   },
   {
