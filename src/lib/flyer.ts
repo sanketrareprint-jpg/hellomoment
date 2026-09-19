@@ -107,47 +107,86 @@ const FONT_FILE_BOLD = path.join(FONT_DIR, 'FreeSansBold.ttf');
 // via sharp's `fontfile` option below — same reliable approach as the
 // default HMFont, so nothing depends on fonts being installed on the
 // Railway host. These are Latin-only (no Devanagari), unlike the default.
-const NAMED_FONT_FILES: Record<string, { regular: string; bold: string }> = {
+//
+// IMPORTANT: `family` must be the font file's *real* internal family name
+// (what `fc-scan` reports), because that is what Pango matches on when we
+// build the font description in buildTextComposite. Passing `fontfile` only
+// makes the file *available*; if the description names a family that no
+// loaded font has (e.g. the old made-up "HMFont"), Pango silently falls back
+// to a default face and the chosen font never shows up on the sent flyer.
+const NAMED_FONT_FILES: Record<string, { family: string; regular: string; bold: string }> = {
   poppins: {
+    family: 'Poppins',
     regular: path.join(FONT_DIR, 'Poppins-Regular.ttf'),
     bold: path.join(FONT_DIR, 'Poppins-Bold.ttf'),
   },
   playfair: {
+    family: 'Playfair Display',
     regular: path.join(FONT_DIR, 'PlayfairDisplay-Regular.ttf'),
     bold: path.join(FONT_DIR, 'PlayfairDisplay-Bold.ttf'),
   },
   'dancing-script': {
+    family: 'Dancing Script',
     regular: path.join(FONT_DIR, 'DancingScript-Regular.ttf'),
     bold: path.join(FONT_DIR, 'DancingScript-Bold.ttf'),
   },
   oswald: {
+    family: 'Oswald',
     regular: path.join(FONT_DIR, 'Oswald-Regular.ttf'),
     bold: path.join(FONT_DIR, 'Oswald-Bold.ttf'),
   },
   arimo: {
+    family: 'Arimo',
     regular: path.join(FONT_DIR, 'Arimo-Regular.ttf'),
     bold: path.join(FONT_DIR, 'Arimo-Bold.ttf'),
   },
   tinos: {
+    family: 'Tinos',
     regular: path.join(FONT_DIR, 'Tinos-Regular.ttf'),
     bold: path.join(FONT_DIR, 'Tinos-Bold.ttf'),
   },
   carlito: {
+    family: 'Carlito',
     regular: path.join(FONT_DIR, 'Carlito-Regular.ttf'),
     bold: path.join(FONT_DIR, 'Carlito-Bold.ttf'),
   },
   gelasio: {
+    family: 'Gelasio',
     regular: path.join(FONT_DIR, 'Gelasio-Regular.ttf'),
     bold: path.join(FONT_DIR, 'Gelasio-Bold.ttf'),
   },
 };
 
-function fontFileFor(fontWeight: number | string | undefined, fontFamily?: string): string {
+// Real internal family name of the bundled default (FreeSans) files.
+const BUNDLED_FONT_REAL_FAMILY = 'FreeSans';
+
+/**
+ * Resolves a placeholder's saved fontFamily id + weight to (a) the exact
+ * .ttf file to load and (b) the Pango font description to render it with.
+ * Both halves must agree: the file is registered by `fontfile`, and the
+ * description picks it by its real family name and weight.
+ */
+function resolveFont(
+  fontWeight: number | string | undefined,
+  fontFamily: string | undefined,
+  fontSize: number
+): { fontfile: string; description: string } {
   const weight = typeof fontWeight === 'string' ? parseInt(fontWeight, 10) : fontWeight;
   const isBold = Boolean(weight && weight >= 600);
   const named = fontFamily ? NAMED_FONT_FILES[fontFamily] : undefined;
-  if (named) return isBold ? named.bold : named.regular;
-  return isBold ? FONT_FILE_BOLD : FONT_FILE_REGULAR;
+  const family = named ? named.family : BUNDLED_FONT_REAL_FAMILY;
+  const fontfile = named
+    ? isBold
+      ? named.bold
+      : named.regular
+    : isBold
+      ? FONT_FILE_BOLD
+      : FONT_FILE_REGULAR;
+  // Always state the weight explicitly. Several fonts (both weights are
+  // registered in the same process over time) share one family name, so an
+  // unqualified description could otherwise resolve to the other weight.
+  const description = `${family} ${isBold ? 'Bold' : 'Normal'} ${Math.round(fontSize)}`;
+  return { fontfile, description };
 }
 
 /**
@@ -186,7 +225,7 @@ export function wrapText(text: string, maxWidth: number | undefined, fontSize: n
 /**
  * Renders one text placeholder (possibly multiple wrapped lines) to its own
  * small transparent PNG via sharp's native text renderer, using our bundled
- * font *file* directly (see fontFileFor above) rather than a font family
+ * font *file* directly (see resolveFont above) rather than a font family
  * name the host has to resolve. The (x, y) on the placeholder is treated as
  * the visual center of the rendered block — matching exactly how the
  * template editor's live preview already positions these markers
@@ -201,8 +240,11 @@ async function buildTextComposite(
 ): Promise<{ input: Buffer; left: number; top: number }> {
   const lines = wrapText(text, placeholder.maxWidth, placeholder.fontSize, placeholder.maxLines ?? 2);
   const markup = lines.map((line) => escapeXml(line)).join('\n');
-  const fontfile = fontFileFor(placeholder.fontWeight, placeholder.fontFamily);
-  const fontDescription = `${BUNDLED_FONT_FAMILY} ${Math.round(placeholder.fontSize)}`;
+  const { fontfile, description: fontDescription } = resolveFont(
+    placeholder.fontWeight,
+    placeholder.fontFamily,
+    placeholder.fontSize
+  );
 
   const buffer = await sharp({
     text: {
