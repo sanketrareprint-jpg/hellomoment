@@ -50,9 +50,6 @@ export default function SiteFooter() {
             <Link href="/#features" className="hover:text-brand-600">Features</Link>
             <Link href="/pricing" className="hover:text-brand-600">Pricing</Link>
             <Link href="/#how-it-works" className="hover:text-brand-600">How It Works</Link>
-            <a href="https://wa.me/919270299601?text=Hi%2C%20I%27d%20like%20to%20see%20a%20demo%20of%20raregreet.com" className="hover:text-brand-600">
-              Demo
-            </a>
           </div>
         </div>
 
