@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { GOOGLE_FONTS_HREF } from '@/lib/fontFamilies';
+
+// Google Analytics (GA4) measurement ID for raregreet.com's property.
+const GA_MEASUREMENT_ID = 'G-5XH0Q5S19J';
 
 export const metadata: Metadata = {
   title: 'raregreet.com — never miss a birthday or anniversary again',
@@ -19,6 +23,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href={GOOGLE_FONTS_HREF} rel="stylesheet" />
+
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`} strategy="afterInteractive" />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${GA_MEASUREMENT_ID}');
+          `}
+        </Script>
       </head>
       <body>{children}</body>
     </html>
