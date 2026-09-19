@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
+import SiteFooter from '@/components/SiteFooter';
 
 export const metadata = { title: 'Contact — raregreet.com' };
 
@@ -22,24 +23,6 @@ function SiteHeader() {
         </Link>
       </nav>
     </header>
-  );
-}
-
-function SiteFooter() {
-  return (
-    <footer className="max-w-6xl mx-auto px-6 py-10 mt-16 border-t border-gray-100">
-      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center mb-3">About us</div>
-      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 justify-center">
-        <Link href="/contact" className="hover:text-brand-600">Contact</Link>
-        <Link href="/pricing" className="hover:text-brand-600">Pricing</Link>
-        <Link href="/terms" className="hover:text-brand-600">Terms &amp; Conditions</Link>
-        <Link href="/privacy" className="hover:text-brand-600">Privacy Policy</Link>
-        <Link href="/refund-policy" className="hover:text-brand-600">Refund &amp; Delivery Policy</Link>
-      </div>
-      <p className="text-center text-xs text-gray-400 mt-4">
-        &copy; {new Date().getFullYear()} RAREPRINT IN, operating raregreet.com. All rights reserved.
-      </p>
-    </footer>
   );
 }
 

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import HeroSlider from '@/components/HeroSlider';
 import { RECHARGE_TIERS } from '@/lib/pricing';
 import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
+import SiteFooter from '@/components/SiteFooter';
 
 const FEATURES = [
   {
@@ -98,7 +99,7 @@ export default async function LandingPage() {
 
       <HeroSlider />
 
-      <section className="max-w-5xl mx-auto px-6 pb-16">
+      <section id="how-it-works" className="max-w-5xl mx-auto px-6 pb-16 scroll-mt-20">
         <p className="text-center text-xs font-semibold text-brand-600 uppercase tracking-wide mb-2">How it works</p>
         <div className="grid sm:grid-cols-3 gap-6">
           {FEATURES.map((f) => (
@@ -115,7 +116,7 @@ export default async function LandingPage() {
         </div>
       </section>
 
-      <section className="max-w-5xl mx-auto px-6 pb-24">
+      <section id="features" className="max-w-5xl mx-auto px-6 pb-24 scroll-mt-20">
         <div className="text-center mb-10">
           <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900">Everything you need, built in</h2>
           <p className="mt-2 text-gray-600 max-w-xl mx-auto">
@@ -169,19 +170,7 @@ export default async function LandingPage() {
         </p>
       </section>
 
-      <footer className="max-w-6xl mx-auto px-6 py-10 border-t border-gray-100">
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide text-center mb-3">About us</div>
-        <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500 justify-center">
-          <Link href="/contact" className="hover:text-brand-600">Contact</Link>
-          <Link href="/pricing" className="hover:text-brand-600">Pricing</Link>
-          <Link href="/terms" className="hover:text-brand-600">Terms &amp; Conditions</Link>
-          <Link href="/privacy" className="hover:text-brand-600">Privacy Policy</Link>
-          <Link href="/refund-policy" className="hover:text-brand-600">Refund &amp; Delivery Policy</Link>
-        </div>
-        <p className="text-center text-xs text-gray-400 mt-4">
-          &copy; {new Date().getFullYear()} RAREPRINT IN, operating raregreet.com. All rights reserved.
-        </p>
-      </footer>
+      <SiteFooter />
       <WhatsAppFloatButton />
     </main>
   );
