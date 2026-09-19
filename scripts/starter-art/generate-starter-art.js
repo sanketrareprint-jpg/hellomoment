@@ -25,6 +25,8 @@ const {
   EDITORIAL_PALETTE,
   OCCASION_ANNIVERSARY_EDITORIAL,
   DECKLE_STYLES,
+  WATERCOLOR_PALETTES,
+  OCCASION_BIRTHDAY_WATERCOLOR,
 } = require('./gen_config.js');
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || process.cwd();
@@ -42,6 +44,8 @@ const FONT = {
   playfairBold: path.join(FONT_DIR, 'PlayfairDisplay-Bold.ttf'),
   poppinsBold: path.join(FONT_DIR, 'Poppins-Bold.ttf'),
   poppinsRegular: path.join(FONT_DIR, 'Poppins-Regular.ttf'),
+  scriptBold: path.join(FONT_DIR, 'DancingScript-Bold.ttf'),
+  scriptRegular: path.join(FONT_DIR, 'DancingScript-Regular.ttf'),
 };
 
 function esc(s) {
@@ -432,8 +436,150 @@ function buildEditorialAnniversarySvg(deckleStyle) {
   </svg>`;
 }
 
-async function renderOne({ file, occasionKey, subdir, archStyle, deckleStyle }) {
+// ---------- "Watercolor Script" birthday design: soft pastel gradient,
+// watercolor botanical corner branches, wavy hand-drawn squiggle accents, a
+// soft organic color blob behind a rounded-square photo frame (instead of
+// the other birthday styles' circle), a thin heart-outline doodle, and
+// hand-lettered script typography with the headline above the photo and
+// the subtitle below it — a different split-layout from LUXURY/EDITORIAL,
+// which both stack kicker+headline+subtitle as one block below the photo.
+// ----------
+
+const PHOTO_LEFT = CIRCLE_CX - CIRCLE_R;
+const PHOTO_TOP = CIRCLE_CY - CIRCLE_R;
+const PHOTO_SIZE = CIRCLE_R * 2;
+const PHOTO_RADIUS = PHOTO_SIZE * 0.18; // matches flyer.ts's 'rounded' mask exactly
+
+// A short hand-drawn-looking wavy line, used as a corner accent.
+function wavySquiggle(color) {
+  return `<path d="M0,0 C20,-18 40,18 60,0 C80,-18 100,18 120,0 C140,-18 160,18 180,0" stroke="${color}" stroke-width="4" fill="none" stroke-linecap="round" opacity="0.85"/>`;
+}
+
+function leafBlob(cx, cy, w, h, rotate, color, opacity) {
+  return `<ellipse cx="${cx}" cy="${cy}" rx="${w}" ry="${h}" fill="${color}" opacity="${opacity}" transform="rotate(${rotate} ${cx} ${cy})"/>`;
+}
+
+// A loose diagonal spray of overlapping leaf blobs — a painterly branch
+// silhouette built from plain filled ellipses at varied size/opacity rather
+// than a single hard-edged shape.
+function watercolorLeafBranch(leaf, leafLight) {
+  const leaves = [
+    [0, 0, 34, 16, -20, leaf, 0.85],
+    [30, -22, 30, 14, 10, leafLight, 0.75],
+    [-28, -20, 28, 13, -55, leaf, 0.7],
+    [55, -10, 26, 12, 30, leafLight, 0.65],
+    [-10, -45, 24, 11, -15, leaf, 0.6],
+    [70, -40, 22, 10, 55, leafLight, 0.55],
+    [15, 20, 20, 10, -80, leaf, 0.5],
+  ];
+  return `<g>${leaves.map(([cx, cy, w, h, r, c, o]) => leafBlob(cx, cy, w, h, r, c, o)).join('')}</g>`;
+}
+
+// Small scattered dots over the color blob — a "glitter" texture.
+function glitterDots(cx, cy, r, color) {
+  const pts = [
+    [-0.5, -0.3, 3],
+    [0.3, -0.5, 2],
+    [0.5, 0.2, 2.5],
+    [-0.3, 0.4, 2],
+    [0.1, -0.1, 1.8],
+    [-0.6, 0.1, 2.2],
+    [0.6, -0.2, 1.6],
+  ];
+  return pts.map(([dx, dy, rr]) => `<circle cx="${cx + dx * r}" cy="${cy + dy * r}" r="${rr}" fill="${color}" opacity="0.6"/>`).join('');
+}
+
+// Thin open heart outline (stroke only, no fill) — a small doodle accent
+// near the photo corner, distinct from the filled iconHeart shape used
+// elsewhere in this file.
+function heartOutline(color) {
+  return `<path d="M0,10 C-14,-6 -14,-20 -3,-20 C4,-20 0,-11 0,-8 C0,-11 -4,-20 3,-20 C14,-20 14,-6 0,10 Z" fill="none" stroke="${color}" stroke-width="2" opacity="0.8"/>`;
+}
+
+// A thick white "instant photo" style border with a soft shadow, matching
+// the exact rounded-rect geometry flyer.ts uses for shape:'rounded' so the
+// decorative frame lines up perfectly with the actual photo crop.
+function photoFrameWatercolor() {
+  const pad = 10;
+  return `
+    <rect x="${PHOTO_LEFT - pad - 4}" y="${PHOTO_TOP - pad - 4 + 10}" width="${PHOTO_SIZE + 2 * (pad + 4)}" height="${PHOTO_SIZE + 2 * (pad + 4)}" rx="${PHOTO_RADIUS + pad + 4}" fill="black" opacity="0.12" filter="url(#blur18)"/>
+    <rect x="${PHOTO_LEFT - pad}" y="${PHOTO_TOP - pad}" width="${PHOTO_SIZE + 2 * pad}" height="${PHOTO_SIZE + 2 * pad}" rx="${PHOTO_RADIUS + pad}" fill="#ffffff"/>
+    <rect x="${PHOTO_LEFT}" y="${PHOTO_TOP}" width="${PHOTO_SIZE}" height="${PHOTO_SIZE}" rx="${PHOTO_RADIUS}" fill="rgba(0,0,0,0.05)"/>
+  `;
+}
+
+function buildWatercolorBirthdaySvg(palette) {
+  const { bgTop, bgBottom, leaf, leafLight, accent, blob } = palette;
+  const blobCx = CIRCLE_CX - 40;
+  const blobCy = CIRCLE_CY + 10;
+  const blobR = CIRCLE_R + 50;
+  const blobPath = deckledEllipsePath(blobCx, blobCy, blobR, blobR, 2001, { amplitude: blobR * 0.05, points: 30 });
+
+  return `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="${bgTop}"/>
+        <stop offset="1" stop-color="${bgBottom}"/>
+      </linearGradient>
+      <filter id="blur18" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="18"/>
+      </filter>
+    </defs>
+
+    <rect width="${W}" height="${H}" fill="url(#bg)"/>
+
+    <g transform="translate(70,60) rotate(-8)">${wavySquiggle(accent)}</g>
+    <g transform="translate(830,990) rotate(4)">${wavySquiggle(accent)}</g>
+
+    <g transform="translate(890,120) scale(1.3) rotate(35)">${watercolorLeafBranch(leaf, leafLight)}</g>
+    <g transform="translate(150,940) scale(1.3) rotate(215)">${watercolorLeafBranch(leaf, leafLight)}</g>
+
+    <path d="${blobPath}" fill="${blob}" opacity="0.55"/>
+    ${glitterDots(blobCx - blobR * 0.5, blobCy - blobR * 0.4, blobR, accent)}
+
+    ${photoFrameWatercolor()}
+
+    <g transform="translate(${PHOTO_LEFT + PHOTO_SIZE - 16},${PHOTO_TOP + PHOTO_SIZE + 6})">${heartOutline(accent)}</g>
+  </svg>`;
+}
+
+async function renderOne({ file, occasionKey, subdir, archStyle, deckleStyle, watercolorPalette }) {
   const isLuxury = occasionKey === 'birthdayLuxury';
+  const isEditorial = occasionKey === 'anniversaryEditorial';
+  const isWatercolor = occasionKey === 'birthdayWatercolor';
+
+  if (isWatercolor) {
+    const occ = OCCASION_BIRTHDAY_WATERCOLOR;
+    const headline = await textBuffer({
+      text: occ.headline,
+      fontfile: FONT.scriptBold,
+      fontFamily: 'Dancing Script',
+      size: 92,
+      color: watercolorPalette.ink,
+    });
+    const subtitle = await textBuffer({
+      text: occ.subtitle,
+      fontfile: FONT.scriptRegular,
+      fontFamily: 'Dancing Script',
+      size: 46,
+      color: watercolorPalette.ink,
+    });
+    const centerX = (info) => Math.round(W / 2 - info.width / 2);
+    const headlineTop = 70;
+    const subtitleTop = PHOTO_TOP + PHOTO_SIZE + 40;
+
+    const outPath = path.join(OUT_DIR, subdir, file);
+    await sharp(Buffer.from(buildWatercolorBirthdaySvg(watercolorPalette)))
+      .resize(W, H)
+      .composite([
+        { input: headline.data, left: centerX(headline.info), top: headlineTop },
+        { input: subtitle.data, left: centerX(subtitle.info), top: subtitleTop },
+      ])
+      .jpeg({ quality: 92 })
+      .toFile(outPath);
+    return outPath;
+  }
+
   const occ = isLuxury ? OCCASION_BIRTHDAY_LUXURY : OCCASION_ANNIVERSARY_EDITORIAL;
   const palette = isLuxury ? LUXURY_PALETTE : EDITORIAL_PALETTE;
 
@@ -509,6 +655,14 @@ async function main() {
         occasionKey: 'birthdayLuxury',
         subdir: 'birthday',
         archStyle,
+      });
+    });
+    WATERCOLOR_PALETTES.forEach((watercolorPalette, idx) => {
+      jobs.push({
+        file: `birthday-${5 + idx}.jpg`,
+        occasionKey: 'birthdayWatercolor',
+        subdir: 'birthday',
+        watercolorPalette,
       });
     });
   }

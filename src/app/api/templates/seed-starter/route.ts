@@ -27,7 +27,7 @@ import { STARTERS } from '@/lib/starterTemplates';
 
 const CANVAS = 1080;
 
-function corePlaceholders() {
+function corePlaceholders(photoShape: 'circle' | 'square' | 'rounded' | 'hexagon' = 'circle') {
   const width = CANVAS;
   const height = CANVAS;
   return {
@@ -55,7 +55,7 @@ function corePlaceholders() {
       x: Math.round(width * 0.36),
       y: Math.round(height * 0.12),
       size: Math.round(width * 0.28),
-      shape: 'circle' as const,
+      shape: photoShape,
     },
     logoPlaceholder: {
       x: Math.round(width * 0.05),
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    const ph = corePlaceholders();
+    const ph = corePlaceholders(starter.photoShape ?? 'circle');
     const makeDefault = !hasDefault[starter.occasion];
     if (makeDefault) hasDefault[starter.occasion] = true;
 

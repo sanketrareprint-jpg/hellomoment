@@ -47,6 +47,61 @@ const OCCASION_ANNIVERSARY_EDITORIAL = {
 // anniversary card templates" brief.
 const DECKLE_STYLES = ['deckleRect', 'deckleRounded', 'deckleArch', 'deckleBlob'];
 
+// 4 soft pastel colorways for the "Watercolor Script" birthday designs —
+// each keeps the same layout (watercolor leaf corners, wavy squiggle
+// accents, rounded photo frame, heart-outline doodle, script typography)
+// but in a different color mood, the same "one motif, 4 colorways" pattern
+// LUXURY/EDITORIAL use their arch/deckle shape for instead.
+const WATERCOLOR_PALETTES = [
+  {
+    name: 'blush-pink',
+    bgTop: '#fbe4d8',
+    bgBottom: '#f6d3c2',
+    leaf: '#7c9473',
+    leafLight: '#a9c19c',
+    accent: '#b5794f',
+    ink: '#5b4636',
+    blob: '#f3c9b0',
+  },
+  {
+    name: 'sage-green',
+    bgTop: '#eef1e4',
+    bgBottom: '#dfe6cf',
+    leaf: '#5d7052',
+    leafLight: '#8ea67e',
+    accent: '#a9835a',
+    ink: '#43503a',
+    blob: '#d8e2c4',
+  },
+  {
+    name: 'lavender',
+    bgTop: '#f1e7f3',
+    bgBottom: '#e3d2ea',
+    leaf: '#6f7d5a',
+    leafLight: '#9db589',
+    accent: '#a67a9e',
+    ink: '#57415c',
+    blob: '#e0c9e6',
+  },
+  {
+    name: 'peach-cream',
+    bgTop: '#fdf1df',
+    bgBottom: '#f8e0bd',
+    leaf: '#77875a',
+    leafLight: '#a3b884',
+    accent: '#b97a4a',
+    ink: '#5a4626',
+    blob: '#f4d3a1',
+  },
+];
+
+// No kicker (the reference design has none) — just a hand-lettered
+// headline above the photo and a smaller script subtitle below it.
+const OCCASION_BIRTHDAY_WATERCOLOR = {
+  headline: 'Happy Birthday',
+  subtitle: 'I wish you a very happy life',
+};
+
 module.exports = {
   LUXURY_PALETTE,
   OCCASION_BIRTHDAY_LUXURY,
@@ -54,4 +109,6 @@ module.exports = {
   EDITORIAL_PALETTE,
   OCCASION_ANNIVERSARY_EDITORIAL,
   DECKLE_STYLES,
+  WATERCOLOR_PALETTES,
+  OCCASION_BIRTHDAY_WATERCOLOR,
 };

@@ -4,14 +4,15 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 /**
- * One-click add of 8 ready-made flyer designs — 4 Modern Luxury styles for
- * Birthday and 4 Modern Editorial styles for Anniversary — with everything
- * (background art, name/photo/branding placement) already set up, so a
- * business can pick a look they like without designing or uploading
- * anything. Clicking it again after the bundled artwork has been updated
- * refreshes the background image on any starter designs the business
- * already has (their placeholder positions and default status are left
- * alone), so this doubles as a "get the latest designs" button.
+ * One-click add of 12 ready-made flyer designs — 4 Modern Luxury and 4
+ * Watercolor Script styles for Birthday, plus 4 Modern Editorial styles for
+ * Anniversary — with everything (background art, name/photo/branding
+ * placement) already set up, so a business can pick a look they like
+ * without designing or uploading anything. Clicking it again after the
+ * bundled artwork has been updated refreshes the background image on any
+ * starter designs the business already has (their placeholder positions
+ * and default status are left alone), so this doubles as a "get the latest
+ * designs" button.
  */
 export default function AddStarterTemplatesButton() {
   const router = useRouter();
