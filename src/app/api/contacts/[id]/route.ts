@@ -13,6 +13,8 @@ const dateOnly = z
 
 const contactSchema = z.object({
   name: z.string().min(1),
+  title: z.string().optional().nullable(),
+  designation: z.string().optional().nullable(),
   relationship: z.enum(['CUSTOMER', 'FRIEND', 'FAMILY', 'OTHER']),
   whatsapp: z.string().min(8),
   dob: dateOnly,

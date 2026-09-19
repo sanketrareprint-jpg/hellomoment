@@ -142,7 +142,11 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
             {contacts.map((c) => (
               <tr key={c.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium text-gray-900">
-                  <Link href={`/dashboard/contacts/${c.id}/edit`}>{c.name}</Link>
+                  <Link href={`/dashboard/contacts/${c.id}/edit`}>
+                    {c.title ? `${c.title} ` : ''}
+                    {c.name}
+                  </Link>
+                  {c.designation && <div className="text-xs font-normal text-gray-500">{c.designation}</div>}
                 </td>
                 <td className="px-4 py-3 text-gray-600 capitalize">{c.relationship.toLowerCase()}</td>
                 <td className="px-4 py-3 text-gray-600">{c.whatsapp}</td>

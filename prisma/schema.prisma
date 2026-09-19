@@ -175,6 +175,8 @@ model Contact {
   businessId   String
   business     Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
   name         String
+  title        String? // optional salutation/initial, e.g. "Mr", "Mrs", "Dr" — free text, prefixed to the name where shown
+  designation  String? // optional job title / role, e.g. "Manager", "Director" — free text
   relationship String        @default("CUSTOMER") // "CUSTOMER" | "FRIEND" | "FAMILY" | "OTHER"
   whatsapp     String // WhatsApp number with country code, e.g. +919876543210
   dob          DateTime? // date of birth (year may be a placeholder if unknown)

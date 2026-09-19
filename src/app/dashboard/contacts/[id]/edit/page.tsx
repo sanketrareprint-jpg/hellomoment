@@ -23,6 +23,8 @@ export default async function EditContactPage({ params }: { params: { id: string
         initial={{
           id: contact.id,
           name: contact.name,
+          title: contact.title ?? '',
+          designation: contact.designation ?? '',
           relationship: contact.relationship as ContactFormValues['relationship'],
           whatsapp: contact.whatsapp,
           dob: toDateInput(contact.dob),

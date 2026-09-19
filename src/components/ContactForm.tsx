@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 export interface ContactFormValues {
   id?: string;
   name: string;
+  title: string; // optional salutation/initial, e.g. "Mr", "Mrs", "Dr" — free text
+  designation: string; // optional job title / role, e.g. "Manager"
   relationship: 'CUSTOMER' | 'FRIEND' | 'FAMILY' | 'OTHER';
   whatsapp: string;
   dob: string; // YYYY-MM-DD or ''
@@ -17,6 +19,8 @@ export interface ContactFormValues {
 
 const EMPTY: ContactFormValues = {
   name: '',
+  title: '',
+  designation: '',
   relationship: 'CUSTOMER',
   whatsapp: '',
   dob: '',
@@ -84,6 +88,8 @@ export default function ContactForm({ initial }: { initial?: ContactFormValues }
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          title: form.title || null,
+          designation: form.designation || null,
           dob: form.dob || null,
           anniversary: form.anniversary || null,
           photoUrl: form.photoUrl || null,
@@ -139,9 +145,30 @@ export default function ContactForm({ initial }: { initial?: ContactFormValues }
         </div>
       </div>
 
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <label className="label">Title (optional)</label>
+          <input
+            className="input"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder="Mr / Mrs / Dr"
+          />
+        </div>
+        <div className="col-span-2">
+          <label className="label">Name</label>
+          <input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        </div>
+      </div>
+
       <div>
-        <label className="label">Name</label>
-        <input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <label className="label">Designation (optional)</label>
+        <input
+          className="input"
+          value={form.designation}
+          onChange={(e) => setForm({ ...form, designation: e.target.value })}
+          placeholder="e.g. Manager, Director"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
