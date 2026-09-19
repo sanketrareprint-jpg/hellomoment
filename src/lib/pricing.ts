@@ -50,6 +50,7 @@ export function paiseToRupees(paise: number): number {
  */
 export const COINS_PER_SEND = 5; // trial coins spent per WhatsApp send — mirrors the ₹5 default wallet rate 1:1
 export const TRIAL_COIN_GRANT_PRESETS = [10, 25, 50, 100]; // quick-pick amounts on the admin "grant trial coins" form
+export const SIGNUP_TRIAL_COINS = 50; // free trial coins every new business starts with, granted automatically at signup
 
 export function rateForRechargeAmount(amountRupees: number): number {
   let rate = RECHARGE_TIERS[0].pricePerMessageRupees;

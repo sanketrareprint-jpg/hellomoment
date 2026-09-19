@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { hashPassword, signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from '@/lib/auth';
+import { SIGNUP_TRIAL_COINS } from '@/lib/pricing';
 
 const schema = z.object({
   businessName: z.string().min(2, 'Business name is required'),
@@ -39,6 +40,18 @@ export async function POST(req: NextRequest) {
       aisensyBirthdayCampaign: DEFAULT_AISENSY_CAMPAIGN,
       aisensyAnniversaryCampaign: DEFAULT_AISENSY_CAMPAIGN,
       aisensyFestivalCampaign: DEFAULT_AISENSY_CAMPAIGN,
+      trialCoins: SIGNUP_TRIAL_COINS,
+    },
+  });
+
+  // Record the welcome grant so it shows up in the business's trial coin
+  // activity history the same way an admin-granted top-up would.
+  await prisma.trialCoinTransaction.create({
+    data: {
+      businessId: business.id,
+      type: 'GRANT',
+      coins: SIGNUP_TRIAL_COINS,
+      description: 'Welcome trial coins',
     },
   });
 
