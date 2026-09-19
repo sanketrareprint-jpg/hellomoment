@@ -27,7 +27,7 @@ const SLIDES: Slide[] = [
     body: 'Add your customers once. raregreet.com automatically designs a personalized flyer with their name, date and photo, and sends it on WhatsApp — to them and to you — the moment it’s their day.',
   },
   {
-    eyebrow: '68 ready-made designs',
+    eyebrow: '',
     title: (
       <>
         Start sending{' '}
@@ -114,10 +114,10 @@ export default function HeroSlider() {
       <div className="mt-8 flex items-center justify-center gap-2">
         {SLIDES.map((s, i) => (
           <button
-            key={s.eyebrow}
+            key={i}
             type="button"
             onClick={() => setIndex(i)}
-            aria-label={`Show slide ${i + 1}: ${s.eyebrow}`}
+            aria-label={`Show slide ${i + 1}`}
             aria-current={i === index}
             className={
               'h-2 rounded-full transition-all ' +
