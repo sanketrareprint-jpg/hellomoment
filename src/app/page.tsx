@@ -24,6 +24,11 @@ const FEATURES = [
     body: 'Every day, raregreet.com checks who’s celebrating, generates their personalized flyer, and sends it on WhatsApp via your AiSensy account — to them and to you.',
     icon: 'M14 5l7 7m0 0l-7 7m7-7H3',
   },
+  {
+    title: '4. You get notified too',
+    body: 'Every birthday and anniversary wish sent also pings you on WhatsApp, so you always know who was wished and when — no need to check the dashboard.',
+    icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+  },
 ];
 
 // Real product capabilities — shown in their own grid below the 3-step
@@ -137,16 +142,16 @@ export default async function LandingPage() {
 
       <section id="how-it-works" className="max-w-5xl mx-auto px-6 pb-16 scroll-mt-20">
         <p className="text-center text-xs font-semibold text-brand-600 uppercase tracking-wide mb-2">How it works</p>
-        <div className="grid sm:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {FEATURES.map((f) => (
-            <div key={f.title} className="card p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-150">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-500 to-fuchsia-600 text-white flex items-center justify-center mb-4 shadow-sm">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div key={f.title} className="card p-4 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-150">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-fuchsia-600 text-white flex items-center justify-center mb-3 shadow-sm">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={f.icon} />
                 </svg>
               </div>
-              <h3 className="font-semibold text-gray-900">{f.title}</h3>
-              <p className="mt-2 text-sm text-gray-600">{f.body}</p>
+              <h3 className="font-semibold text-gray-900 text-sm">{f.title}</h3>
+              <p className="mt-1.5 text-sm text-gray-600">{f.body}</p>
             </div>
           ))}
         </div>
