@@ -57,8 +57,6 @@ export interface TemplateFormValues {
   canvasHeight: number;
   useName: boolean;
   namePlaceholder: TextPlaceholder;
-  useTitle: boolean;
-  titlePlaceholder: TextPlaceholder;
   useDesignation: boolean;
   designationPlaceholder: TextPlaceholder;
   useDate: boolean;
@@ -80,13 +78,12 @@ export interface TemplateFormValues {
 // Fields whose placeholder is a plain TextPlaceholder (font/size/color/align
 // etc.) — i.e. everything except the photo box and the logo image, which
 // each have their own shape.
-type TextFieldKey = 'name' | 'title' | 'designation' | 'date' | 'firmName' | 'phone' | 'address' | 'products';
+type TextFieldKey = 'name' | 'designation' | 'date' | 'firmName' | 'phone' | 'address' | 'products';
 type FieldKey = TextFieldKey | 'photo' | 'logo';
 
-function defaultsFor(width: number, height: number): Pick<
+export function defaultsFor(width: number, height: number): Pick<
   TemplateFormValues,
   | 'namePlaceholder'
-  | 'titlePlaceholder'
   | 'designationPlaceholder'
   | 'datePlaceholder'
   | 'photoPlaceholder'
@@ -97,16 +94,6 @@ function defaultsFor(width: number, height: number): Pick<
   | 'productsPlaceholder'
 > {
   return {
-    titlePlaceholder: {
-      x: Math.round(width / 2),
-      y: Math.round(height * 0.715),
-      fontSize: Math.round(width * 0.035),
-      color: '#ffffff',
-      fontWeight: 600,
-      align: 'center',
-      maxWidth: Math.round(width * 0.85),
-      maxLines: 1,
-    },
     namePlaceholder: {
       x: Math.round(width / 2),
       y: Math.round(height * 0.78),
@@ -210,12 +197,11 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
   usePhoto: true,
   // Name and logo default to on (nearly every flyer wants both), but — like
   // everything else here — the business can turn either off per template.
-  // Title / designation / firm name / phone / address / products default to
-  // OFF: most flyer artwork (including the bundled starter designs) already
-  // has its own decorative footer, and stacking more text on top of it
-  // collided with the art. The business can still switch any of these on
-  // per template and drag them into a clear spot.
-  useTitle: false,
+  // Designation / firm name / phone / address / products default to OFF:
+  // most flyer artwork (including the bundled starter designs) already has
+  // its own decorative footer, and stacking more text on top of it collided
+  // with the art. The business can still switch any of these on per
+  // template and drag them into a clear spot.
   useDesignation: false,
   useLogo: true,
   useFirmName: false,
@@ -240,11 +226,6 @@ const CONTACT_FIELDS: { key: FieldKey; label: string; icon: string }[] = [
     key: 'name',
     label: 'Name',
     icon: 'M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z',
-  },
-  {
-    key: 'title',
-    label: 'Title',
-    icon: 'M2.25 8.25h19.5M2.25 8.25v10.5a1.5 1.5 0 001.5 1.5h16.5a1.5 1.5 0 001.5-1.5V8.25M2.25 8.25l1.72-3.44a1.5 1.5 0 011.342-.81h13.376a1.5 1.5 0 011.342.81l1.72 3.44M6 15h4',
   },
   {
     key: 'designation',
@@ -339,8 +320,6 @@ export default function TemplatePlaceholderEditor({
     switch (key) {
       case 'name':
         return form.useName;
-      case 'title':
-        return form.useTitle;
       case 'designation':
         return form.useDesignation;
       case 'date':
@@ -367,8 +346,6 @@ export default function TemplatePlaceholderEditor({
       switch (key) {
         case 'name':
           return { ...f, useName: value };
-        case 'title':
-          return { ...f, useTitle: value };
         case 'designation':
           return { ...f, useDesignation: value };
         case 'date':
@@ -395,8 +372,6 @@ export default function TemplatePlaceholderEditor({
     switch (key) {
       case 'name':
         return form.namePlaceholder;
-      case 'title':
-        return form.titlePlaceholder;
       case 'designation':
         return form.designationPlaceholder;
       case 'date':
@@ -417,8 +392,6 @@ export default function TemplatePlaceholderEditor({
       switch (key) {
         case 'name':
           return { ...f, namePlaceholder: p };
-        case 'title':
-          return { ...f, titlePlaceholder: p };
         case 'designation':
           return { ...f, designationPlaceholder: p };
         case 'date':
@@ -442,6 +415,8 @@ export default function TemplatePlaceholderEditor({
   // for it — surfaced as a note in the properties panel rather than
   // disabling the button outright, so it stays discoverable.
   function missingBrandDataNote(key: FieldKey): string | null {
+    if (key === 'name')
+      return 'If a contact has a Title saved (e.g. "Mr.", "Dr."), it\'s shown automatically right before their name here — contacts without one just show their name.';
     if (key === 'logo' && !business?.logoUrl) return 'Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.';
     if (key === 'phone' && !business?.phoneDisplay) return 'Add a phone number in Settings → Brand kit for flyers first.';
     if (key === 'address' && !business?.addressText) return 'Add an address in Settings → Brand kit for flyers first.';
@@ -452,9 +427,7 @@ export default function TemplatePlaceholderEditor({
   function previewTextFor(key: TextFieldKey): string {
     switch (key) {
       case 'name':
-        return 'Sample Name';
-      case 'title':
-        return 'Mr.';
+        return 'Mr. Sample Name';
       case 'designation':
         return 'Manager';
       case 'date':
@@ -572,7 +545,6 @@ export default function TemplatePlaceholderEditor({
         isDefault: form.isDefault,
         aisensyCampaignName: form.aisensyCampaignName || null,
         namePlaceholder: form.useName ? form.namePlaceholder : null,
-        titlePlaceholder: form.useTitle ? form.titlePlaceholder : null,
         designationPlaceholder: form.useDesignation ? form.designationPlaceholder : null,
         datePlaceholder: form.useDate ? form.datePlaceholder : null,
         photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
@@ -900,10 +872,10 @@ export default function TemplatePlaceholderEditor({
             </div>
           )}
 
-          {(['name', 'title', 'designation', 'date', 'firmName', 'phone', 'address', 'products'] as TextFieldKey[]).map((key) => {
+          {(['name', 'designation', 'date', 'firmName', 'phone', 'address', 'products'] as TextFieldKey[]).map((key) => {
             if (!isFieldOn(key) || !form.backgroundUrl) return null;
             const p = getTextPlaceholder(key);
-            const minFontPx = key === 'name' ? 10 : key === 'date' || key === 'title' ? 9 : 8;
+            const minFontPx = key === 'name' ? 10 : key === 'date' ? 9 : 8;
             return (
               <div
                 key={key}

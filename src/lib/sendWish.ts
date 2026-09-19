@@ -281,21 +281,23 @@ async function renderFlyer(
   const outputPath = path.join(STORAGE_DIR, 'generated', outputName);
 
   const logoPlaceholder = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
-  const titlePlaceholder = template.titlePlaceholder ? JSON.parse(template.titlePlaceholder) : null;
   const designationPlaceholder = template.designationPlaceholder ? JSON.parse(template.designationPlaceholder) : null;
   const firmNamePlaceholder = template.firmNamePlaceholder ? JSON.parse(template.firmNamePlaceholder) : null;
   const phonePlaceholder = template.phonePlaceholder ? JSON.parse(template.phonePlaceholder) : null;
   const addressPlaceholder = template.addressPlaceholder ? JSON.parse(template.addressPlaceholder) : null;
   const productsPlaceholder = template.productsPlaceholder ? JSON.parse(template.productsPlaceholder) : null;
 
+  // A contact's Title (e.g. "Mr.", "Dr.") is shown as part of the name line
+  // itself, not as a separately positioned placeholder — contacts without
+  // one just show their plain name.
+  const displayName = title ? `${title} ${name}` : name;
+
   await generateFlyer({
     backgroundPath: servedUrlToAbsolutePath(template.backgroundUrl),
     canvasWidth: template.canvasWidth,
     canvasHeight: template.canvasHeight,
     namePlaceholder: template.namePlaceholder ? (JSON.parse(template.namePlaceholder) as TextPlaceholder) : null,
-    name,
-    titlePlaceholder: titlePlaceholder as TextPlaceholder | null,
-    titleText: title || null,
+    name: displayName,
     designationPlaceholder: designationPlaceholder as TextPlaceholder | null,
     designationText: designation || null,
     datePlaceholder: template.datePlaceholder ? (JSON.parse(template.datePlaceholder) as TextPlaceholder) : null,
