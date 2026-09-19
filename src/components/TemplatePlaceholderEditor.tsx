@@ -499,6 +499,14 @@ export default function TemplatePlaceholderEditor({
     return (e: React.PointerEvent) => {
       e.preventDefault();
       dragTarget.current = target;
+      // Without this, a fast or slightly-off-target touch/mouse drag can
+      // lose the gesture the moment the pointer strays off the (often tiny,
+      // text-sized) element it started on — the browser re-targets
+      // subsequent pointer events to whatever's now underneath instead of
+      // keeping them routed to this drag. Capturing keeps every event for
+      // this pointer coming to us (it still bubbles up to previewRef's
+      // onPointerMove/onPointerUp) until pointerup releases it.
+      e.currentTarget.setPointerCapture(e.pointerId);
     };
   }
 
@@ -860,6 +868,7 @@ export default function TemplatePlaceholderEditor({
                 top: form.photoPlaceholder.y * scale,
                 width: form.photoPlaceholder.width * scale,
                 height: form.photoPlaceholder.height * scale,
+                touchAction: 'none',
                 borderRadius:
                   form.photoPlaceholder.shape === 'circle'
                     ? '9999px'
@@ -879,6 +888,7 @@ export default function TemplatePlaceholderEditor({
                   startDrag('photo-resize')(e);
                 }}
                 className="absolute -right-1.5 -bottom-1.5 w-3.5 h-3.5 rounded-full bg-brand-600 border-2 border-white cursor-nwse-resize"
+                style={{ touchAction: 'none' }}
                 title="Drag to stretch"
               />
             </div>
@@ -893,6 +903,7 @@ export default function TemplatePlaceholderEditor({
                 top: form.logoPlaceholder.y * scale,
                 width: form.logoPlaceholder.size * scale,
                 height: form.logoPlaceholder.size * scale,
+                touchAction: 'none',
               }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -908,12 +919,29 @@ export default function TemplatePlaceholderEditor({
               <div
                 key={key}
                 onPointerDown={startDrag(key)}
-                className="absolute cursor-move px-1 whitespace-nowrap"
+                className="absolute cursor-move whitespace-nowrap"
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
+                  // Padding below grows the touch/click target well past the
+                  // rendered glyphs (some of these, like "Mr." or a short
+                  // date, are only a few pixels tall at preview scale).
+                  // Percentage translate is relative to this padded box, so
+                  // center alignment (-50%) still lands exactly on the
+                  // padded box's center, which coincides with the text's
+                  // center. Left/right alignment anchor to an *edge* of that
+                  // padded box instead of an edge of the text, so those two
+                  // cases pull the extra horizontal padding back out with a
+                  // fixed px offset to keep the visible glyph position
+                  // unchanged.
                   transform:
-                    p.align === 'center' ? 'translate(-50%, -50%)' : p.align === 'right' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
+                    p.align === 'center'
+                      ? 'translate(-50%, -50%)'
+                      : p.align === 'right'
+                        ? 'translate(calc(-100% + 8px), -50%)'
+                        : 'translate(-8px, -50%)',
+                  padding: '10px 8px',
+                  touchAction: 'none',
                   fontSize: Math.max(minFontPx, p.fontSize * scale),
                   fontWeight: p.fontWeight,
                   fontFamily: cssFontFamilyFor(p.fontFamily),
