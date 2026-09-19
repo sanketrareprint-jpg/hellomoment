@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
-import TemplatePlaceholderEditor, { defaultsFor, TemplateFormValues, BrandInfo } from '@/components/TemplatePlaceholderEditor';
+import TemplatePlaceholderEditor, { TemplateFormValues, BrandInfo } from '@/components/TemplatePlaceholderEditor';
+import { defaultsFor } from '@/lib/flyerPlaceholders';
 
 export default async function EditTemplatePage({ params }: { params: { id: string } }) {
   const business = await getCurrentBusiness();
