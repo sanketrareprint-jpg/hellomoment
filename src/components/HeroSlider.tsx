@@ -85,7 +85,7 @@ export default function HeroSlider() {
 
   return (
     <section
-      className="relative max-w-4xl mx-auto text-center px-6 pt-16 pb-20"
+      className="relative max-w-4xl mx-auto text-center px-6 pt-4 sm:pt-16 pb-20"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
