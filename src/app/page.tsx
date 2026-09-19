@@ -105,13 +105,13 @@ export default async function LandingPage() {
         </nav>
       </header>
 
-      <HeroSlider />
-
       {banners.length > 0 && (
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-8">
+        <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
           <DashboardBannerSlider banners={banners} />
         </section>
       )}
+
+      <HeroSlider />
 
       <section id="how-it-works" className="max-w-5xl mx-auto px-6 pb-16 scroll-mt-20">
         <p className="text-center text-xs font-semibold text-brand-600 uppercase tracking-wide mb-2">How it works</p>
