@@ -87,13 +87,6 @@ export default async function DashboardOverview() {
         <StatCard label="Active festivals" value={festivalCount} href="/dashboard/festivals" />
       </div>
 
-      <div className="card p-4">
-        <h2 className="font-semibold text-gray-900 text-sm mb-3">Promotional banner</h2>
-        <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-lg py-10 text-sm text-gray-400">
-          Banner coming soon
-        </div>
-      </div>
-
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="card p-4">
           <h2 className="font-semibold text-gray-900 text-sm mb-2">Upcoming this week</h2>
