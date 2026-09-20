@@ -14,8 +14,8 @@ export default async function WalletPage({ searchParams }: { searchParams: { pag
 
   const page = Math.max(1, Number(searchParams.page ?? '1'));
 
-  // The ₹ wallet is shared across every company under the same login (see
-  // src/lib/businessFamily.ts) — trial coins below stay per-company.
+  // Both the ₹ wallet and trial coins below are shared across every
+  // company under the same login (see src/lib/businessFamily.ts).
   const walletOwner = await getWalletOwner(business);
   const sharedWithOtherCompanies = walletOwner.id !== business.id;
 
@@ -28,13 +28,13 @@ export default async function WalletPage({ searchParams }: { searchParams: { pag
     }),
     prisma.walletTransaction.count({ where: { businessId: walletOwner.id } }),
     prisma.trialCoinTransaction.findMany({
-      where: { businessId: business.id },
+      where: { businessId: walletOwner.id },
       orderBy: { createdAt: 'desc' },
       take: 10,
     }),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / TXN_PAGE_SIZE));
-  const hasTrialCoinActivity = business.trialCoins > 0 || trialCoinTransactions.length > 0;
+  const hasTrialCoinActivity = walletOwner.trialCoins > 0 || trialCoinTransactions.length > 0;
 
   const balanceRupees = walletOwner.walletBalancePaise / 100;
   const rateRupees = walletOwner.walletRatePaise / 100;
@@ -74,11 +74,11 @@ export default async function WalletPage({ searchParams }: { searchParams: { pag
         <div className="card p-5 mb-6 border-amber-200 bg-amber-50/40">
           <div className="flex items-center justify-between flex-wrap gap-2 mb-1">
             <h2 className="text-sm font-semibold text-gray-900">Trial coins</h2>
-            <div className="text-lg font-bold text-amber-700">{business.trialCoins} coin{business.trialCoins === 1 ? '' : 's'}</div>
+            <div className="text-lg font-bold text-amber-700">{walletOwner.trialCoins} coin{walletOwner.trialCoins === 1 ? '' : 's'}</div>
           </div>
           <p className="text-xs text-gray-500 mb-3">
             A free trial credit, separate from your ₹ balance above — spent first on every send
-            ({COINS_PER_SEND} coins/message) before your wallet is touched.
+            ({COINS_PER_SEND} coins/message) before your wallet is touched.{sharedWithOtherCompanies && ' Shared with every company under your login, just like the wallet.'}
           </p>
           {trialCoinTransactions.length > 0 && (
             <div className="overflow-x-auto -mx-5 px-5 pt-3 border-t border-amber-100">

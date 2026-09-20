@@ -43,8 +43,8 @@ export async function sendWishForContact(params: {
 }) {
   const { business, contact, template, occasion } = params;
 
-  // The ₹ wallet is shared across every company under the same login (see
-  // getWalletOwner) — trial coins are the one balance that stays per-company.
+  // Both the ₹ wallet and trial coins are shared across every company
+  // under the same login (see getWalletOwner).
   const walletOwner = await getWalletOwner(business);
 
   // Spending gate: a send is covered either by trial coins (spent first —
@@ -52,7 +52,7 @@ export async function sendWishForContact(params: {
   // walletRatePaise (locked in at its last recharge). If neither can cover
   // one more message, skip it rather than sending for free — the business
   // sees exactly why in their Send logs / this contact's timeline.
-  const useCoins = business.trialCoins >= COINS_PER_SEND;
+  const useCoins = walletOwner.trialCoins >= COINS_PER_SEND;
   if (!useCoins && walletOwner.walletBalancePaise < walletOwner.walletRatePaise) {
     await prisma.sendLog.create({
       data: {
@@ -176,8 +176,8 @@ export async function sendWishForFestival(params: {
   const apiKey = resolveAisensyApiKey(business);
   const fromName = brandFirmNameText(business) || business.name;
 
-  // The ₹ wallet is shared across every company under the same login —
-  // trial coins stay per-company (see getWalletOwner in businessFamily.ts).
+  // Both the ₹ wallet and trial coins are shared across every company
+  // under the same login (see getWalletOwner in businessFamily.ts).
   const walletOwner = await getWalletOwner(business);
 
   // Tracked locally rather than re-reading from the DB every iteration —
@@ -185,7 +185,7 @@ export async function sendWishForFestival(params: {
   // enough to stop sending once neither pool can cover the next message,
   // even mid-batch. Trial coins are spent first, same as sendWishForContact.
   let remainingBalance = walletOwner.walletBalancePaise;
-  let remainingCoins = business.trialCoins;
+  let remainingCoins = walletOwner.trialCoins;
 
   for (const contact of contacts) {
     const useCoins = remainingCoins >= COINS_PER_SEND;
@@ -355,30 +355,29 @@ async function chargeForSend(
   description: string,
   useCoins: boolean
 ): Promise<void> {
+  // Note which company this send was for when it's paid from another
+  // company's shared pool — otherwise the root account's history would just
+  // show identical-looking debits with no way to tell them apart.
+  const fullDescription = walletOwner.id === business.id ? description : `${description} — ${business.name}`;
+
   if (useCoins) {
-    // Trial coins are per-company, always charged to the sending business
-    // itself — never the shared wallet owner.
     await prisma.$transaction([
       prisma.business.update({
-        where: { id: business.id },
+        where: { id: walletOwner.id },
         data: { trialCoins: { decrement: COINS_PER_SEND } },
       }),
       prisma.trialCoinTransaction.create({
         data: {
-          businessId: business.id,
+          businessId: walletOwner.id,
           type: 'DEBIT',
           coins: COINS_PER_SEND,
-          description,
+          description: fullDescription,
           sendLogId,
         },
       }),
     ]);
     return;
   }
-  // Note which company this send was for when it's paid from another
-  // company's shared wallet — otherwise the root account's wallet history
-  // would just show identical-looking debits with no way to tell them apart.
-  const fullDescription = walletOwner.id === business.id ? description : `${description} — ${business.name}`;
   await debitWallet(walletOwner, sendLogId, fullDescription);
 }
 

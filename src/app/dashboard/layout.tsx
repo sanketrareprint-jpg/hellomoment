@@ -9,7 +9,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const companies = await getFamilyBusinesses(business);
 
-  // The ₹ wallet is shared across the whole family (see
+  // The ₹ wallet and trial coins are shared across the whole family (see
   // src/lib/businessFamily.ts) — this also gives us the root account's real
   // login email to show under the company switcher, instead of a member
   // company's synthesized one.
@@ -20,7 +20,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       businessName={business.name}
       businessEmail={walletOwner.email}
       walletBalancePaise={walletOwner.walletBalancePaise}
-      trialCoins={business.trialCoins}
+      trialCoins={walletOwner.trialCoins}
       companies={companies}
       activeBusinessId={business.id}
     >
