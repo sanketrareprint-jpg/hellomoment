@@ -679,7 +679,18 @@ export default function TemplatePlaceholderEditor({
         </div>
       </div>
 
-      <div className="lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+      {/* top-0, not top-4: this column is a CSS Grid item with
+          align-self:start, so its *containing block* for sticky purposes is
+          the grid row's full height (matching whichever column is taller),
+          not its own shrunk box. A nonzero `top` offset is satisfied
+          immediately, with no scrolling, the moment that row becomes taller
+          than this column — e.g. the instant the left column's properties
+          panel opens below the toolbar — which read as the whole flyer
+          preview (and its markers) suddenly jumping down when a field was
+          selected. top-0 has nothing to "jump" to (it's already satisfied
+          at the column's natural position), so it keeps this column
+          pinned near the top while scrolling without that snap. */}
+      <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
         <p className="text-sm text-gray-600 mb-2">
           Drag the labeled markers on the flyer to position them. Numbers below give exact control.
         </p>
