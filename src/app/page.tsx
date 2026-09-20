@@ -84,7 +84,7 @@ export default async function LandingPage() {
   const banners = await prisma.dashboardBanner.findMany({
     where: { isActive: true, placement: 'LANDING' },
     orderBy: { order: 'asc' },
-    select: { id: true, imageUrl: true, linkUrl: true },
+    select: { id: true, imageUrl: true, mobileImageUrl: true, linkUrl: true },
   });
 
   return (
@@ -112,7 +112,7 @@ export default async function LandingPage() {
 
       <div className="flex flex-col">
         {banners.length > 0 && (
-          <section className="hidden sm:block max-w-5xl mx-auto px-4 sm:px-6 pt-6">
+          <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
             <DashboardBannerSlider banners={banners} />
           </section>
         )}

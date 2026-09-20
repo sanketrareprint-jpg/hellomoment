@@ -37,13 +37,16 @@ export async function POST(req: NextRequest) {
   const linkUrlRaw = formData?.get('linkUrl');
   const linkUrl = typeof linkUrlRaw === 'string' && linkUrlRaw.trim() ? linkUrlRaw.trim() : null;
   const placement = parsePlacement(formData?.get('placement')) ?? 'DASHBOARD';
+  const mobileFile = formData?.get('mobileFile');
 
   try {
     const saved = await saveImageUpload(file, 'banners');
+    const savedMobile = mobileFile instanceof File ? await saveImageUpload(mobileFile, 'banners') : null;
     const maxOrder = await prisma.dashboardBanner.aggregate({ where: { placement }, _max: { order: true } });
     const banner = await prisma.dashboardBanner.create({
       data: {
         imageUrl: saved.url,
+        mobileImageUrl: savedMobile?.url ?? null,
         linkUrl,
         placement,
         order: (maxOrder._max.order ?? -1) + 1,

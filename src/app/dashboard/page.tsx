@@ -24,7 +24,7 @@ export default async function DashboardOverview() {
     prisma.dashboardBanner.findMany({
       where: { isActive: true, placement: 'DASHBOARD' },
       orderBy: { order: 'asc' },
-      select: { id: true, imageUrl: true, linkUrl: true },
+      select: { id: true, imageUrl: true, mobileImageUrl: true, linkUrl: true },
     }),
   ]);
 

@@ -254,12 +254,13 @@ model FlyerTemplate {
 // run different creative on the dashboard vs. the landing page.
 // placement: "DASHBOARD" | "LANDING"
 model DashboardBanner {
-  id        String   @id @default(cuid())
-  imageUrl  String
-  linkUrl   String? // optional; banner is clickable if set
-  placement String   @default("DASHBOARD") // "DASHBOARD" | "LANDING"
-  order     Int      @default(0) // lower shows first
-  isActive  Boolean  @default(true)
+  id             String   @id @default(cuid())
+  imageUrl       String
+  mobileImageUrl String? // optional; shown on phones instead of imageUrl — falls back to imageUrl if not set
+  linkUrl        String? // optional; banner is clickable if set
+  placement      String   @default("DASHBOARD") // "DASHBOARD" | "LANDING"
+  order          Int      @default(0) // lower shows first
+  isActive       Boolean  @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

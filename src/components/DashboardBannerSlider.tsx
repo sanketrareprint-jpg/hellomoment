@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react';
 export interface SliderBanner {
   id: string;
   imageUrl: string;
+  mobileImageUrl?: string | null;
   linkUrl: string | null;
 }
 
@@ -32,13 +33,16 @@ export default function DashboardBannerSlider({ banners }: { banners: SliderBann
   const current = banners[index];
 
   const Image = (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={current.imageUrl} alt="Promotional banner" className="w-full h-full object-cover" />
+    <picture>
+      {current.mobileImageUrl && <source media="(max-width: 639px)" srcSet={current.mobileImageUrl} />}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={current.imageUrl} alt="Promotional banner" className="w-full h-full object-cover" />
+    </picture>
   );
 
   return (
     <div className="relative rounded-2xl overflow-hidden shadow-sm border border-gray-200/80 group">
-      <div className="w-full aspect-[3/1] bg-gray-100">
+      <div className="w-full aspect-[16/9] sm:aspect-[3/1] bg-gray-100">
         {current.linkUrl ? (
           <a href={current.linkUrl} target="_blank" rel="noopener noreferrer">
             {Image}
