@@ -1,0 +1,35 @@
+import Link from 'next/link';
+import { prisma } from '@/lib/db';
+import AdminStarterTemplatesGrid from '@/components/AdminStarterTemplatesGrid';
+import ImportBundledStarterTemplatesButton from '@/components/ImportBundledStarterTemplatesButton';
+
+export const dynamic = 'force-dynamic';
+
+export default async function AdminTemplatesPage() {
+  const templates = await prisma.starterTemplate.findMany({ orderBy: [{ order: 'asc' }, { createdAt: 'desc' }] });
+
+  return (
+    <div>
+      <Link href="/admin" className="text-sm text-brand-600 font-medium inline-flex items-center gap-1 mb-4 hover:gap-2 transition-all">
+        ← Back to businesses
+      </Link>
+
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-1">
+        <h1 className="text-2xl font-bold text-gray-900">Flyer templates</h1>
+        <div className="flex gap-2">
+          <ImportBundledStarterTemplatesButton />
+          <Link href="/admin/templates/new" className="btn-primary">
+            + New template
+          </Link>
+        </div>
+      </div>
+      <p className="text-gray-600 mb-6">
+        Ready-made flyer designs offered to every business via &ldquo;Add / refresh starter flyer designs&rdquo; on
+        their own Templates page. Upload a background, then drag the name/date/photo/branding markers into place —
+        same editor a business uses for their own templates.
+      </p>
+
+      <AdminStarterTemplatesGrid templates={templates} />
+    </div>
+  );
+}

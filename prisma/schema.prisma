@@ -259,6 +259,40 @@ model DashboardBanner {
   @@index([isActive, order])
 }
 
+// A ready-made flyer design admin (Vrushali) curates from the /admin panel —
+// the source of truth for "Add / refresh starter flyer designs" on every
+// business's Templates page (src/app/api/templates/seed-starter/route.ts
+// copies these into a business's own FlyerTemplate rows). Global, not
+// per-business, same pattern as DashboardBanner above. Placeholder fields
+// mirror FlyerTemplate's (same JSON shape) — isDefault/aisensyCampaignName
+// don't apply here since those are decided per-business at copy time.
+model StarterTemplate {
+  id            String   @id @default(cuid())
+  name          String
+  occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+  backgroundUrl String // /api/files/templates/<file>
+  canvasWidth   Int      @default(1080)
+  canvasHeight  Int      @default(1080)
+
+  namePlaceholder        String? // JSON, see FlyerTemplate for shape
+  designationPlaceholder String?
+  datePlaceholder        String?
+  photoPlaceholder       String?
+  logoPlaceholder        String?
+  firmNamePlaceholder    String?
+  phonePlaceholder       String?
+  addressPlaceholder     String?
+  productsPlaceholder    String?
+
+  isActive Boolean @default(true) // only active designs are offered to businesses
+  order    Int     @default(0) // lower shows first
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([occasion, isActive, order])
+}
+
 model Festival {
   id         String   @id @default(cuid())
   businessId String

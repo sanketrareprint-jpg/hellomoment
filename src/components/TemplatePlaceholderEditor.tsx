@@ -119,6 +119,10 @@ export default function TemplatePlaceholderEditor({
   initial,
   business,
   showBranding = true,
+  showPerBusinessOptions = true,
+  apiBase = '/api/templates',
+  uploadUrl = '/api/uploads/template',
+  redirectPath = '/dashboard/templates',
 }: {
   initial?: TemplateFormValues;
   business?: BrandInfo;
@@ -127,6 +131,17 @@ export default function TemplatePlaceholderEditor({
   // uploaded artwork ("My templates") already has its branding drawn into
   // the image, so offering these fields there would just duplicate it.
   showBranding?: boolean;
+  // "Use as default" and the AiSensy campaign override are per-business
+  // settings decided when a business copies/edits its own FlyerTemplate row
+  // — they don't apply to admin's global StarterTemplate library, so the
+  // admin template editor hides both.
+  showPerBusinessOptions?: boolean;
+  // Where this editor reads/writes from — defaults to the business-owned
+  // FlyerTemplate API; the admin StarterTemplate library passes its own
+  // endpoints and redirect instead.
+  apiBase?: string;
+  uploadUrl?: string;
+  redirectPath?: string;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<TemplateFormValues>(initial ?? EMPTY_TEMPLATE);
@@ -300,7 +315,7 @@ export default function TemplatePlaceholderEditor({
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('/api/uploads/template', { method: 'POST', body: fd });
+      const res = await fetch(uploadUrl, { method: 'POST', body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       setForm((f) => ({
@@ -391,8 +406,9 @@ export default function TemplatePlaceholderEditor({
         backgroundUrl: form.backgroundUrl,
         canvasWidth: form.canvasWidth,
         canvasHeight: form.canvasHeight,
-        isDefault: form.isDefault,
-        aisensyCampaignName: form.aisensyCampaignName || null,
+        ...(showPerBusinessOptions
+          ? { isDefault: form.isDefault, aisensyCampaignName: form.aisensyCampaignName || null }
+          : {}),
         namePlaceholder: form.useName ? form.namePlaceholder : null,
         designationPlaceholder: form.useDesignation ? form.designationPlaceholder : null,
         datePlaceholder: form.useDate ? form.datePlaceholder : null,
@@ -403,7 +419,7 @@ export default function TemplatePlaceholderEditor({
         addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
         productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
       };
-      const url = form.id ? `/api/templates/${form.id}` : '/api/templates';
+      const url = form.id ? `${apiBase}/${form.id}` : apiBase;
       const method = form.id ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -412,7 +428,7 @@ export default function TemplatePlaceholderEditor({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
-      router.push('/dashboard/templates');
+      router.push(redirectPath);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -482,36 +498,39 @@ export default function TemplatePlaceholderEditor({
                 <option value="FESTIVAL">Festival</option>
               </select>
             </div>
-            <div className="flex items-end pb-2">
-              <label className="flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={form.isDefault}
-                  onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
-                />
-                Use as default for this occasion
-              </label>
-            </div>
+            {showPerBusinessOptions && (
+              <div className="flex items-end pb-2">
+                <label className="flex items-center gap-2 text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={form.isDefault}
+                    onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
+                  />
+                  Use as default for this occasion
+                </label>
+              </div>
+            )}
           </div>
-          {!showAdvanced ? (
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(true)}
-              className="text-sm font-medium text-brand-600 hover:text-brand-700"
-            >
-              + Advanced options (optional)
-            </button>
-          ) : (
-            <div>
-              <label className="label">AiSensy campaign name (optional)</label>
-              <input
-                className="input"
-                value={form.aisensyCampaignName}
-                onChange={(e) => setForm({ ...form, aisensyCampaignName: e.target.value })}
-                placeholder="Leave blank to use your Settings default"
-              />
-            </div>
-          )}
+          {showPerBusinessOptions &&
+            (!showAdvanced ? (
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(true)}
+                className="text-sm font-medium text-brand-600 hover:text-brand-700"
+              >
+                + Advanced options (optional)
+              </button>
+            ) : (
+              <div>
+                <label className="label">AiSensy campaign name (optional)</label>
+                <input
+                  className="input"
+                  value={form.aisensyCampaignName}
+                  onChange={(e) => setForm({ ...form, aisensyCampaignName: e.target.value })}
+                  placeholder="Leave blank to use your Settings default"
+                />
+              </div>
+            ))}
           <div>
             <label className="label">Flyer background image</label>
             <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onBackgroundChange} />
@@ -647,7 +666,7 @@ export default function TemplatePlaceholderEditor({
           <button type="submit" disabled={loading || uploading} className="btn-primary">
             {loading ? 'Saving…' : form.id ? 'Save changes' : 'Create template'}
           </button>
-          <button type="button" className="btn-secondary" onClick={() => router.push('/dashboard/templates')}>
+          <button type="button" className="btn-secondary" onClick={() => router.push(redirectPath)}>
             Cancel
           </button>
         </div>
