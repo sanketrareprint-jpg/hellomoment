@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 export default function SendTestWishButton({
   contactId,
@@ -59,7 +60,20 @@ export default function SendTestWishButton({
           </button>
         )}
       </div>
-      {message && <p className="text-sm text-gray-700 mt-2">{message}</p>}
+      {message && (
+        <p className="text-sm text-gray-700 mt-2">
+          {message}
+          {/* No default template configured — point straight at the fix instead of a dead end. */}
+          {/No default .* template/i.test(message) && (
+            <>
+              {' '}
+              <Link href="/dashboard/templates" className="text-brand-600 font-medium hover:underline">
+                Go to Flyer templates →
+              </Link>
+            </>
+          )}
+        </p>
+      )}
     </div>
   );
 }

@@ -42,7 +42,16 @@ export default function SendTestMessageButton({
           );
           router.refresh();
         } catch (err) {
-          alert(err instanceof Error ? err.message : 'Send failed');
+          const msg = err instanceof Error ? err.message : 'Send failed';
+          // "No default birthday/anniversary template" is a dead end as a
+          // plain alert — offer to jump straight to Flyer templates so the
+          // business can mark one as default, instead of just naming the
+          // page they have to go find themselves.
+          if (/No default .* template/i.test(msg) && confirm(`${msg}\n\nGo to Flyer templates now?`)) {
+            router.push('/dashboard/templates');
+          } else if (!/No default .* template/i.test(msg)) {
+            alert(msg);
+          }
         } finally {
           setBusy(false);
         }
