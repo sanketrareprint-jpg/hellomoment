@@ -44,7 +44,10 @@ export interface SavedUpload {
  * STORAGE_DIR/<subdir>/, returning both its servable URL and absolute
  * filesystem path. Rejects anything that isn't a recognized image type.
  */
-export async function saveImageUpload(file: File, subdir: 'photos' | 'templates' | 'logos' | 'banners'): Promise<SavedUpload> {
+export async function saveImageUpload(
+  file: File,
+  subdir: 'photos' | 'templates' | 'logos' | 'banners' | 'frames'
+): Promise<SavedUpload> {
   const allowed = subdir === 'templates' ? ALLOWED_TEMPLATE_IMAGE_TYPES : ALLOWED_IMAGE_TYPES;
   const ext = allowed[file.type];
   if (!ext) {

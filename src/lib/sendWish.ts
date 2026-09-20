@@ -2,12 +2,13 @@ import path from 'node:path';
 import { v4 as uuid } from 'uuid';
 import type { Business, Contact, Festival, FlyerTemplate } from '@prisma/client';
 import { prisma } from './db';
-import { generateFlyer, TextPlaceholder, PhotoPlaceholder } from './flyer';
+import { generateFlyer, TextPlaceholder, PhotoPlaceholder, LogoPlaceholder } from './flyer';
 import { sendAisensyCampaign } from './aisensy';
 import { servedUrlToAbsolutePath, STORAGE_DIR } from './uploads';
 import { formatDateForDisplay } from './dateUtils';
 import { COINS_PER_SEND } from './pricing';
 import { getWalletOwner } from './businessFamily';
+import { scaleLogoPlaceholder, scaleTextPlaceholder } from './framePlaceholders';
 
 /**
  * The single place that turns "it's Priya's birthday" (or a festival) into
@@ -289,14 +290,66 @@ async function renderFlyer(
   const outputName = `${uuid()}.jpg`;
   const outputPath = path.join(STORAGE_DIR, 'generated', outputName);
 
-  const logoPlaceholder = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
   const designationPlaceholder = template.designationPlaceholder ? JSON.parse(template.designationPlaceholder) : null;
-  const firmNamePlaceholder = template.firmNamePlaceholder ? JSON.parse(template.firmNamePlaceholder) : null;
-  const phonePlaceholder = template.phonePlaceholder ? JSON.parse(template.phonePlaceholder) : null;
-  const emailPlaceholder = template.emailPlaceholder ? JSON.parse(template.emailPlaceholder) : null;
-  const addressPlaceholder = template.addressPlaceholder ? JSON.parse(template.addressPlaceholder) : null;
-  const websitePlaceholder = template.websitePlaceholder ? JSON.parse(template.websitePlaceholder) : null;
-  const productsPlaceholder = template.productsPlaceholder ? JSON.parse(template.productsPlaceholder) : null;
+
+  // A business's default Frame (see the Frame/BusinessFrame models and
+  // /dashboard/frames) — when set, its branding placement/styling and
+  // overlay graphic are used on *every* flyer this business sends, instead
+  // of the FlyerTemplate's own logo/firmName/phone/email/address/website/
+  // products placeholders below. This is what lets a business set up their
+  // branding once and have it apply across every template/occasion, rather
+  // than repeating the setup per template. Falls back to the template's own
+  // placeholders (unchanged behavior) when no default frame is set.
+  const defaultFrame = await prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } });
+
+  let logoPlaceholder: LogoPlaceholder | null = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
+  let firmNamePlaceholder: TextPlaceholder | null = template.firmNamePlaceholder
+    ? JSON.parse(template.firmNamePlaceholder)
+    : null;
+  let phonePlaceholder: TextPlaceholder | null = template.phonePlaceholder ? JSON.parse(template.phonePlaceholder) : null;
+  let emailPlaceholder: TextPlaceholder | null = template.emailPlaceholder ? JSON.parse(template.emailPlaceholder) : null;
+  let addressPlaceholder: TextPlaceholder | null = template.addressPlaceholder
+    ? JSON.parse(template.addressPlaceholder)
+    : null;
+  let websitePlaceholder: TextPlaceholder | null = template.websitePlaceholder
+    ? JSON.parse(template.websitePlaceholder)
+    : null;
+  let productsPlaceholder: TextPlaceholder | null = template.productsPlaceholder
+    ? JSON.parse(template.productsPlaceholder)
+    : null;
+  let overlayPath: string | null = null;
+
+  if (defaultFrame) {
+    // The frame's placeholders were positioned against its own canvas size
+    // (frame.canvasWidth/Height), which may not match this particular
+    // template's background dimensions — scale proportionally so the same
+    // frame still lands in the right relative spot on every template.
+    const scaleX = template.canvasWidth / defaultFrame.canvasWidth;
+    const scaleY = template.canvasHeight / defaultFrame.canvasHeight;
+
+    logoPlaceholder = defaultFrame.logoPlaceholder
+      ? scaleLogoPlaceholder(JSON.parse(defaultFrame.logoPlaceholder), scaleX, scaleY)
+      : null;
+    firmNamePlaceholder = defaultFrame.firmNamePlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.firmNamePlaceholder), scaleX, scaleY)
+      : null;
+    phonePlaceholder = defaultFrame.phonePlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.phonePlaceholder), scaleX, scaleY)
+      : null;
+    emailPlaceholder = defaultFrame.emailPlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.emailPlaceholder), scaleX, scaleY)
+      : null;
+    addressPlaceholder = defaultFrame.addressPlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.addressPlaceholder), scaleX, scaleY)
+      : null;
+    websitePlaceholder = defaultFrame.websitePlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.websitePlaceholder), scaleX, scaleY)
+      : null;
+    productsPlaceholder = defaultFrame.productsPlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.productsPlaceholder), scaleX, scaleY)
+      : null;
+    overlayPath = defaultFrame.overlayUrl ? servedUrlToAbsolutePath(defaultFrame.overlayUrl) : null;
+  }
 
   // A contact's Title (e.g. "Mr.", "Dr.") is shown as part of the name line
   // itself, not as a separately positioned placeholder — contacts without
@@ -307,6 +360,7 @@ async function renderFlyer(
     backgroundPath: servedUrlToAbsolutePath(template.backgroundUrl),
     canvasWidth: template.canvasWidth,
     canvasHeight: template.canvasHeight,
+    overlayPath,
     namePlaceholder: template.namePlaceholder ? (JSON.parse(template.namePlaceholder) as TextPlaceholder) : null,
     name: displayName,
     designationPlaceholder: designationPlaceholder as TextPlaceholder | null,
