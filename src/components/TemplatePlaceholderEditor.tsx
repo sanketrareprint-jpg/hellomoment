@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
 import { defaultsFor, type Align, type TemplateFormValues, type TextPlaceholder } from '@/lib/flyerPlaceholders';
+import { wrapText } from '@/lib/textWrap';
 
 export type { TemplateFormValues };
 
@@ -810,8 +811,11 @@ export default function TemplatePlaceholderEditor({
           {(['name', 'designation', 'date', 'firmName', 'phone', 'email', 'address', 'website', 'products'] as TextFieldKey[]).map((key) => {
             if (!isFieldOn(key) || !form.backgroundUrl) return null;
             const p = getTextPlaceholder(key);
-            const minFontPx = key === 'name' ? 10 : key === 'date' ? 9 : 8;
-            const fontPx = Math.max(minFontPx, p.fontSize * scale);
+            // No artificial floor here: the real flyer (flyer.ts) never
+            // enforces a minimum font size, so clamping this preview to a
+            // minimum made small font choices look bigger while editing
+            // than what actually got sent.
+            const fontPx = Math.max(1, p.fontSize * scale);
             // Phone/email/address/website get the same outline icon used for
             // their toolbar button, sized and colored to match the text next
             // to it — same icon shown on the actual sent flyer (see flyer.ts).
@@ -819,14 +823,22 @@ export default function TemplatePlaceholderEditor({
               key === 'phone' || key === 'email' || key === 'address' || key === 'website'
                 ? BRAND_FIELDS.find((d) => d.key === key)?.icon
                 : null;
+            // Wrap with the exact same heuristic flyer.ts uses server-side
+            // (see textWrap.ts) instead of rendering one un-wrapped line —
+            // previously this used `whitespace-nowrap`, so any text that
+            // needed to wrap onto 2+ lines on the real flyer just overflowed
+            // sideways in the preview instead, making the field look
+            // positioned differently than what actually got sent.
+            const lines = wrapText(previewTextFor(key), p.maxWidth, p.fontSize, p.maxLines ?? 2);
             return (
               <div
                 key={key}
                 onPointerDown={startDrag(key)}
-                className="absolute cursor-move px-1 whitespace-nowrap flex items-center gap-1"
+                className="absolute cursor-move px-1 flex items-center gap-1"
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
+                  maxWidth: p.maxWidth ? p.maxWidth * scale : undefined,
                   transform:
                     p.align === 'center' ? 'translate(-50%, -50%)' : p.align === 'right' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
                   color: p.color,
@@ -846,8 +858,17 @@ export default function TemplatePlaceholderEditor({
                     <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
                   </svg>
                 )}
-                <span style={{ fontSize: fontPx, fontWeight: p.fontWeight, fontFamily: cssFontFamilyFor(p.fontFamily) }}>
-                  {previewTextFor(key)}
+                <span
+                  style={{
+                    fontSize: fontPx,
+                    fontWeight: p.fontWeight,
+                    fontFamily: cssFontFamilyFor(p.fontFamily),
+                    textAlign: p.align,
+                    lineHeight: 1.15,
+                    whiteSpace: 'pre-line',
+                  }}
+                >
+                  {lines.join('\n')}
                 </span>
               </div>
             );
