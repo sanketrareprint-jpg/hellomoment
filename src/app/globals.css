@@ -2,6 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Same FreeSans .ttf files bundled in assets/fonts and used server-side for
+   every flyer's "Default (English + Marathi)" font choice (see
+   BUNDLED_FONT_FAMILY in src/lib/flyer.ts) — copied into public/fonts so the
+   browser can load them too. Without this, the template editor's live
+   preview had no way to render the "Default" font as itself: FONT_FAMILIES'
+   cssFamily for it was 'inherit', which just picks up whatever UI font the
+   surrounding page (and therefore the viewer's own OS/browser) happens to
+   use — Segoe UI, San Francisco, Roboto, etc., all different from and none
+   of them matching the FreeSans actually sent on the flyer. That mismatch is
+   why the preview's fonts looked inconsistent/wrong compared to what
+   businesses actually received on WhatsApp.
+*/
+@font-face {
+  font-family: 'HMFontPreview';
+  src: url('/fonts/FreeSans.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'HMFontPreview';
+  src: url('/fonts/FreeSansBold.ttf') format('truetype');
+  font-weight: 600 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 html,
 body {
   height: 100%;

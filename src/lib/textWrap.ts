@@ -33,12 +33,20 @@ export function wrapText(text: string, maxWidth: number | undefined, fontSize: n
     } else {
       current = candidate;
     }
-    if (lines.length === maxLines - 1 && current.length > maxCharsPerLine) {
-      // Truncate the final allowed line with an ellipsis rather than overflow.
-      current = current.slice(0, Math.max(0, maxCharsPerLine - 1)).trimEnd() + '…';
-      break;
-    }
   }
   if (current) lines.push(current);
-  return lines.slice(0, maxLines);
+
+  if (lines.length <= maxLines) return lines;
+
+  // Wrapping produced more lines than allowed (this is the common case once
+  // maxLines is small, e.g. 1): rather than the previous behavior — which
+  // silently dropped every line past maxLines with no visual cue, cutting
+  // text off mid-sentence — keep the first maxLines lines and mark the cut
+  // with a trailing ellipsis on the last one, trimming it back down to fit
+  // maxCharsPerLine (the ellipsis glyph takes up width too).
+  const visible = lines.slice(0, maxLines);
+  const last = visible[maxLines - 1];
+  visible[maxLines - 1] =
+    last.length >= maxCharsPerLine ? last.slice(0, Math.max(0, maxCharsPerLine - 1)).trimEnd() + '…' : last + '…';
+  return visible;
 }

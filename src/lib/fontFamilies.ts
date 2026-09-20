@@ -27,7 +27,13 @@ export const FONT_FAMILIES: FontFamilyOption[] = [
   {
     id: 'default',
     label: 'Default (English + Marathi)',
-    cssFamily: 'inherit',
+    // 'HMFontPreview' is the same bundled FreeSans .ttf server-side
+    // rendering uses (see BUNDLED_FONT_FAMILY in src/lib/flyer.ts),
+    // @font-face'd in globals.css from public/fonts — NOT 'inherit', which
+    // used to just pick up whatever UI font the surrounding page (and thus
+    // the viewer's own OS/browser) happened to be using, so the preview
+    // never actually showed the font real flyers are sent with.
+    cssFamily: "'HMFontPreview', sans-serif",
     supportsDevanagari: true,
   },
   {
