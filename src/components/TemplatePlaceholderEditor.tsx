@@ -2,11 +2,24 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
 import { defaultsFor, type TemplateFormValues, type TextPlaceholder } from '@/lib/flyerPlaceholders';
 import PlaceholderControls from '@/components/PlaceholderControls';
 
 export type { TemplateFormValues };
+
+// A business's saved Frame (see the Frame/BusinessFrame Prisma models and
+// /dashboard/frames) — its default, when set, overrides every template's own
+// branding placeholders at send time (see src/lib/sendWish.ts), so this
+// editor surfaces that here instead of leaving the "Your business branding"
+// toolbar below looking like it always takes effect.
+export interface FrameOption {
+  id: string;
+  name: string;
+  overlayUrl: string | null;
+  isDefault: boolean;
+}
 
 // The business's saved Brand kit (Settings → Brand kit for flyers), passed
 // in so the editor can preview the *actual* logo/firm name/phone/address
@@ -137,6 +150,7 @@ const BRAND_FIELDS: { key: FieldKey; label: string; icon: string }[] = [
 export default function TemplatePlaceholderEditor({
   initial,
   business,
+  frames = [],
   showBranding = true,
   showPerBusinessOptions = true,
   apiBase = '/api/templates',
@@ -145,6 +159,9 @@ export default function TemplatePlaceholderEditor({
 }: {
   initial?: TemplateFormValues;
   business?: BrandInfo;
+  // This business's saved Frames, if any — offered in the branding section
+  // below as the recommended alternative to manually positioning each field.
+  frames?: FrameOption[];
   // Business branding (logo/firm name/phone/address/products) only makes
   // sense to overlay on a bundled Starter template — a business's own
   // uploaded artwork ("My templates") already has its branding drawn into
@@ -176,12 +193,40 @@ export default function TemplatePlaceholderEditor({
   // shared properties panel below the toolbar, Word/Photoshop-style,
   // instead of every field's settings being permanently expanded at once.
   const [selected, setSelected] = useState<FieldKey | null>(null);
+  // Elements a business has locked in place so they stop being draggable —
+  // handy once several markers overlap (e.g. name/date sitting on top of a
+  // photo box) and dragging one keeps bumping another by accident. Purely a
+  // working aid for this editing session — not saved with the template —
+  // so a freshly opened editor always starts with everything unlocked.
+  const [locked, setLocked] = useState<Set<FieldKey>>(new Set());
   // Purely a visual aid for lining elements up while dragging — never saved,
   // doesn't affect the actual generated flyer.
   const [showGrid, setShowGrid] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
   const previewColumnRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
+
+  // This business's default Frame, if any. When set, it overrides every
+  // template's own branding placeholders at send time regardless of what's
+  // configured below (see src/lib/sendWish.ts) — so the manual toolbar stays
+  // collapsed behind an "advanced" toggle by default rather than looking
+  // like positioning these fields here still matters.
+  const defaultFrame = frames.find((f) => f.isDefault) ?? null;
+  const [manualBrandingOpen, setManualBrandingOpen] = useState(false);
+  const brandFieldKeySet = new Set(BRAND_FIELDS.map((d) => d.key));
+
+  function isLocked(key: FieldKey): boolean {
+    return locked.has(key);
+  }
+
+  function toggleLock(key: FieldKey) {
+    setLocked((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   // Shrinks the preview canvas to fit its column on narrow screens (e.g. a
   // phone in the mobile drawer layout, where the column is narrower than
@@ -402,6 +447,14 @@ export default function TemplatePlaceholderEditor({
 
   function startDrag(target: DragTarget) {
     return (e: React.PointerEvent) => {
+      // A locked element ignores drags entirely (the resize handle counts
+      // as part of the photo box it belongs to) — but still selects, so its
+      // properties panel (and the Unlock button in it) stays reachable.
+      const lockKey = target === 'photo-resize' ? 'photo' : target;
+      if (lockKey && isLocked(lockKey)) {
+        setSelected(lockKey);
+        return;
+      }
       e.preventDefault();
       dragTarget.current = target;
       // Touching a marker also selects it, opening its properties panel
@@ -540,6 +593,11 @@ export default function TemplatePlaceholderEditor({
         </svg>
         <span>{def.label}</span>
         {on && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-brand-500" />}
+        {isLocked(def.key) && (
+          <svg className="absolute top-0.5 left-0.5 w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 1.5a4.5 4.5 0 00-4.5 4.5v3H6a1.5 1.5 0 00-1.5 1.5v9A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0018 9h-1.5V6A4.5 4.5 0 0012 1.5zm-3 7.5V6a3 3 0 116 0v3H9z" />
+          </svg>
+        )}
       </button>
     );
   }
@@ -634,27 +692,124 @@ export default function TemplatePlaceholderEditor({
           {showBranding && (
             <div>
               <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Your business branding</h3>
-              <div className="grid grid-cols-5 gap-1.5">
-                {BRAND_FIELDS.map((def) => (
-                  <ToolbarButton key={def.key} def={def} />
-                ))}
-              </div>
+
+              {defaultFrame ? (
+                <div className="rounded-lg border border-brand-200 bg-brand-50/60 p-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-md overflow-hidden bg-white border border-brand-200 flex-shrink-0 flex items-center justify-center">
+                      {defaultFrame.overlayUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={defaultFrame.overlayUrl} alt={defaultFrame.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <svg className="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-brand-800">Using Frame &ldquo;{defaultFrame.name}&rdquo;</p>
+                      <p className="text-[11px] text-brand-700 leading-snug">
+                        Its logo/firm name/contact placement applies automatically to every flyer, including this
+                        template — the fields below are ignored while it&rsquo;s your default.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <Link href="/dashboard/frames?folder=my" className="text-[11px] font-medium text-brand-700 hover:text-brand-800">
+                      Manage frames →
+                    </Link>
+                    <button
+                      type="button"
+                      className="text-[11px] font-medium text-gray-500 hover:text-gray-700"
+                      onClick={() => setManualBrandingOpen((v) => !v)}
+                    >
+                      {manualBrandingOpen ? 'Hide manual positioning' : 'Position manually instead (advanced)'}
+                    </button>
+                  </div>
+                </div>
+              ) : frames.length > 0 ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 mb-2 text-[11px] text-amber-800 leading-snug">
+                  You have {frames.length} saved frame{frames.length === 1 ? '' : 's'} but none is set as default.{' '}
+                  <Link href="/dashboard/frames?folder=my" className="font-medium underline">
+                    Set a default frame
+                  </Link>{' '}
+                  to apply its branding automatically to every flyer instead of positioning fields below.
+                </div>
+              ) : (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 mb-2 text-[11px] text-gray-600 leading-snug">
+                  Tip:{' '}
+                  <Link href="/dashboard/frames/new" className="font-medium text-brand-600">
+                    create a reusable Frame
+                  </Link>{' '}
+                  to position your branding once and apply it to every flyer automatically, instead of positioning
+                  each field below.
+                </div>
+              )}
+
+              {(!defaultFrame || manualBrandingOpen) && (
+                <div className="grid grid-cols-5 gap-1.5">
+                  {BRAND_FIELDS.map((def) => (
+                    <ToolbarButton key={def.key} def={def} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {selected && selectedDef && (
+          {selected && selectedDef && (!brandFieldKeySet.has(selected) || !defaultFrame || manualBrandingOpen) && (
             <div className="border-t border-gray-100 pt-2">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm font-semibold text-gray-900">{selectedDef.label}</span>
-                <label className="flex items-center gap-1.5 text-xs text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={isFieldOn(selected)}
-                    onChange={(e) => setFieldOn(selected, e.target.checked)}
-                  />
-                  Show on flyer
-                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleLock(selected)}
+                    title={isLocked(selected) ? 'Unlock — allow dragging again' : 'Lock in place — stop accidental dragging'}
+                    className={
+                      'flex items-center gap-1 text-xs font-medium ' +
+                      (isLocked(selected) ? 'text-amber-700' : 'text-gray-500 hover:text-gray-700')
+                    }
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {isLocked(selected) ? (
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                        />
+                      ) : (
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                        />
+                      )}
+                    </svg>
+                    {isLocked(selected) ? 'Locked' : 'Lock'}
+                  </button>
+                  <label className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={isFieldOn(selected)}
+                      onChange={(e) => setFieldOn(selected, e.target.checked)}
+                    />
+                    Show on flyer
+                  </label>
+                </div>
               </div>
+
+              {isLocked(selected) && (
+                <p className="text-xs text-amber-600 mb-1.5">
+                  Locked — drag on the preview is disabled. Click Unlock above to move it again.
+                </p>
+              )}
 
               {selectedNote && <p className="text-xs text-amber-600 mb-1.5">{selectedNote}</p>}
 
@@ -833,7 +988,10 @@ export default function TemplatePlaceholderEditor({
           {form.usePhoto && form.backgroundUrl && (
             <div
               onPointerDown={startDrag('photo')}
-              className="absolute border-2 border-dashed border-brand-500 bg-brand-500/20 cursor-move flex items-center justify-center text-[10px] font-medium text-brand-700"
+              className={
+                'absolute border-2 border-dashed border-brand-500 bg-brand-500/20 flex items-center justify-center text-[10px] font-medium text-brand-700 ' +
+                (isLocked('photo') ? 'cursor-not-allowed' : 'cursor-move')
+              }
               style={{
                 left: form.photoPlaceholder.x * scale,
                 top: form.photoPlaceholder.y * scale,
@@ -853,14 +1011,16 @@ export default function TemplatePlaceholderEditor({
               }}
             >
               Photo
-              <div
-                onPointerDown={(e) => {
-                  e.stopPropagation();
-                  startDrag('photo-resize')(e);
-                }}
-                className="absolute -right-1.5 -bottom-1.5 w-3.5 h-3.5 rounded-full bg-brand-600 border-2 border-white cursor-nwse-resize"
-                title="Drag to stretch"
-              />
+              {!isLocked('photo') && (
+                <div
+                  onPointerDown={(e) => {
+                    e.stopPropagation();
+                    startDrag('photo-resize')(e);
+                  }}
+                  className="absolute -right-1.5 -bottom-1.5 w-3.5 h-3.5 rounded-full bg-brand-600 border-2 border-white cursor-nwse-resize"
+                  title="Drag to stretch"
+                />
+              )}
             </div>
           )}
 
@@ -872,7 +1032,12 @@ export default function TemplatePlaceholderEditor({
             // way the Photo box above doesn't need a real photo either.
             <div
               onPointerDown={startDrag('logo')}
-              className="absolute border-2 border-dashed border-amber-500 cursor-move flex items-center justify-center overflow-hidden bg-white/10 text-[10px] font-medium text-amber-700"
+              className={
+                'absolute border-2 border-dashed flex items-center justify-center overflow-hidden bg-white/10 text-[10px] font-medium text-amber-700 ' +
+                (selected === 'logo' ? 'border-amber-500' : 'border-transparent hover:border-amber-300') +
+                ' ' +
+                (isLocked('logo') ? 'cursor-not-allowed' : 'cursor-move')
+              }
               style={{
                 left: form.logoPlaceholder.x * scale,
                 top: form.logoPlaceholder.y * scale,
@@ -912,7 +1077,7 @@ export default function TemplatePlaceholderEditor({
               <div
                 key={key}
                 onPointerDown={startDrag(key)}
-                className="absolute cursor-move px-1 flex items-center gap-1"
+                className={'absolute px-1 flex items-center gap-1 ' + (isLocked(key) ? 'cursor-not-allowed' : 'cursor-move')}
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
@@ -923,7 +1088,7 @@ export default function TemplatePlaceholderEditor({
                     .filter(Boolean)
                     .join(' '),
                   color: p.color,
-                  outline: selected === key ? '1px dashed rgba(255,255,255,0.8)' : undefined,
+                  outline: selected === key ? `1px dashed ${isLocked(key) ? 'rgba(217,119,6,0.9)' : 'rgba(255,255,255,0.8)'}` : undefined,
                 }}
               >
                 {iconPath && (

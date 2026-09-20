@@ -109,9 +109,26 @@ export default function FramePlaceholderEditor({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<FieldKey | null>(null);
+  // Elements locked in place so they stop being draggable — handy once
+  // several markers overlap. A working aid for this editing session only,
+  // not saved with the frame.
+  const [locked, setLocked] = useState<Set<FieldKey>>(new Set());
   const [showGrid, setShowGrid] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
+
+  function isLocked(key: FieldKey): boolean {
+    return locked.has(key);
+  }
+
+  function toggleLock(key: FieldKey) {
+    setLocked((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   // Local edits to the actual branding TEXT (as opposed to its position/
   // style, which lives in `form` above) — e.g. typing a new address right
@@ -332,6 +349,10 @@ export default function FramePlaceholderEditor({
 
   function startDrag(target: DragTarget) {
     return (e: React.PointerEvent) => {
+      if (target && isLocked(target)) {
+        setSelected(target);
+        return;
+      }
       e.preventDefault();
       dragTarget.current = target;
       if (target) setSelected(target);
@@ -436,6 +457,11 @@ export default function FramePlaceholderEditor({
         </svg>
         <span>{def.label}</span>
         {on && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-brand-500" />}
+        {isLocked(def.key) && (
+          <svg className="absolute top-0.5 left-0.5 w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 1.5a4.5 4.5 0 00-4.5 4.5v3H6a1.5 1.5 0 00-1.5 1.5v9A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0018 9h-1.5V6A4.5 4.5 0 0012 1.5zm-3 7.5V6a3 3 0 116 0v3H9z" />
+          </svg>
+        )}
       </button>
     );
   }
@@ -499,15 +525,51 @@ export default function FramePlaceholderEditor({
             <div className="border-t border-gray-100 pt-2">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm font-semibold text-gray-900">{selectedDef.label}</span>
-                <label className="flex items-center gap-1.5 text-xs text-gray-600">
-                  <input
-                    type="checkbox"
-                    checked={isFieldOn(selected)}
-                    onChange={(e) => setFieldOn(selected, e.target.checked)}
-                  />
-                  Show on flyer
-                </label>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleLock(selected)}
+                    title={isLocked(selected) ? 'Unlock — allow dragging again' : 'Lock in place — stop accidental dragging'}
+                    className={
+                      'flex items-center gap-1 text-xs font-medium ' +
+                      (isLocked(selected) ? 'text-amber-700' : 'text-gray-500 hover:text-gray-700')
+                    }
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      {isLocked(selected) ? (
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                        />
+                      ) : (
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                        />
+                      )}
+                    </svg>
+                    {isLocked(selected) ? 'Locked' : 'Lock'}
+                  </button>
+                  <label className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <input
+                      type="checkbox"
+                      checked={isFieldOn(selected)}
+                      onChange={(e) => setFieldOn(selected, e.target.checked)}
+                    />
+                    Show on flyer
+                  </label>
+                </div>
               </div>
+
+              {isLocked(selected) && (
+                <p className="text-xs text-amber-600 mb-1.5">
+                  Locked — drag on the preview is disabled. Click Unlock above to move it again.
+                </p>
+              )}
 
               {selectedNote && <p className="text-xs text-amber-600 mb-1.5">{selectedNote}</p>}
 
@@ -653,7 +715,12 @@ export default function FramePlaceholderEditor({
           {isFieldOn('logo') && (
             <div
               onPointerDown={startDrag('logo')}
-              className="absolute border-2 border-dashed border-amber-500 cursor-move flex items-center justify-center overflow-hidden bg-white/10 text-[10px] font-medium text-amber-700"
+              className={
+                'absolute border-2 border-dashed flex items-center justify-center overflow-hidden bg-white/10 text-[10px] font-medium text-amber-700 ' +
+                (selected === 'logo' ? 'border-amber-500' : 'border-transparent hover:border-amber-300') +
+                ' ' +
+                (isLocked('logo') ? 'cursor-not-allowed' : 'cursor-move')
+              }
               style={{
                 left: form.logoPlaceholder.x * scale,
                 top: form.logoPlaceholder.y * scale,
@@ -683,7 +750,7 @@ export default function FramePlaceholderEditor({
               <div
                 key={key}
                 onPointerDown={startDrag(key)}
-                className="absolute cursor-move px-1 flex items-center gap-1"
+                className={'absolute px-1 flex items-center gap-1 ' + (isLocked(key) ? 'cursor-not-allowed' : 'cursor-move')}
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
@@ -694,7 +761,7 @@ export default function FramePlaceholderEditor({
                     .filter(Boolean)
                     .join(' '),
                   color: p.color,
-                  outline: selected === key ? '1px dashed rgba(0,0,0,0.5)' : undefined,
+                  outline: selected === key ? `1px dashed ${isLocked(key) ? 'rgba(180,83,9,0.9)' : 'rgba(0,0,0,0.5)'}` : undefined,
                 }}
               >
                 {iconPath && (
