@@ -15,6 +15,8 @@ export interface StarterTemplateRow {
   name: string;
   occasion: string;
   backgroundUrl: string;
+  canvasWidth: number;
+  canvasHeight: number;
   isActive: boolean;
   order: number;
 }
@@ -105,8 +107,13 @@ export default function AdminStarterTemplatesGrid({ templates }: { templates: St
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((t, i) => (
             <div key={t.id} className={'card overflow-hidden' + (t.isActive ? '' : ' opacity-60')}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={t.backgroundUrl} alt={t.name} className="w-full h-40 object-cover" />
+              <div
+                className="w-full bg-gray-100 flex items-center justify-center overflow-hidden"
+                style={{ aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}` }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={t.backgroundUrl} alt={t.name} className="w-full h-full object-contain" />
+              </div>
               <div className="p-4">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="font-semibold text-gray-900 truncate">{t.name}</h3>

@@ -16,6 +16,8 @@ export interface TemplateRow {
   name: string;
   occasion: string;
   backgroundUrl: string;
+  canvasWidth: number;
+  canvasHeight: number;
   isDefault: boolean;
 }
 
@@ -74,8 +76,13 @@ export default function TemplatesGrid({ templates }: { templates: TemplateRow[] 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((t) => (
             <div key={t.id} className="card overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={t.backgroundUrl} alt={t.name} className="w-full h-40 object-cover" />
+              <div
+                className="w-full bg-gray-100 flex items-center justify-center overflow-hidden"
+                style={{ aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}` }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={t.backgroundUrl} alt={t.name} className="w-full h-full object-contain" />
+              </div>
               <div className="p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900">{t.name}</h3>
