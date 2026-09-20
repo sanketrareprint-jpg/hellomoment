@@ -39,11 +39,12 @@ model Business {
   // firmNameMarathi verbatim, since there's no reliable auto-transliteration).
   logoUrl          String? // /api/files/logos/<file>
   phoneDisplay     String? // contact number to print on the flyer (can differ from ownerWhatsapp)
+  emailDisplay     String? // contact email to print on the flyer (can differ from the account's login `email`)
   addressText      String?
   productsText     String? // short line of products/services, e.g. "Sweets · Snacks · Catering"
   firmNameScript   String  @default("ENGLISH") // "ENGLISH" | "MARATHI"
   firmNameMarathi  String? // Marathi-script rendering of the firm name, typed by the business
-  websiteUrl       String? // business's own website, shown in Settings → Business profile
+  websiteUrl       String? // business's own website, shown on flyers — stored without a protocol prefix (e.g. "www.example.com"), never "https://…"
 
   // Wallet — prepaid balance that pays for WhatsApp sends, in paise (₹1 =
   // 100 paise; integers avoid floating-point rounding on money). Recharged
@@ -225,7 +226,9 @@ model FlyerTemplate {
   logoPlaceholder      String? // JSON, e.g. { "x":390,"y":30,"size":180 } — business logo, contain-fit (not cropped)
   firmNamePlaceholder  String? // JSON text placeholder — business name (English caps, or Marathi script)
   phonePlaceholder     String? // JSON text placeholder — business phone number
+  emailPlaceholder     String? // JSON text placeholder — business email
   addressPlaceholder   String? // JSON text placeholder — business address
+  websitePlaceholder   String? // JSON text placeholder — business website
   productsPlaceholder  String? // JSON text placeholder — products/services line
 
   isDefault          Boolean  @default(false) // used when a contact/festival doesn't specify a template
@@ -282,7 +285,9 @@ model StarterTemplate {
   logoPlaceholder        String?
   firmNamePlaceholder    String?
   phonePlaceholder       String?
+  emailPlaceholder       String?
   addressPlaceholder     String?
+  websitePlaceholder     String?
   productsPlaceholder    String?
 
   isActive Boolean @default(true) // only active designs are offered to businesses

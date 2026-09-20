@@ -32,7 +32,9 @@ const templateSchema = z.object({
   logoPlaceholder: placeholderSchema.nullable().optional(),
   firmNamePlaceholder: placeholderSchema.nullable().optional(),
   phonePlaceholder: placeholderSchema.nullable().optional(),
+  emailPlaceholder: placeholderSchema.nullable().optional(),
   addressPlaceholder: placeholderSchema.nullable().optional(),
+  websitePlaceholder: placeholderSchema.nullable().optional(),
   productsPlaceholder: placeholderSchema.nullable().optional(),
 });
 
@@ -64,7 +66,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     logoPlaceholder,
     firmNamePlaceholder,
     phonePlaceholder,
+    emailPlaceholder,
     addressPlaceholder,
+    websitePlaceholder,
     productsPlaceholder,
     ...rest
   } = parsed.data;
@@ -80,7 +84,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       logoPlaceholder: logoPlaceholder ? JSON.stringify(logoPlaceholder) : null,
       firmNamePlaceholder: firmNamePlaceholder ? JSON.stringify(firmNamePlaceholder) : null,
       phonePlaceholder: phonePlaceholder ? JSON.stringify(phonePlaceholder) : null,
+      emailPlaceholder: emailPlaceholder ? JSON.stringify(emailPlaceholder) : null,
       addressPlaceholder: addressPlaceholder ? JSON.stringify(addressPlaceholder) : null,
+      websitePlaceholder: websitePlaceholder ? JSON.stringify(websitePlaceholder) : null,
       productsPlaceholder: productsPlaceholder ? JSON.stringify(productsPlaceholder) : null,
     },
   });

@@ -15,6 +15,7 @@ export interface SettingsFormValues {
   aisensyFestivalCampaign: string;
   logoUrl: string;
   phoneDisplay: string;
+  emailDisplay: string;
   addressText: string;
   productsText: string;
   firmNameScript: 'ENGLISH' | 'MARATHI';
@@ -108,27 +109,15 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
           </div>
         </div>
         <p className="text-xs text-gray-500">Owner WhatsApp receives a copy of every wish sent to your contacts.</p>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="label">Email</label>
-            <input
-              className="input"
-              type="email"
-              required
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="label">Website</label>
-            <input
-              className="input"
-              type="url"
-              value={form.websiteUrl}
-              onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })}
-              placeholder="https://yourbusiness.com"
-            />
-          </div>
+        <div>
+          <label className="label">Login email</label>
+          <input
+            className="input"
+            type="email"
+            required
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
         </div>
         <div>
           <label className="label">Timezone</label>
@@ -144,7 +133,7 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
 
       <div className="card p-3 space-y-2">
         <h2 className="font-semibold text-gray-900 text-sm">Brand kit for flyers</h2>
-        <p className="text-xs text-gray-500">Shown on flyer templates that choose to display them — logo, firm name, phone, address, products.</p>
+        <p className="text-xs text-gray-500">Shown on flyer templates that choose to display them — logo, firm name, phone, email, address, website, products.</p>
         <div>
           <label className="label">Logo</label>
           <div className="flex items-center gap-2">
@@ -167,12 +156,34 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
             />
           </div>
           <div>
+            <label className="label">Email on flyer</label>
+            <input
+              className="input"
+              type="email"
+              value={form.emailDisplay}
+              onChange={(e) => setForm({ ...form, emailDisplay: e.target.value })}
+              placeholder="sales@yourbusiness.com"
+            />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
             <label className="label">Address</label>
             <input
               className="input"
               value={form.addressText}
               onChange={(e) => setForm({ ...form, addressText: e.target.value })}
               placeholder="Shop address"
+            />
+          </div>
+          <div>
+            <label className="label">Website</label>
+            <input
+              className="input"
+              type="text"
+              value={form.websiteUrl}
+              onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })}
+              placeholder="www.yourbusiness.com"
             />
           </div>
         </div>

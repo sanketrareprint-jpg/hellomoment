@@ -35,14 +35,18 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
   const logoPlaceholder = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
   const firmNamePlaceholder = template.firmNamePlaceholder ? JSON.parse(template.firmNamePlaceholder) : null;
   const phonePlaceholder = template.phonePlaceholder ? JSON.parse(template.phonePlaceholder) : null;
+  const emailPlaceholder = template.emailPlaceholder ? JSON.parse(template.emailPlaceholder) : null;
   const addressPlaceholder = template.addressPlaceholder ? JSON.parse(template.addressPlaceholder) : null;
+  const websitePlaceholder = template.websitePlaceholder ? JSON.parse(template.websitePlaceholder) : null;
   const productsPlaceholder = template.productsPlaceholder ? JSON.parse(template.productsPlaceholder) : null;
 
   const brand: BrandInfo = {
     logoUrl: business.logoUrl,
     name: business.name,
     phoneDisplay: business.phoneDisplay,
+    emailDisplay: business.emailDisplay,
     addressText: business.addressText,
+    websiteUrl: business.websiteUrl,
     productsText: business.productsText,
     firmNameScript: business.firmNameScript as 'ENGLISH' | 'MARATHI',
     firmNameMarathi: business.firmNameMarathi,
@@ -77,8 +81,12 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
           firmNamePlaceholder: { ...defaults.firmNamePlaceholder, ...(firmNamePlaceholder ?? {}) },
           usePhone: Boolean(phonePlaceholder),
           phonePlaceholder: { ...defaults.phonePlaceholder, ...(phonePlaceholder ?? {}) },
+          useEmail: Boolean(emailPlaceholder),
+          emailPlaceholder: { ...defaults.emailPlaceholder, ...(emailPlaceholder ?? {}) },
           useAddress: Boolean(addressPlaceholder),
           addressPlaceholder: { ...defaults.addressPlaceholder, ...(addressPlaceholder ?? {}) },
+          useWebsite: Boolean(websitePlaceholder),
+          websitePlaceholder: { ...defaults.websitePlaceholder, ...(websitePlaceholder ?? {}) },
           useProducts: Boolean(productsPlaceholder),
           productsPlaceholder: { ...defaults.productsPlaceholder, ...(productsPlaceholder ?? {}) },
         }}

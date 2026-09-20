@@ -259,7 +259,9 @@ export default async function AdminBusinessDetailPage({
             />
             <Field label="Firm name script" value={business.firmNameScript === 'MARATHI' ? `Marathi — ${business.firmNameMarathi || '(not set)'}` : 'English'} />
             <Field label="Phone shown on flyer" value={business.phoneDisplay} />
+            <Field label="Email shown on flyer" value={business.emailDisplay} />
             <Field label="Address" value={business.addressText} />
+            <Field label="Website" value={business.websiteUrl} />
             <Field label="Products / services line" value={business.productsText} />
           </div>
         </div>

@@ -284,7 +284,9 @@ async function renderFlyer(
   const designationPlaceholder = template.designationPlaceholder ? JSON.parse(template.designationPlaceholder) : null;
   const firmNamePlaceholder = template.firmNamePlaceholder ? JSON.parse(template.firmNamePlaceholder) : null;
   const phonePlaceholder = template.phonePlaceholder ? JSON.parse(template.phonePlaceholder) : null;
+  const emailPlaceholder = template.emailPlaceholder ? JSON.parse(template.emailPlaceholder) : null;
   const addressPlaceholder = template.addressPlaceholder ? JSON.parse(template.addressPlaceholder) : null;
+  const websitePlaceholder = template.websitePlaceholder ? JSON.parse(template.websitePlaceholder) : null;
   const productsPlaceholder = template.productsPlaceholder ? JSON.parse(template.productsPlaceholder) : null;
 
   // A contact's Title (e.g. "Mr.", "Dr.") is shown as part of the name line
@@ -310,8 +312,12 @@ async function renderFlyer(
     firmNameText: brandFirmNameText(business),
     phonePlaceholder,
     phoneText: business.phoneDisplay || null,
+    emailPlaceholder,
+    emailText: business.emailDisplay || null,
     addressPlaceholder,
     addressText: business.addressText || null,
+    websitePlaceholder,
+    websiteText: business.websiteUrl || null,
     productsPlaceholder,
     productsText: business.productsText || null,
     outputPath,
