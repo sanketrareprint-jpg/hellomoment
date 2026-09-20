@@ -74,6 +74,14 @@ export default async function EditAdminTemplatePage({ params }: { params: { id: 
           websitePlaceholder: { ...defaults.websitePlaceholder, ...(websitePlaceholder ?? {}) },
           useProducts: Boolean(productsPlaceholder),
           productsPlaceholder: { ...defaults.productsPlaceholder, ...(productsPlaceholder ?? {}) },
+          // StarterTemplate has no per-template text overrides — these
+          // designs get copied into each business's own FlyerTemplate,
+          // where that feature actually applies.
+          phoneTextOverride: '',
+          emailTextOverride: '',
+          addressTextOverride: '',
+          websiteTextOverride: '',
+          productsTextOverride: '',
         }}
       />
     </div>

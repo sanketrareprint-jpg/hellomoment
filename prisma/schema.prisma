@@ -250,6 +250,20 @@ model FlyerTemplate {
   websitePlaceholder   String? // JSON text placeholder — business website
   productsPlaceholder  String? // JSON text placeholder — products/services line
 
+  // Per-template overrides for the phone/email/address/website/products
+  // TEXT itself (as opposed to its placeholder position/style above). Null
+  // falls back to the shared Business.phoneDisplay/emailDisplay/addressText/
+  // websiteUrl/productsText (Settings -> Brand kit) at send time — same as
+  // before these existed. Deliberately separate from that shared field (and
+  // from a default Frame's own rendering, which always uses the shared
+  // field, never these — see sendWish.ts) so editing one template's text
+  // here can never change what another template or a Frame shows.
+  phoneTextOverride    String?
+  emailTextOverride    String?
+  addressTextOverride  String?
+  websiteTextOverride  String?
+  productsTextOverride String?
+
   isDefault          Boolean  @default(false) // used when a contact/festival doesn't specify a template
   aisensyCampaignName String? // overrides the business-level default campaign for this template, if set
 

@@ -77,6 +77,15 @@ export interface TemplateFormValues {
   websitePlaceholder: TextPlaceholder;
   useProducts: boolean;
   productsPlaceholder: TextPlaceholder;
+  // Per-template overrides for the phone/email/address/website/products
+  // TEXT itself — '' means "no override, fall back to Settings → Brand
+  // kit's shared text" (same as a default Frame always does). See the
+  // FlyerTemplate.phoneTextOverride etc. comment in schema.prisma.
+  phoneTextOverride: string;
+  emailTextOverride: string;
+  addressTextOverride: string;
+  websiteTextOverride: string;
+  productsTextOverride: string;
 }
 
 export function defaultsFor(width: number, height: number): Pick<

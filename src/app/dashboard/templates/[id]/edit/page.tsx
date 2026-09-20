@@ -128,6 +128,11 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
           websitePlaceholder: { ...defaults.websitePlaceholder, ...(websitePlaceholder ?? {}) },
           useProducts: Boolean(productsPlaceholder),
           productsPlaceholder: { ...defaults.productsPlaceholder, ...(productsPlaceholder ?? {}) },
+          phoneTextOverride: template.phoneTextOverride ?? '',
+          emailTextOverride: template.emailTextOverride ?? '',
+          addressTextOverride: template.addressTextOverride ?? '',
+          websiteTextOverride: template.websiteTextOverride ?? '',
+          productsTextOverride: template.productsTextOverride ?? '',
         }}
       />
     </div>

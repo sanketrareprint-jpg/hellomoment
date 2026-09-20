@@ -361,6 +361,20 @@ async function renderFlyer(
   // one just show their plain name.
   const displayName = title ? `${title} ${name}` : name;
 
+  // This template's own phone/email/address/website/products text
+  // override, if it has one (see FlyerTemplate.phoneTextOverride etc. and
+  // TemplatePlaceholderEditor.tsx) — falls back to the shared Business
+  // field otherwise. Ignored while a default Frame is active: the Frame
+  // already overrides this template's own *placeholders* above regardless
+  // of what's configured here, so its *text* stays on the one shared
+  // source too, instead of silently picking up a per-template override it
+  // was never shown or asked about.
+  const phoneText = (!defaultFrame && template.phoneTextOverride) || business.phoneDisplay || null;
+  const emailText = (!defaultFrame && template.emailTextOverride) || business.emailDisplay || null;
+  const addressText = (!defaultFrame && template.addressTextOverride) || business.addressText || null;
+  const websiteText = (!defaultFrame && template.websiteTextOverride) || business.websiteUrl || null;
+  const productsText = (!defaultFrame && template.productsTextOverride) || business.productsText || null;
+
   await generateFlyer({
     backgroundPath: servedUrlToAbsolutePath(template.backgroundUrl),
     canvasWidth: template.canvasWidth,
@@ -379,15 +393,15 @@ async function renderFlyer(
     firmNamePlaceholder,
     firmNameText: brandFirmNameText(business),
     phonePlaceholder,
-    phoneText: business.phoneDisplay || null,
+    phoneText,
     emailPlaceholder,
-    emailText: business.emailDisplay || null,
+    emailText,
     addressPlaceholder,
-    addressText: business.addressText || null,
+    addressText,
     websitePlaceholder,
-    websiteText: business.websiteUrl || null,
+    websiteText,
     productsPlaceholder,
-    productsText: business.productsText || null,
+    productsText,
     outputPath,
   });
 

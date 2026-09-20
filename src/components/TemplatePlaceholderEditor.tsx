@@ -83,6 +83,11 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
   useAddress: false,
   useWebsite: false,
   useProducts: false,
+  phoneTextOverride: '',
+  emailTextOverride: '',
+  addressTextOverride: '',
+  websiteTextOverride: '',
+  productsTextOverride: '',
   ...defaultsFor(1080, 1080),
 };
 
@@ -278,21 +283,6 @@ export default function TemplatePlaceholderEditor({
   // to the cursor on the very first, often sub-pixel, move of a click).
   const dragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
-  // Local edits to the actual branding TEXT (as opposed to its position/
-  // style, which lives in `form` above) — e.g. typing a new address right
-  // here instead of going to Settings first. Same pattern as
-  // FramePlaceholderEditor.tsx: these are Business-level fields (Settings →
-  // Brand kit), shared by every template and frame, so they're saved
-  // through their own endpoint (see saveBrandText below) rather than
-  // through this form's own "Save changes" button, and layered on top of
-  // the `business` prop so the preview reflects them immediately.
-  const [brandOverride, setBrandOverride] = useState<Partial<BrandInfo>>({});
-  const [brandSaving, setBrandSaving] = useState<FieldKey | null>(null);
-  const [brandSavedAt, setBrandSavedAt] = useState<Partial<Record<FieldKey, number>>>({});
-  const [brandSaveError, setBrandSaveError] = useState<string | null>(null);
-
-  const effectiveBusiness: BrandInfo | undefined = business ? { ...business, ...brandOverride } : business;
-
   // This business's default Frame, if any. When set, it overrides every
   // template's own branding placeholders at send time regardless of what's
   // configured below (see src/lib/sendWish.ts) — so the manual toolbar stays
@@ -420,10 +410,10 @@ export default function TemplatePlaceholderEditor({
     return (FONT_FAMILIES.find((f) => f.id === id) ?? FONT_FAMILIES.find((f) => f.id === 'default'))!.cssFamily;
   }
 
-  const firmNamePreviewText = effectiveBusiness
-    ? effectiveBusiness.firmNameScript === 'MARATHI'
-      ? effectiveBusiness.firmNameMarathi || effectiveBusiness.name
-      : effectiveBusiness.name.toUpperCase()
+  const firmNamePreviewText = business
+    ? business.firmNameScript === 'MARATHI'
+      ? business.firmNameMarathi || business.name
+      : business.name.toUpperCase()
     : 'YOUR FIRM NAME';
 
   // --- Small generic switches shared by the toolbar, the properties panel
@@ -556,74 +546,73 @@ export default function TemplatePlaceholderEditor({
     return Math.round(f.canvasWidth / 2);
   }
 
-  // A field a business hasn't filled in yet (Settings → Brand kit) can still
-  // be switched on and dragged into place, but there's nothing real to show
-  // for it — surfaced as a note in the properties panel rather than
-  // disabling the button outright, so it stays discoverable.
-  function missingBrandDataNote(key: FieldKey): string | null {
-    if (key === 'name')
-      return 'If a contact has a Title saved (e.g. "Mr.", "Dr."), it\'s shown automatically right before their name here — contacts without one just show their name.';
-    if (key === 'logo' && !effectiveBusiness?.logoUrl) return 'Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.';
-    if (key === 'phone' && !effectiveBusiness?.phoneDisplay) return 'Type a phone number below.';
-    if (key === 'email' && !effectiveBusiness?.emailDisplay) return 'Type an email below.';
-    if (key === 'address' && !effectiveBusiness?.addressText) return 'Type an address below.';
-    if (key === 'website' && !effectiveBusiness?.websiteUrl) return 'Type a website below.';
-    if (key === 'products' && !effectiveBusiness?.productsText) return 'Type a products/services line below.';
-    return null;
-  }
+  // The five fields with their own per-template text override (see
+  // FlyerTemplate.phoneTextOverride etc. in schema.prisma) — deliberately
+  // not firmName, which always shows the business's actual account name
+  // (or its Marathi variant), edited only from Settings, same as before.
+  type OverrideFieldKey = 'phoneTextOverride' | 'emailTextOverride' | 'addressTextOverride' | 'websiteTextOverride' | 'productsTextOverride';
 
-  // Only these five fields are safe to edit right here: each is a plain
-  // flyer-display string with no other meaning. Firm name (English) isn't
-  // included — the flyer shows the business's actual account name
-  // (uppercased), so editing it lives in Settings instead of a placement
-  // editor; the Marathi firm name has no such double duty and is editable.
-  type EditableBrandKey = 'phoneDisplay' | 'emailDisplay' | 'addressText' | 'websiteUrl' | 'productsText' | 'firmNameMarathi';
-
-  function brandKeyFor(key: FieldKey): EditableBrandKey | null {
+  function overrideFieldFor(key: FieldKey): OverrideFieldKey | null {
     switch (key) {
       case 'phone':
-        return 'phoneDisplay';
+        return 'phoneTextOverride';
       case 'email':
-        return 'emailDisplay';
+        return 'emailTextOverride';
       case 'address':
-        return 'addressText';
+        return 'addressTextOverride';
       case 'website':
-        return 'websiteUrl';
+        return 'websiteTextOverride';
       case 'products':
-        return 'productsText';
-      case 'firmName':
-        return effectiveBusiness?.firmNameScript === 'MARATHI' ? 'firmNameMarathi' : null;
+        return 'productsTextOverride';
       default:
         return null;
     }
   }
 
-  function updateBrandDraft(key: FieldKey, value: string) {
-    const brandKey = brandKeyFor(key);
-    if (!brandKey) return;
-    setBrandOverride((prev) => ({ ...prev, [brandKey]: value }));
-    setBrandSavedAt((prev) => ({ ...prev, [key]: undefined }));
+  // What actually shows on the flyer for one of those five fields: this
+  // template's own override if it has one, else the shared Settings →
+  // Brand kit value — the exact same fallback sendWish.ts applies at send
+  // time, so this preview always matches what gets sent.
+  function effectiveBrandText(key: TextFieldKey): string {
+    const overrideField = overrideFieldFor(key);
+    const override = overrideField ? form[overrideField] : '';
+    switch (key) {
+      case 'phone':
+        return override || business?.phoneDisplay || '';
+      case 'email':
+        return override || business?.emailDisplay || '';
+      case 'address':
+        return override || business?.addressText || '';
+      case 'website':
+        return override || business?.websiteUrl || '';
+      case 'products':
+        return override || business?.productsText || '';
+      default:
+        return '';
+    }
   }
 
-  async function saveBrandText(key: FieldKey) {
-    const brandKey = brandKeyFor(key);
-    if (!brandKey || !effectiveBusiness) return;
-    const value = effectiveBusiness[brandKey] ?? '';
-    setBrandSaving(key);
-    setBrandSaveError(null);
-    try {
-      const res = await fetch('/api/settings/brand', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [brandKey]: value }),
-      });
-      if (!res.ok) throw new Error('Could not save this text');
-      setBrandSavedAt((prev) => ({ ...prev, [key]: Date.now() }));
-    } catch (err) {
-      setBrandSaveError(err instanceof Error ? err.message : 'Could not save this text');
-    } finally {
-      setBrandSaving(null);
-    }
+  function setBrandTextOverride(key: FieldKey, value: string) {
+    const field = overrideFieldFor(key);
+    if (!field) return;
+    setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  // A field a business hasn't filled in yet (here or in Settings → Brand
+  // kit) can still be switched on and dragged into place, but there's
+  // nothing real to show for it — surfaced as a note in the properties
+  // panel rather than disabling the button outright, so it stays
+  // discoverable.
+  function missingBrandDataNote(key: FieldKey): string | null {
+    if (key === 'name')
+      return 'If a contact has a Title saved (e.g. "Mr.", "Dr."), it\'s shown automatically right before their name here — contacts without one just show their name.';
+    if (key === 'logo' && !business?.logoUrl) return 'Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.';
+    if (key === 'phone' && !effectiveBrandText('phone')) return 'Type a phone number below, or add one in Settings → Brand kit.';
+    if (key === 'email' && !effectiveBrandText('email')) return 'Type an email below, or add one in Settings → Brand kit.';
+    if (key === 'address' && !effectiveBrandText('address')) return 'Type an address below, or add one in Settings → Brand kit.';
+    if (key === 'website' && !effectiveBrandText('website')) return 'Type a website below, or add one in Settings → Brand kit.';
+    if (key === 'products' && !effectiveBrandText('products')) return 'Type a products/services line below, or add one in Settings → Brand kit.';
+    return null;
   }
 
   function previewTextFor(key: TextFieldKey): string {
@@ -637,15 +626,15 @@ export default function TemplatePlaceholderEditor({
       case 'firmName':
         return firmNamePreviewText;
       case 'phone':
-        return effectiveBusiness?.phoneDisplay || 'Your phone number';
+        return effectiveBrandText('phone') || 'Your phone number';
       case 'email':
-        return effectiveBusiness?.emailDisplay || 'Your email';
+        return effectiveBrandText('email') || 'Your email';
       case 'address':
-        return effectiveBusiness?.addressText || 'Your address';
+        return effectiveBrandText('address') || 'Your address';
       case 'website':
-        return effectiveBusiness?.websiteUrl || 'www.yourbusiness.com';
+        return effectiveBrandText('website') || 'www.yourbusiness.com';
       case 'products':
-        return effectiveBusiness?.productsText || 'Your products / services';
+        return effectiveBrandText('products') || 'Your products / services';
     }
   }
 
@@ -819,6 +808,11 @@ export default function TemplatePlaceholderEditor({
         addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
         websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
         productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
+        phoneTextOverride: form.phoneTextOverride || null,
+        emailTextOverride: form.emailTextOverride || null,
+        addressTextOverride: form.addressTextOverride || null,
+        websiteTextOverride: form.websiteTextOverride || null,
+        productsTextOverride: form.productsTextOverride || null,
       };
       const url = form.id ? `${apiBase}/${form.id}` : apiBase;
       const method = form.id ? 'PUT' : 'POST';
@@ -1185,43 +1179,25 @@ export default function TemplatePlaceholderEditor({
 
               {selectedNote && <p className="text-xs text-amber-600 mb-1.5">{selectedNote}</p>}
 
-              {brandKeyFor(selected) && effectiveBusiness && (
+              {overrideFieldFor(selected) && business && (
                 <div className="mb-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="label mb-0">Text shown on the flyer</label>
-                    {brandSaving === selected ? (
-                      <span className="text-xs text-gray-400">Saving…</span>
-                    ) : brandSavedAt[selected] ? (
-                      <span className="text-xs text-green-600">Saved</span>
-                    ) : null}
-                  </div>
+                  <label className="label mb-0">Text shown on the flyer</label>
                   <textarea
                     className="input"
                     rows={2}
-                    value={effectiveBusiness[brandKeyFor(selected)!] ?? ''}
-                    onChange={(e) => updateBrandDraft(selected, e.target.value)}
-                    onBlur={() => saveBrandText(selected)}
-                    placeholder="Type the text to show on the flyer…"
+                    value={form[overrideFieldFor(selected)!]}
+                    onChange={(e) => setBrandTextOverride(selected, e.target.value)}
+                    placeholder={effectiveBrandText(selected as TextFieldKey) || 'Type the text to show on the flyer…'}
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Press Enter to start a new line. Saved straight to Settings → Brand kit, so it updates on every
-                    template and frame too.
+                    Press Enter to start a new line. Only used by this template — saved with it when you click Save
+                    changes below, and never changes your Settings → Brand kit text or any Frame. Leave blank to use
+                    your Settings → Brand kit text here instead.
                   </p>
-                  {defaultFrame && (
-                    <p className="text-xs text-amber-600 mt-1">
-                      Heads up: this text is also used by your default Frame &ldquo;{defaultFrame.name}&rdquo; — a
-                      line-break change here can make it overflow that Frame&rsquo;s own box on every flyer, not just
-                      this template. Check{' '}
-                      <Link href="/dashboard/frames?folder=my" className="font-medium underline">
-                        Manage frames
-                      </Link>{' '}
-                      after editing.
-                    </p>
-                  )}
                 </div>
               )}
 
-              {selected === 'firmName' && effectiveBusiness && effectiveBusiness.firmNameScript !== 'MARATHI' && (
+              {selected === 'firmName' && business && business.firmNameScript !== 'MARATHI' && (
                 <p className="text-xs text-gray-500 mb-2">
                   Shown in capitals, from your business name in{' '}
                   <a href="/dashboard/settings" className="text-brand-600 font-medium">
@@ -1230,8 +1206,6 @@ export default function TemplatePlaceholderEditor({
                   .
                 </p>
               )}
-
-              {brandSaveError && <p className="text-xs text-red-600 mb-1.5">{brandSaveError}</p>}
 
               {isFieldOn(selected) && selected === 'photo' && (
                 <div className="grid grid-cols-2 gap-3">
@@ -1476,9 +1450,9 @@ export default function TemplatePlaceholderEditor({
                 transform: frameLogoPlaceholder.rotation ? `rotate(${frameLogoPlaceholder.rotation}deg)` : undefined,
               }}
             >
-              {effectiveBusiness?.logoUrl && (
+              {business?.logoUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={effectiveBusiness.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+                <img src={business.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
               )}
             </div>
           )}
@@ -1505,9 +1479,9 @@ export default function TemplatePlaceholderEditor({
                 transform: form.logoPlaceholder.rotation ? `rotate(${form.logoPlaceholder.rotation}deg)` : undefined,
               }}
             >
-              {effectiveBusiness?.logoUrl ? (
+              {business?.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={effectiveBusiness.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain pointer-events-none" />
+                <img src={business.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain pointer-events-none" />
               ) : (
                 'Logo'
               )}
