@@ -59,9 +59,10 @@ export interface GenerateFlyerOptions {
   // BusinessFrame Prisma models and src/lib/sendWish.ts), composited right
   // on top of the background — before the photo/logo/text below — so a
   // frame's border/badge art sits *behind* everything it's meant to be
-  // decorating rather than covering it up. Stretched to exactly
-  // canvasWidth×canvasHeight, since a frame is designed to line up with the
-  // full flyer canvas.
+  // decorating rather than covering it up. Scaled to the canvas's width
+  // (preserving its own aspect ratio) and anchored to the bottom edge — see
+  // its compositing below for why, and framePlaceholders.ts's
+  // frameLayoutFor for the matching logo/text placeholder scaling.
   overlayPath?: string | null;
   namePlaceholder?: TextPlaceholder | null;
   name?: string | null; // if the contact has a Title (e.g. "Mr."), callers prefix it into this string themselves — there's no separate title placeholder
@@ -488,11 +489,22 @@ export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string>
 
   if (opts.overlayPath) {
     try {
+      // Scaled to the canvas's own width, preserving the overlay's own
+      // aspect ratio (never stretched to fill canvasHeight too — a frame's
+      // overlay is typically a short, wide banner, and stretching it to a
+      // taller/shorter canvas badly distorted both the art and, since its
+      // logo/text placeholders are scaled the same way in sendWish.ts, the
+      // business's branding text on top of it) and anchored to the
+      // canvas's bottom edge, matching how it renders in the editor preview.
+      const { width: naturalWidth, height: naturalHeight } = await sharp(opts.overlayPath).metadata();
+      const overlayScale = naturalWidth ? opts.canvasWidth / naturalWidth : 1;
+      const overlayHeight = Math.max(1, Math.round((naturalHeight ?? opts.canvasHeight) * overlayScale));
+      const overlayTop = Math.max(0, opts.canvasHeight - overlayHeight);
       const overlayBuffer = await sharp(opts.overlayPath)
-        .resize(opts.canvasWidth, opts.canvasHeight, { fit: 'fill' })
+        .resize(opts.canvasWidth, overlayHeight, { fit: 'fill' })
         .png()
         .toBuffer();
-      composites.push({ input: overlayBuffer, left: 0, top: 0 });
+      composites.push({ input: overlayBuffer, left: 0, top: overlayTop });
     } catch {
       // Overlay file missing on disk — skip it rather than fail the whole send.
     }

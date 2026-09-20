@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
 import { defaultsFor, type TemplateFormValues, type TextPlaceholder, type LogoPlaceholder } from '@/lib/flyerPlaceholders';
-import { scaleLogoPlaceholder, scaleTextPlaceholder } from '@/lib/framePlaceholders';
+import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder } from '@/lib/framePlaceholders';
 import PlaceholderControls from '@/components/PlaceholderControls';
 import FloatingNudgePad from '@/components/FloatingNudgePad';
 
@@ -236,13 +236,17 @@ export default function TemplatePlaceholderEditor({
   // template's own branding placeholders, which are ignored then.
   const frameActive = Boolean(defaultFrame) && !manualBrandingOpen;
 
-  // Same scaling sendWish.ts applies — the frame's placeholders were
-  // positioned against its own canvas size, not necessarily this template's.
-  const frameScaleX = defaultFrame ? form.canvasWidth / defaultFrame.canvasWidth : 1;
-  const frameScaleY = defaultFrame ? form.canvasHeight / defaultFrame.canvasHeight : 1;
+  // Same layout sendWish.ts (and flyer.ts's overlay compositing) applies —
+  // the frame's placeholders were positioned against its own canvas size
+  // (its overlay graphic's own native pixel size), scaled uniformly by
+  // width and anchored to this template's bottom edge, matching exactly
+  // where the overlay graphic itself renders below.
+  const { scale: frameScale, topOffset: frameTopOffset } = defaultFrame
+    ? frameLayoutFor(form.canvasWidth, form.canvasHeight, defaultFrame.canvasWidth, defaultFrame.canvasHeight)
+    : { scale: 1, topOffset: 0 };
 
   const frameLogoPlaceholder: LogoPlaceholder | null =
-    defaultFrame?.logoPlaceholder ? scaleLogoPlaceholder(defaultFrame.logoPlaceholder, frameScaleX, frameScaleY) : null;
+    defaultFrame?.logoPlaceholder ? scaleLogoPlaceholder(defaultFrame.logoPlaceholder, frameScale, frameTopOffset) : null;
 
   // Only for the brand fields a Frame can carry (name/designation/date live
   // on the template itself, never on a Frame).
@@ -262,7 +266,7 @@ export default function TemplatePlaceholderEditor({
                 : key === 'products'
                   ? defaultFrame.productsPlaceholder
                   : null;
-    return raw ? scaleTextPlaceholder(raw, frameScaleX, frameScaleY) : null;
+    return raw ? scaleTextPlaceholder(raw, frameScale, frameTopOffset) : null;
   }
 
   // Whether an element is locked in place (drag disabled) lives on its own
