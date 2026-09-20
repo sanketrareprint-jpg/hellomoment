@@ -918,14 +918,17 @@ export default function TemplatePlaceholderEditor({
                 )}
                 {/* No auto-wrap/truncation here either — matches flyer.ts exactly:
                     a literal newline the business typed (Enter, in Settings or the
-                    contact record) becomes a line break via `white-space: pre-line`;
-                    anything else renders at its natural width, even past this box. */}
+                    contact record) becomes a line break via `white-space: pre`;
+                    anything else renders at its natural width, even past this box.
+                    (`pre-line` would still soft-wrap at whitespace once the box's
+                    shrink-to-fit width gets squeezed near the container edge —
+                    `pre` is the one value that both keeps newlines and never wraps.) */}
                 <span
                   style={{
                     fontSize: fontPx,
                     fontWeight: p.fontWeight,
                     fontFamily: cssFontFamilyFor(p.fontFamily),
-                    whiteSpace: 'pre-line',
+                    whiteSpace: 'pre',
                     textAlign: p.align,
                   }}
                 >
