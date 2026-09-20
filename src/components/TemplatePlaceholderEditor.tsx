@@ -828,17 +828,40 @@ export default function TemplatePlaceholderEditor({
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-1">
+                  <div className="flex items-center justify-between gap-2 mt-1.5">
                     <Link href="/dashboard/frames?folder=my" className="text-[11px] font-medium text-brand-700 hover:text-brand-800">
                       Manage frames →
                     </Link>
-                    <button
-                      type="button"
-                      className="text-[11px] font-medium text-gray-500 hover:text-gray-700"
-                      onClick={() => setManualBrandingOpen((v) => !v)}
+                    <div
+                      role="radiogroup"
+                      aria-label="Branding placement"
+                      className="inline-flex items-center rounded-full border border-brand-200 bg-white p-0.5 text-[11px] font-medium"
                     >
-                      {manualBrandingOpen ? 'Hide manual positioning' : 'Position manually instead (advanced)'}
-                    </button>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={!manualBrandingOpen}
+                        onClick={() => setManualBrandingOpen(false)}
+                        className={
+                          'rounded-full px-2.5 py-1 transition-colors ' +
+                          (!manualBrandingOpen ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700')
+                        }
+                      >
+                        Use frame
+                      </button>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={manualBrandingOpen}
+                        onClick={() => setManualBrandingOpen(true)}
+                        className={
+                          'rounded-full px-2.5 py-1 transition-colors ' +
+                          (manualBrandingOpen ? 'bg-brand-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700')
+                        }
+                      >
+                        Manual
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : frames.length > 0 ? (
