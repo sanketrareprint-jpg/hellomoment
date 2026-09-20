@@ -615,7 +615,7 @@ export default function TemplatePlaceholderEditor({
         onClick={() => selectAndEnable(def.key)}
         title={def.label}
         className={[
-          'relative flex flex-col items-center justify-center gap-0.5 rounded-lg border px-1.5 py-1.5 text-[10px] font-medium leading-tight transition-colors',
+          'relative flex flex-col items-center justify-center gap-0.5 rounded-lg border px-1 py-1 text-[9px] font-medium leading-tight transition-colors',
           isSelected
             ? 'border-brand-500 bg-brand-50 text-brand-700 ring-1 ring-brand-500'
             : on
@@ -623,7 +623,7 @@ export default function TemplatePlaceholderEditor({
               : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50',
         ].join(' ')}
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={def.icon} />
         </svg>
         <span>{def.label}</span>
@@ -641,9 +641,9 @@ export default function TemplatePlaceholderEditor({
   const selectedNote = selected ? missingBrandDataNote(selected) : null;
 
   return (
-    <form onSubmit={onSubmit} className="compact-form grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className="space-y-2">
-        <div className="card p-2 space-y-1.5">
+    <form onSubmit={onSubmit} className="compact-form grid grid-cols-1 lg:grid-cols-2 gap-3">
+      <div className="space-y-1.5">
+        <div className="card p-1.5 space-y-1">
           <div>
             <label className="label">Template name</label>
             <input
@@ -654,7 +654,7 @@ export default function TemplatePlaceholderEditor({
               placeholder="e.g. Birthday — Gold theme"
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="label">Occasion</label>
               <select
@@ -668,8 +668,8 @@ export default function TemplatePlaceholderEditor({
               </select>
             </div>
             {showPerBusinessOptions && (
-              <div className="flex items-end pb-2">
-                <label className="flex items-center gap-2 text-sm text-gray-700">
+              <div className="flex items-end pb-1.5">
+                <label className="flex items-center gap-1.5 text-xs text-gray-700">
                   <input
                     type="checkbox"
                     checked={form.isDefault}
@@ -685,7 +685,7 @@ export default function TemplatePlaceholderEditor({
               <button
                 type="button"
                 onClick={() => setShowAdvanced(true)}
-                className="text-sm font-medium text-brand-600 hover:text-brand-700"
+                className="text-xs font-medium text-brand-600 hover:text-brand-700"
               >
                 + Advanced options (optional)
               </button>
@@ -702,11 +702,11 @@ export default function TemplatePlaceholderEditor({
             ))}
           <div>
             <label className="label">Flyer background image</label>
-            <input type="file" accept="image/webp" onChange={onBackgroundChange} />
-            <p className="text-xs text-gray-500 mt-1">WebP only.</p>
-            {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
+            <input type="file" accept="image/webp" onChange={onBackgroundChange} className="text-xs" />
+            <p className="text-xs text-gray-500 mt-0.5">WebP only.</p>
+            {uploading && <p className="text-xs text-gray-500 mt-0.5">Uploading…</p>}
             {form.backgroundUrl && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 mt-0.5">
                 Current image is {form.canvasWidth}×{form.canvasHeight}px — only choose a file here if you want to
                 replace it with a different background.
               </p>
@@ -714,10 +714,10 @@ export default function TemplatePlaceholderEditor({
           </div>
         </div>
 
-        <div className="card p-2 space-y-2">
+        <div className="card p-1.5 space-y-1.5">
           <div>
-            <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Contact details</h3>
-            <div className="grid grid-cols-5 gap-1.5">
+            <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Contact details</h3>
+            <div className="grid grid-cols-5 gap-1">
               {CONTACT_FIELDS.map((def) => (
                 <ToolbarButton key={def.key} def={def} />
               ))}
@@ -726,12 +726,12 @@ export default function TemplatePlaceholderEditor({
 
           {showBranding && (
             <div>
-              <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Your business branding</h3>
+              <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Your business branding</h3>
 
               {defaultFrame ? (
-                <div className="rounded-lg border border-brand-200 bg-brand-50/60 p-2 mb-2">
+                <div className="rounded-lg border border-brand-200 bg-brand-50/60 p-1.5 mb-1.5">
                   <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-md overflow-hidden bg-white border border-brand-200 flex-shrink-0 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-md overflow-hidden bg-white border border-brand-200 flex-shrink-0 flex items-center justify-center">
                       {defaultFrame.overlayUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={defaultFrame.overlayUrl} alt={defaultFrame.name} className="w-full h-full object-cover" />
@@ -754,7 +754,7 @@ export default function TemplatePlaceholderEditor({
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 mt-1.5">
+                  <div className="flex items-center gap-3 mt-1">
                     <Link href="/dashboard/frames?folder=my" className="text-[11px] font-medium text-brand-700 hover:text-brand-800">
                       Manage frames →
                     </Link>
@@ -768,7 +768,7 @@ export default function TemplatePlaceholderEditor({
                   </div>
                 </div>
               ) : frames.length > 0 ? (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 mb-2 text-[11px] text-amber-800 leading-snug">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-1.5 mb-1.5 text-[11px] text-amber-800 leading-snug">
                   You have {frames.length} saved frame{frames.length === 1 ? '' : 's'} but none is set as default.{' '}
                   <Link href="/dashboard/frames?folder=my" className="font-medium underline">
                     Set a default frame
@@ -776,7 +776,7 @@ export default function TemplatePlaceholderEditor({
                   to apply its branding automatically to every flyer instead of positioning fields below.
                 </div>
               ) : (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 mb-2 text-[11px] text-gray-600 leading-snug">
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-1.5 mb-1.5 text-[11px] text-gray-600 leading-snug">
                   Tip:{' '}
                   <Link href="/dashboard/frames/new" className="font-medium text-brand-600">
                     create a reusable Frame
@@ -787,7 +787,7 @@ export default function TemplatePlaceholderEditor({
               )}
 
               {(!defaultFrame || manualBrandingOpen) && (
-                <div className="grid grid-cols-5 gap-1.5">
+                <div className="grid grid-cols-5 gap-1">
                   {BRAND_FIELDS.map((def) => (
                     <ToolbarButton key={def.key} def={def} />
                   ))}
@@ -797,8 +797,8 @@ export default function TemplatePlaceholderEditor({
           )}
 
           {selected && selectedDef && (!brandFieldKeySet.has(selected) || !defaultFrame || manualBrandingOpen) && (
-            <div className="border-t border-gray-100 pt-2">
-              <div className="flex items-center justify-between mb-1.5">
+            <div className="border-t border-gray-100 pt-1.5">
+              <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-semibold text-gray-900">{selectedDef.label}</span>
                 <div className="flex items-center gap-3">
                   <button
@@ -955,7 +955,7 @@ export default function TemplatePlaceholderEditor({
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex gap-3">
+        <div className="flex gap-2">
           <button type="submit" disabled={loading || uploading} className="btn-primary">
             {loading ? 'Saving…' : form.id ? 'Save changes' : 'Create template'}
           </button>
@@ -977,8 +977,8 @@ export default function TemplatePlaceholderEditor({
           at the column's natural position), so it keeps this column
           pinned near the top while scrolling without that snap. */}
       <div ref={previewColumnRef} className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm text-gray-600">
+        <div className="flex items-center justify-between mb-1.5">
+          <p className="text-xs text-gray-600">
             Drag the labeled markers on the flyer to position them. Numbers below give exact control.
           </p>
           <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap ml-2">
