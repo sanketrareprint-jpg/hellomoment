@@ -87,23 +87,25 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
   }
 
   return (
-    <form onSubmit={onSubmit} className="compact-form space-y-4 max-w-xl">
-      <div className="card p-4 space-y-3">
+    <form onSubmit={onSubmit} className="compact-form space-y-3 max-w-xl">
+      <div className="card p-3 space-y-2">
         <h2 className="font-semibold text-gray-900 text-sm">Business profile</h2>
-        <div>
-          <label className="label">Business name</label>
-          <input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="label">Business name</label>
+            <input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div>
+            <label className="label">Owner WhatsApp number</label>
+            <input
+              className="input"
+              required
+              value={form.ownerWhatsapp}
+              onChange={(e) => setForm({ ...form, ownerWhatsapp: e.target.value })}
+            />
+          </div>
         </div>
-        <div>
-          <label className="label">Owner WhatsApp number</label>
-          <input
-            className="input"
-            required
-            value={form.ownerWhatsapp}
-            onChange={(e) => setForm({ ...form, ownerWhatsapp: e.target.value })}
-          />
-          <p className="mt-1 text-xs text-gray-500">Receives a copy of every wish sent to your contacts.</p>
-        </div>
+        <p className="text-xs text-gray-500">Owner WhatsApp receives a copy of every wish sent to your contacts.</p>
         <div>
           <label className="label">Timezone</label>
           <select className="input" value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })}>
@@ -113,81 +115,76 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-gray-500">Birthdays/anniversaries/festivals trigger at local midnight in this timezone.</p>
         </div>
       </div>
 
-      <div className="card p-4 space-y-3">
+      <div className="card p-3 space-y-2">
         <h2 className="font-semibold text-gray-900 text-sm">Brand kit for flyers</h2>
-        <p className="text-sm text-gray-600">
-          These details are saved once here and can be shown on any flyer template — logo, firm name, phone,
-          address, products. Each template you design decides where (or whether) to show them; you don&rsquo;t
-          need to re-enter anything when you create a new festival template.
-        </p>
+        <p className="text-xs text-gray-500">Shown on flyer templates that choose to display them — logo, firm name, phone, address, products.</p>
         <div>
           <label className="label">Logo</label>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {form.logoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={form.logoUrl} alt="Logo preview" className="h-14 w-14 object-contain rounded border border-gray-200 bg-white" />
+              <img src={form.logoUrl} alt="Logo preview" className="h-9 w-9 object-contain rounded border border-gray-200 bg-white" />
             )}
-            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onLogoChange} />
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onLogoChange} className="text-xs" />
           </div>
-          {uploadingLogo && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
-          <p className="mt-1 text-xs text-gray-500">A PNG with a transparent background looks best.</p>
+          {uploadingLogo && <p className="text-xs text-gray-500 mt-0.5">Uploading…</p>}
         </div>
-        <div>
-          <label className="label">Phone number to show on the flyer</label>
-          <input
-            className="input"
-            value={form.phoneDisplay}
-            onChange={(e) => setForm({ ...form, phoneDisplay: e.target.value })}
-            placeholder="e.g. +91 98765 43210"
-          />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="label">Phone on flyer</label>
+            <input
+              className="input"
+              value={form.phoneDisplay}
+              onChange={(e) => setForm({ ...form, phoneDisplay: e.target.value })}
+              placeholder="+91 98765 43210"
+            />
+          </div>
+          <div>
+            <label className="label">Address</label>
+            <input
+              className="input"
+              value={form.addressText}
+              onChange={(e) => setForm({ ...form, addressText: e.target.value })}
+              placeholder="Shop address"
+            />
+          </div>
         </div>
-        <div>
-          <label className="label">Address</label>
-          <input
-            className="input"
-            value={form.addressText}
-            onChange={(e) => setForm({ ...form, addressText: e.target.value })}
-            placeholder="Shop address to print on the flyer"
-          />
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="label">Products / services</label>
+            <input
+              className="input"
+              value={form.productsText}
+              onChange={(e) => setForm({ ...form, productsText: e.target.value })}
+              placeholder="Sweets · Snacks · Catering"
+            />
+          </div>
+          <div>
+            <label className="label">Firm name script</label>
+            <select
+              className="input"
+              value={form.firmNameScript}
+              onChange={(e) => setForm({ ...form, firmNameScript: e.target.value as 'ENGLISH' | 'MARATHI' })}
+            >
+              <option value="ENGLISH">English (CAPITALS)</option>
+              <option value="MARATHI">Marathi (मराठी लिपी)</option>
+            </select>
+          </div>
         </div>
-        <div>
-          <label className="label">Products / services line</label>
-          <input
-            className="input"
-            value={form.productsText}
-            onChange={(e) => setForm({ ...form, productsText: e.target.value })}
-            placeholder="e.g. Sweets · Snacks · Catering"
-          />
-        </div>
-        <div>
-          <label className="label">Firm name script on the flyer</label>
-          <select
-            className="input"
-            value={form.firmNameScript}
-            onChange={(e) => setForm({ ...form, firmNameScript: e.target.value as 'ENGLISH' | 'MARATHI' })}
-          >
-            <option value="ENGLISH">English (shown in CAPITAL letters)</option>
-            <option value="MARATHI">Marathi (मराठी लिपी)</option>
-          </select>
-          {form.firmNameScript === 'MARATHI' && (
-            <div className="mt-2">
-              <label className="label">Firm name in Marathi</label>
-              <input
-                className="input"
-                value={form.firmNameMarathi}
-                onChange={(e) => setForm({ ...form, firmNameMarathi: e.target.value })}
-                placeholder="उदा. रेअरप्रिंट"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Type your firm name in Marathi script here — we print this exactly as typed.
-              </p>
-            </div>
-          )}
-        </div>
+        {form.firmNameScript === 'MARATHI' && (
+          <div>
+            <label className="label">Firm name in Marathi</label>
+            <input
+              className="input"
+              value={form.firmNameMarathi}
+              onChange={(e) => setForm({ ...form, firmNameMarathi: e.target.value })}
+              placeholder="उदा. रेअरप्रिंट"
+            />
+          </div>
+        )}
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}

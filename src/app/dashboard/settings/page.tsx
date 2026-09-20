@@ -8,7 +8,7 @@ export default async function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-gray-900 mb-4">Settings</h1>
+      <h1 className="text-xl font-bold text-gray-900 mb-3">Settings</h1>
       <SettingsForm
         initial={{
           name: business.name,
@@ -26,7 +26,7 @@ export default async function SettingsPage() {
           firmNameMarathi: business.firmNameMarathi ?? '',
         }}
       />
-      <div className="max-w-xl mt-4">
+      <div className="max-w-xl mt-3">
         <ChangePasswordForm />
       </div>
     </div>
