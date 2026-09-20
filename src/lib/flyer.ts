@@ -142,6 +142,11 @@ function escapeXml(input: string): string {
  */
 export const BUNDLED_FONT_FAMILY = 'HMFont';
 const FONT_DIR = path.join(process.cwd(), 'assets', 'fonts');
+// Bundled generic placeholder photo (flat gray head-and-shoulders silhouette,
+// original artwork — not a third-party icon) composited in place of a contact's
+// photo whenever the template has a photo placeholder but this send has no real
+// photo to use, so the flyer never ships with a blank hole where a photo goes.
+const DEFAULT_AVATAR_PATH = path.join(process.cwd(), 'assets', 'images', 'default-avatar.png');
 const FONT_FILE_REGULAR = path.join(FONT_DIR, 'FreeSans.ttf');
 const FONT_FILE_BOLD = path.join(FONT_DIR, 'FreeSansBold.ttf');
 
@@ -469,13 +474,25 @@ export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string>
 
   const composites: { input: Buffer; left: number; top: number }[] = [];
 
-  if (opts.photoPlaceholder && opts.photoPath) {
+  if (opts.photoPlaceholder) {
+    // Prefer the contact's real photo; fall back to the bundled generic avatar
+    // if there isn't one (or the file on disk has gone missing), so a template
+    // built with a photo placeholder never renders with an empty gap there.
+    let photoPath = opts.photoPath;
+    if (photoPath) {
+      try {
+        await fs.access(photoPath);
+      } catch {
+        photoPath = null;
+      }
+    }
+    photoPath = photoPath || DEFAULT_AVATAR_PATH;
     try {
-      await fs.access(opts.photoPath);
-      composites.push(await buildPhotoComposite(opts.photoPath, opts.photoPlaceholder));
+      await fs.access(photoPath);
+      composites.push(await buildPhotoComposite(photoPath, opts.photoPlaceholder));
     } catch {
-      // Photo file missing on disk — silently skip so the flyer still sends
-      // with name/date rather than failing the whole send.
+      // Even the bundled fallback avatar is missing — skip entirely rather
+      // than fail the whole send.
     }
   }
 
