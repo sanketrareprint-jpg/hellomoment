@@ -1185,14 +1185,20 @@ export default function TemplatePlaceholderEditor({
                   <textarea
                     className="input"
                     rows={2}
-                    value={form[overrideFieldFor(selected)!]}
+                    // Pre-filled with the real, editable current text (this
+                    // template's own override if it already has one, else
+                    // today's Settings → Brand kit text) — not just a
+                    // placeholder — so clicking in and backspacing/retyping
+                    // actually edits it, instead of looking editable but
+                    // leaving greyed-out placeholder text untouched.
+                    value={form[overrideFieldFor(selected)!] || effectiveBrandText(selected as TextFieldKey)}
                     onChange={(e) => setBrandTextOverride(selected, e.target.value)}
-                    placeholder={effectiveBrandText(selected as TextFieldKey) || 'Type the text to show on the flyer…'}
+                    placeholder="Type the text to show on the flyer…"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Press Enter to start a new line. Only used by this template — saved with it when you click Save
-                    changes below, and never changes your Settings → Brand kit text or any Frame. Leave blank to use
-                    your Settings → Brand kit text here instead.
+                    changes below, and never changes your Settings → Brand kit text or any Frame. Clear it back to
+                    empty to use your Settings → Brand kit text here instead.
                   </p>
                 </div>
               )}
