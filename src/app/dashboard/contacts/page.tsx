@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
 import { formatDateForDisplay, getTodayInTimezone } from '@/lib/dateUtils';
 import DeleteContactButton from '@/components/DeleteContactButton';
+import SendTestMessageButton from '@/components/SendTestMessageButton';
 import ShareJoinLink from '@/components/ShareJoinLink';
 
 export const dynamic = 'force-dynamic';
@@ -155,6 +156,7 @@ export default async function ContactsPage({ searchParams }: { searchParams: { q
                   {c.anniversary ? formatDateForDisplay(c.anniversary) : '—'}
                 </td>
                 <td className="px-4 py-3 text-right space-x-3">
+                  <SendTestMessageButton contactId={c.id} hasDob={!!c.dob} hasAnniversary={!!c.anniversary} />
                   <Link href={`/dashboard/contacts/${c.id}/edit`} className="text-brand-600 font-medium">
                     Edit
                   </Link>
