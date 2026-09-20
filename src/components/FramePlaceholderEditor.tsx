@@ -116,6 +116,12 @@ export default function FramePlaceholderEditor({
   const [showGrid, setShowGrid] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
+  // The gap between the pointer's canvas position at pointerdown and the
+  // value being dragged (an anchor x/y or a center) — captured once so every
+  // later pointermove offsets from it instead of snapping that value
+  // straight to the pointer (which jumped the element to the cursor on the
+  // very first, often sub-pixel, move of a click).
+  const dragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
   function isLocked(key: FieldKey): boolean {
     return locked.has(key);
@@ -356,6 +362,23 @@ export default function FramePlaceholderEditor({
       e.preventDefault();
       dragTarget.current = target;
       if (target) setSelected(target);
+
+      if (target && previewRef.current) {
+        const rect = previewRef.current.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / scale;
+        const py = (e.clientY - rect.top) / scale;
+        let trackedX = px;
+        let trackedY = py;
+        if (target === 'logo') {
+          trackedX = form.logoPlaceholder.x + form.logoPlaceholder.size / 2;
+          trackedY = form.logoPlaceholder.y + form.logoPlaceholder.size / 2;
+        } else {
+          const p = getTextPlaceholder(target as TextFieldKey);
+          trackedX = p.x;
+          trackedY = p.y;
+        }
+        dragOffset.current = { dx: trackedX - px, dy: trackedY - py };
+      }
     };
   }
 
@@ -364,8 +387,10 @@ export default function FramePlaceholderEditor({
     const rect = previewRef.current.getBoundingClientRect();
     const px = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
     const py = Math.min(Math.max(e.clientY - rect.top, 0), rect.height);
-    const x = Math.round(px / scale);
-    const y = Math.round(py / scale);
+    // Offset by the gap captured at pointerdown so the element moves with
+    // the pointer instead of snapping to it.
+    const trackedX = px / scale + dragOffset.current.dx;
+    const trackedY = py / scale + dragOffset.current.dy;
 
     const target = dragTarget.current;
     if (target === 'logo') {
@@ -373,15 +398,15 @@ export default function FramePlaceholderEditor({
         ...f,
         logoPlaceholder: {
           ...f.logoPlaceholder,
-          x: Math.round(x - f.logoPlaceholder.size / 2),
-          y: Math.round(y - f.logoPlaceholder.size / 2),
+          x: Math.round(trackedX - f.logoPlaceholder.size / 2),
+          y: Math.round(trackedY - f.logoPlaceholder.size / 2),
         },
       }));
       return;
     }
     if (target) {
       const key = target as TextFieldKey;
-      setTextPlaceholder(key, { ...getTextPlaceholder(key), x, y });
+      setTextPlaceholder(key, { ...getTextPlaceholder(key), x: Math.round(trackedX), y: Math.round(trackedY) });
     }
   }
 

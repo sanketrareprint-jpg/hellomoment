@@ -200,6 +200,12 @@ export default function TemplatePlaceholderEditor({
   const [showGrid, setShowGrid] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
+  // The gap between the pointer's canvas position at pointerdown and the
+  // value being dragged (an anchor x/y, a center, or a resize corner) —
+  // captured once so every later pointermove offsets from it instead of
+  // snapping that value straight to the pointer (which jumped the element
+  // to the cursor on the very first, often sub-pixel, move of a click).
+  const dragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
 
   // This business's default Frame, if any. When set, it overrides every
   // template's own branding placeholders at send time regardless of what's
@@ -441,6 +447,29 @@ export default function TemplatePlaceholderEditor({
       // on the flyer preview. Not for the photo box's resize handle, which
       // isn't its own field.
       if (target && target !== 'photo-resize') setSelected(target);
+
+      if (target && previewRef.current) {
+        const rect = previewRef.current.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / scale;
+        const py = (e.clientY - rect.top) / scale;
+        let trackedX = px;
+        let trackedY = py;
+        if (target === 'photo') {
+          trackedX = form.photoPlaceholder.x + form.photoPlaceholder.width / 2;
+          trackedY = form.photoPlaceholder.y + form.photoPlaceholder.height / 2;
+        } else if (target === 'photo-resize') {
+          trackedX = form.photoPlaceholder.x + form.photoPlaceholder.width;
+          trackedY = form.photoPlaceholder.y + form.photoPlaceholder.height;
+        } else if (target === 'logo') {
+          trackedX = form.logoPlaceholder.x + form.logoPlaceholder.size / 2;
+          trackedY = form.logoPlaceholder.y + form.logoPlaceholder.size / 2;
+        } else {
+          const p = getTextPlaceholder(target as TextFieldKey);
+          trackedX = p.x;
+          trackedY = p.y;
+        }
+        dragOffset.current = { dx: trackedX - px, dy: trackedY - py };
+      }
     };
   }
 
@@ -449,8 +478,10 @@ export default function TemplatePlaceholderEditor({
     const rect = previewRef.current.getBoundingClientRect();
     const px = Math.min(Math.max(e.clientX - rect.left, 0), rect.width);
     const py = Math.min(Math.max(e.clientY - rect.top, 0), rect.height);
-    const x = Math.round(px / scale);
-    const y = Math.round(py / scale);
+    // Offset by the gap captured at pointerdown so the element moves with
+    // the pointer instead of snapping to it.
+    const trackedX = px / scale + dragOffset.current.dx;
+    const trackedY = py / scale + dragOffset.current.dy;
 
     const target = dragTarget.current;
     if (target === 'photo') {
@@ -458,8 +489,8 @@ export default function TemplatePlaceholderEditor({
         ...f,
         photoPlaceholder: {
           ...f.photoPlaceholder,
-          x: Math.round(x - f.photoPlaceholder.width / 2),
-          y: Math.round(y - f.photoPlaceholder.height / 2),
+          x: Math.round(trackedX - f.photoPlaceholder.width / 2),
+          y: Math.round(trackedY - f.photoPlaceholder.height / 2),
         },
       }));
       return;
@@ -469,8 +500,8 @@ export default function TemplatePlaceholderEditor({
         ...f,
         photoPlaceholder: {
           ...f.photoPlaceholder,
-          width: Math.max(20, Math.round(x - f.photoPlaceholder.x)),
-          height: Math.max(20, Math.round(y - f.photoPlaceholder.y)),
+          width: Math.max(20, Math.round(trackedX - f.photoPlaceholder.x)),
+          height: Math.max(20, Math.round(trackedY - f.photoPlaceholder.y)),
         },
       }));
       return;
@@ -480,15 +511,15 @@ export default function TemplatePlaceholderEditor({
         ...f,
         logoPlaceholder: {
           ...f.logoPlaceholder,
-          x: Math.round(x - f.logoPlaceholder.size / 2),
-          y: Math.round(y - f.logoPlaceholder.size / 2),
+          x: Math.round(trackedX - f.logoPlaceholder.size / 2),
+          y: Math.round(trackedY - f.logoPlaceholder.size / 2),
         },
       }));
       return;
     }
     if (target) {
       const key = target as TextFieldKey;
-      setTextPlaceholder(key, { ...getTextPlaceholder(key), x, y });
+      setTextPlaceholder(key, { ...getTextPlaceholder(key), x: Math.round(trackedX), y: Math.round(trackedY) });
     }
   }
 
