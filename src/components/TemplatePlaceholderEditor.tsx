@@ -638,6 +638,33 @@ export default function TemplatePlaceholderEditor({
     }
   }
 
+  // Same as previewTextFor, but for the frame-driven markers below (when a
+  // default Frame applies): sendWish.ts ignores this template's own text
+  // override whenever a Frame is active — the Frame already overrides this
+  // template's *placeholders* regardless of what's set here, so its *text*
+  // stays on the one shared Settings → Brand kit source too (see the
+  // comment above phoneText/emailText/etc. in sendWish.ts). Reusing
+  // previewTextFor there would show a template's own override text even
+  // though the actual send ignores it — this keeps the preview honest.
+  function previewTextForFrame(key: TextFieldKey): string {
+    switch (key) {
+      case 'firmName':
+        return firmNamePreviewText;
+      case 'phone':
+        return business?.phoneDisplay || 'Your phone number';
+      case 'email':
+        return business?.emailDisplay || 'Your email';
+      case 'address':
+        return business?.addressText || 'Your address';
+      case 'website':
+        return business?.websiteUrl || 'www.yourbusiness.com';
+      case 'products':
+        return business?.productsText || 'Your products / services';
+      default:
+        return previewTextFor(key);
+    }
+  }
+
   async function onBackgroundChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1568,7 +1595,7 @@ export default function TemplatePlaceholderEditor({
                     textAlign: p.align,
                   }}
                 >
-                  {previewTextFor(key)}
+                  {useFrame ? previewTextForFrame(key) : previewTextFor(key)}
                 </span>
               </div>
             );
