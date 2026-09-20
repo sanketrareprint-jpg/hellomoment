@@ -18,7 +18,10 @@ export default async function NewTemplatePage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">New flyer template</h1>
-      <TemplatePlaceholderEditor business={brand} />
+      {/* Templates created here are always "My templates" (source: CUSTOM) —
+          the business's own uploaded artwork already has its branding drawn
+          in, so the branding overlay options are for Starter templates only. */}
+      <TemplatePlaceholderEditor business={brand} showBranding={false} />
     </div>
   );
 }

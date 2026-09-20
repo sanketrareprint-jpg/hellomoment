@@ -85,7 +85,7 @@ export default function HeroSlider() {
 
   return (
     <section
-      className="relative max-w-4xl mx-auto text-center px-6 pt-16 pb-20"
+      className="relative max-w-4xl mx-auto text-center px-6 pt-4 sm:pt-16 pb-20"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -103,8 +103,17 @@ export default function HeroSlider() {
       </div>
 
       <div className="mt-8 flex items-center justify-center gap-4">
-        <Link href="/register" className="btn-primary text-base px-6 py-3">
+        <Link
+          href="/register"
+          className="btn-primary relative text-base px-6 py-3 animate-pulse-glow hover:scale-105"
+        >
           Create your free account
+          <span className="absolute -top-2.5 -right-2.5 flex h-6 w-6">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
+            <span className="relative inline-flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-[11px] shadow-sm">
+              🎁
+            </span>
+          </span>
         </Link>
         <Link href="/login" className="btn-secondary text-base px-6 py-3">
           I already have an account

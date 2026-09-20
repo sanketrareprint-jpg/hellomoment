@@ -17,6 +17,20 @@ module.exports = {
           900: '#831843',
         },
       },
+      keyframes: {
+        wiggle: {
+          '0%, 100%': { transform: 'rotate(-1.5deg)' },
+          '50%': { transform: 'rotate(1.5deg)' },
+        },
+        'pulse-glow': {
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(219, 39, 119, 0.45)' },
+          '50%': { boxShadow: '0 0 0 10px rgba(219, 39, 119, 0)' },
+        },
+      },
+      animation: {
+        wiggle: 'wiggle 1.6s ease-in-out infinite',
+        'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

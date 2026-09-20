@@ -51,9 +51,7 @@ export interface GenerateFlyerOptions {
   canvasWidth: number;
   canvasHeight: number;
   namePlaceholder?: TextPlaceholder | null;
-  name?: string | null;
-  titlePlaceholder?: TextPlaceholder | null;
-  titleText?: string | null;
+  name?: string | null; // if the contact has a Title (e.g. "Mr."), callers prefix it into this string themselves — there's no separate title placeholder
   designationPlaceholder?: TextPlaceholder | null;
   designationText?: string | null;
   datePlaceholder?: TextPlaceholder | null;
@@ -382,9 +380,6 @@ export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string>
   const textEntries: { placeholder: TextPlaceholder; text: string }[] = [];
   if (opts.namePlaceholder && opts.name) {
     textEntries.push({ placeholder: opts.namePlaceholder, text: opts.name });
-  }
-  if (opts.titlePlaceholder && opts.titleText) {
-    textEntries.push({ placeholder: opts.titlePlaceholder, text: opts.titleText });
   }
   if (opts.designationPlaceholder && opts.designationText) {
     textEntries.push({ placeholder: opts.designationPlaceholder, text: opts.designationText });

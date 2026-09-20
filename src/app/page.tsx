@@ -24,6 +24,11 @@ const FEATURES = [
     body: 'Every day, raregreet.com checks who’s celebrating, generates their personalized flyer, and sends it on WhatsApp via your AiSensy account — to them and to you.',
     icon: 'M14 5l7 7m0 0l-7 7m7-7H3',
   },
+  {
+    title: '4. You get notified too',
+    body: 'Every birthday and anniversary wish sent also pings you on WhatsApp, so you always know who was wished and when — no need to check the dashboard.',
+    icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+  },
 ];
 
 // Real product capabilities — shown in their own grid below the 3-step
@@ -36,8 +41,8 @@ const CAPABILITIES = [
     icon: 'M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z',
   },
   {
-    title: '68 ready-made designs',
-    body: 'Starter flyers for every major birthday, anniversary and festival occasion, organized separately from your own uploads — usable the moment you sign up.',
+    title: '12 ready-made designs',
+    body: 'Starter flyers for birthday and anniversary occasions, organized separately from your own uploads — usable the moment you sign up.',
     icon: 'M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z',
   },
   {
@@ -105,26 +110,48 @@ export default async function LandingPage() {
         </nav>
       </header>
 
-      {banners.length > 0 && (
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-6">
-          <DashboardBannerSlider banners={banners} />
-        </section>
-      )}
+      <div className="flex flex-col">
+        {banners.length > 0 && (
+          <section className="hidden sm:block max-w-5xl mx-auto px-4 sm:px-6 pt-6">
+            <DashboardBannerSlider banners={banners} />
+          </section>
+        )}
 
-      <HeroSlider />
+        <div className="flex justify-center px-4 pt-4 sm:pt-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-600 to-fuchsia-600 px-4 py-1.5 text-xs sm:text-sm font-bold text-white shadow-md shadow-brand-500/30 animate-wiggle">
+            🎁 Sign up today — get 50 free coins, on us
+          </span>
+        </div>
+
+        <HeroSlider />
+
+        <section className="order-first sm:hidden max-w-md mx-auto px-4 pb-6">
+          <img
+            src="/raregreet-flyer.webp"
+            srcSet="/raregreet-flyer-640.webp 640w, /raregreet-flyer.webp 1254w"
+            sizes="calc(100vw - 2rem)"
+            width={1254}
+            height={1254}
+            alt="RareGreet — automate your birthday and anniversary wishes on WhatsApp"
+            loading="lazy"
+            decoding="async"
+            className="block w-full h-auto rounded-2xl shadow-xl ring-1 ring-brand-100"
+          />
+        </section>
+      </div>
 
       <section id="how-it-works" className="max-w-5xl mx-auto px-6 pb-16 scroll-mt-20">
         <p className="text-center text-xs font-semibold text-brand-600 uppercase tracking-wide mb-2">How it works</p>
-        <div className="grid sm:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {FEATURES.map((f) => (
-            <div key={f.title} className="card p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-150">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-brand-500 to-fuchsia-600 text-white flex items-center justify-center mb-4 shadow-sm">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div key={f.title} className="card p-4 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-150">
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-500 to-fuchsia-600 text-white flex items-center justify-center mb-3 shadow-sm">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={f.icon} />
                 </svg>
               </div>
-              <h3 className="font-semibold text-gray-900">{f.title}</h3>
-              <p className="mt-2 text-sm text-gray-600">{f.body}</p>
+              <h3 className="font-semibold text-gray-900 text-sm">{f.title}</h3>
+              <p className="mt-1.5 text-sm text-gray-600">{f.body}</p>
             </div>
           ))}
         </div>
