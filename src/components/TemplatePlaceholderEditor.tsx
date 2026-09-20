@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
-import { defaultsFor, type TemplateFormValues, type TextPlaceholder } from '@/lib/flyerPlaceholders';
+import { defaultsFor, type TemplateFormValues, type TextPlaceholder, type LogoPlaceholder } from '@/lib/flyerPlaceholders';
+import { scaleLogoPlaceholder, scaleTextPlaceholder } from '@/lib/framePlaceholders';
 import PlaceholderControls from '@/components/PlaceholderControls';
 import FloatingNudgePad from '@/components/FloatingNudgePad';
 
@@ -14,12 +15,24 @@ export type { TemplateFormValues };
 // /dashboard/frames) — its default, when set, overrides every template's own
 // branding placeholders at send time (see src/lib/sendWish.ts), so this
 // editor surfaces that here instead of leaving the "Your business branding"
-// toolbar below looking like it always takes effect.
+// toolbar below looking like it always takes effect. The placeholder/canvas
+// fields mirror what sendWish.ts reads from BusinessFrame, so the preview
+// can lay out the frame's own logo/text exactly like the real send does
+// (scaled from the frame's own canvas size onto this template's).
 export interface FrameOption {
   id: string;
   name: string;
   overlayUrl: string | null;
   isDefault: boolean;
+  canvasWidth: number;
+  canvasHeight: number;
+  logoPlaceholder: LogoPlaceholder | null;
+  firmNamePlaceholder: TextPlaceholder | null;
+  phonePlaceholder: TextPlaceholder | null;
+  emailPlaceholder: TextPlaceholder | null;
+  addressPlaceholder: TextPlaceholder | null;
+  websitePlaceholder: TextPlaceholder | null;
+  productsPlaceholder: TextPlaceholder | null;
 }
 
 // The business's saved Brand kit (Settings → Brand kit for flyers), passed
@@ -216,11 +229,41 @@ export default function TemplatePlaceholderEditor({
   const [manualBrandingOpen, setManualBrandingOpen] = useState(false);
   const brandFieldKeySet = new Set(BRAND_FIELDS.map((d) => d.key));
   // While a default Frame applies (and the business hasn't opened manual
-  // positioning), the frame's own overlay graphic renders branding at send
-  // time (see defaultFrame handling in sendWish.ts) — so the preview should
-  // show that overlay instead of this template's own logo/firmName/phone/
-  // email/address/website/products placeholders, which are ignored then.
+  // positioning), the frame's own overlay graphic and its own logo/firmName/
+  // phone/email/address/website/products placeholders render branding at
+  // send time (see defaultFrame handling in sendWish.ts) — so the preview
+  // should show those, scaled onto this template's canvas, instead of this
+  // template's own branding placeholders, which are ignored then.
   const frameActive = Boolean(defaultFrame) && !manualBrandingOpen;
+
+  // Same scaling sendWish.ts applies — the frame's placeholders were
+  // positioned against its own canvas size, not necessarily this template's.
+  const frameScaleX = defaultFrame ? form.canvasWidth / defaultFrame.canvasWidth : 1;
+  const frameScaleY = defaultFrame ? form.canvasHeight / defaultFrame.canvasHeight : 1;
+
+  const frameLogoPlaceholder: LogoPlaceholder | null =
+    defaultFrame?.logoPlaceholder ? scaleLogoPlaceholder(defaultFrame.logoPlaceholder, frameScaleX, frameScaleY) : null;
+
+  // Only for the brand fields a Frame can carry (name/designation/date live
+  // on the template itself, never on a Frame).
+  function frameTextPlaceholderFor(key: TextFieldKey): TextPlaceholder | null {
+    if (!defaultFrame) return null;
+    const raw =
+      key === 'firmName'
+        ? defaultFrame.firmNamePlaceholder
+        : key === 'phone'
+          ? defaultFrame.phonePlaceholder
+          : key === 'email'
+            ? defaultFrame.emailPlaceholder
+            : key === 'address'
+              ? defaultFrame.addressPlaceholder
+              : key === 'website'
+                ? defaultFrame.websitePlaceholder
+                : key === 'products'
+                  ? defaultFrame.productsPlaceholder
+                  : null;
+    return raw ? scaleTextPlaceholder(raw, frameScaleX, frameScaleY) : null;
+  }
 
   // Whether an element is locked in place (drag disabled) lives on its own
   // placeholder object — the same `locked` flag saved to the DB alongside
@@ -1093,7 +1136,8 @@ export default function TemplatePlaceholderEditor({
           {frameActive && defaultFrame?.overlayUrl && (
             // The frame's overlay graphic itself, in place of the manual
             // logo/firmName/phone/email/address/website/products markers
-            // below — anchored to the bottom edge and scaled to the flyer's
+            // below — anchored flush to the bottom edge (block, not inline,
+            // so there's no phantom gap under it) and scaled to the flyer's
             // full width (its own aspect ratio decides the height), matching
             // how the overlay graphic is designed to sit along the bottom of
             // the flyer.
@@ -1101,8 +1145,29 @@ export default function TemplatePlaceholderEditor({
             <img
               src={defaultFrame.overlayUrl}
               alt={`${defaultFrame.name} frame`}
-              className="absolute bottom-0 left-0 w-full pointer-events-none"
+              className="absolute bottom-0 left-0 block w-full pointer-events-none"
             />
+          )}
+
+          {frameActive && frameLogoPlaceholder && form.backgroundUrl && (
+            // The frame's own logo placement — read-only here (it's edited
+            // from the Frame itself, under Frames), unlike the draggable
+            // manual marker below.
+            <div
+              className="absolute flex items-center justify-center overflow-hidden pointer-events-none"
+              style={{
+                left: frameLogoPlaceholder.x * scale,
+                top: frameLogoPlaceholder.y * scale,
+                width: frameLogoPlaceholder.size * scale,
+                height: frameLogoPlaceholder.size * scale,
+                transform: frameLogoPlaceholder.rotation ? `rotate(${frameLogoPlaceholder.rotation}deg)` : undefined,
+              }}
+            >
+              {business?.logoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={business.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+              )}
+            </div>
           )}
 
           {!frameActive && isFieldOn('logo') && form.backgroundUrl && (
@@ -1137,12 +1202,13 @@ export default function TemplatePlaceholderEditor({
           )}
 
           {(['name', 'designation', 'date', 'firmName', 'phone', 'email', 'address', 'website', 'products'] as TextFieldKey[]).map((key) => {
-            if (!isFieldOn(key) || !form.backgroundUrl) return null;
-            // Brand fields are drawn by the frame's own overlay graphic
-            // above while a default Frame applies — skip the manual marker
-            // for those so the preview doesn't show both at once.
-            if (frameActive && brandFieldKeySet.has(key)) return null;
-            const p = getTextPlaceholder(key);
+            if (!form.backgroundUrl) return null;
+            // Brand fields are positioned by the Frame itself (read-only
+            // here) while a default Frame applies — the template's own
+            // saved position for them is ignored then, same as at send time.
+            const useFrame = frameActive && brandFieldKeySet.has(key);
+            const p = useFrame ? frameTextPlaceholderFor(key) : isFieldOn(key) ? getTextPlaceholder(key) : null;
+            if (!p) return null;
             // No artificial floor: flyer.ts never enforces a minimum font
             // size server-side, so clamping this preview to one (10/9/8px)
             // made any field whose configured fontSize maps below that at
@@ -1161,8 +1227,11 @@ export default function TemplatePlaceholderEditor({
             return (
               <div
                 key={key}
-                onPointerDown={startDrag(key)}
-                className={'absolute px-1 flex items-center gap-1 ' + (isLocked(key) ? 'cursor-not-allowed' : 'cursor-move')}
+                onPointerDown={useFrame ? undefined : startDrag(key)}
+                className={
+                  'absolute px-1 flex items-center gap-1 ' +
+                  (useFrame ? 'pointer-events-none' : isLocked(key) ? 'cursor-not-allowed' : 'cursor-move')
+                }
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
@@ -1173,7 +1242,8 @@ export default function TemplatePlaceholderEditor({
                     .filter(Boolean)
                     .join(' '),
                   color: p.color,
-                  outline: selected === key ? `1px dashed ${isLocked(key) ? 'rgba(217,119,6,0.9)' : 'rgba(255,255,255,0.8)'}` : undefined,
+                  outline:
+                    !useFrame && selected === key ? `1px dashed ${isLocked(key) ? 'rgba(217,119,6,0.9)' : 'rgba(255,255,255,0.8)'}` : undefined,
                 }}
               >
                 {iconPath && (

@@ -11,11 +11,43 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
   const template = await prisma.flyerTemplate.findUnique({ where: { id: params.id } });
   if (!template || template.businessId !== business.id) notFound();
 
-  const businessFrames = await prisma.businessFrame.findMany({
+  const rawFrames = await prisma.businessFrame.findMany({
     where: { businessId: business.id },
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'desc' }],
-    select: { id: true, name: true, overlayUrl: true, isDefault: true },
+    select: {
+      id: true,
+      name: true,
+      overlayUrl: true,
+      isDefault: true,
+      canvasWidth: true,
+      canvasHeight: true,
+      logoPlaceholder: true,
+      firmNamePlaceholder: true,
+      phonePlaceholder: true,
+      emailPlaceholder: true,
+      addressPlaceholder: true,
+      websitePlaceholder: true,
+      productsPlaceholder: true,
+    },
   });
+  // Parsed here (JSON strings in the DB) so the client editor can lay the
+  // frame's own logo/text out on its preview exactly like sendWish.ts does
+  // when a default Frame overrides a template's own branding placeholders.
+  const businessFrames = rawFrames.map((f) => ({
+    id: f.id,
+    name: f.name,
+    overlayUrl: f.overlayUrl,
+    isDefault: f.isDefault,
+    canvasWidth: f.canvasWidth,
+    canvasHeight: f.canvasHeight,
+    logoPlaceholder: f.logoPlaceholder ? JSON.parse(f.logoPlaceholder) : null,
+    firmNamePlaceholder: f.firmNamePlaceholder ? JSON.parse(f.firmNamePlaceholder) : null,
+    phonePlaceholder: f.phonePlaceholder ? JSON.parse(f.phonePlaceholder) : null,
+    emailPlaceholder: f.emailPlaceholder ? JSON.parse(f.emailPlaceholder) : null,
+    addressPlaceholder: f.addressPlaceholder ? JSON.parse(f.addressPlaceholder) : null,
+    websitePlaceholder: f.websitePlaceholder ? JSON.parse(f.websitePlaceholder) : null,
+    productsPlaceholder: f.productsPlaceholder ? JSON.parse(f.productsPlaceholder) : null,
+  }));
 
   // Scaled to *this* template's own canvas size — not a fixed 1080×1080
   // guess — so a field a business is switching on for the first time (e.g.
