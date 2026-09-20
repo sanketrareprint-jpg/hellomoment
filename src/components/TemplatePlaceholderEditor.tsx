@@ -2,11 +2,24 @@
 
 import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
 import { defaultsFor, type TemplateFormValues, type TextPlaceholder } from '@/lib/flyerPlaceholders';
 import PlaceholderControls from '@/components/PlaceholderControls';
 
 export type { TemplateFormValues };
+
+// A business's saved Frame (see the Frame/BusinessFrame Prisma models and
+// /dashboard/frames) — its default, when set, overrides every template's own
+// branding placeholders at send time (see src/lib/sendWish.ts), so this
+// editor surfaces that here instead of leaving the "Your business branding"
+// toolbar below looking like it always takes effect.
+export interface FrameOption {
+  id: string;
+  name: string;
+  overlayUrl: string | null;
+  isDefault: boolean;
+}
 
 // The business's saved Brand kit (Settings → Brand kit for flyers), passed
 // in so the editor can preview the *actual* logo/firm name/phone/address
@@ -133,6 +146,7 @@ const BRAND_FIELDS: { key: FieldKey; label: string; icon: string }[] = [
 export default function TemplatePlaceholderEditor({
   initial,
   business,
+  frames = [],
   showBranding = true,
   showPerBusinessOptions = true,
   apiBase = '/api/templates',
@@ -141,6 +155,9 @@ export default function TemplatePlaceholderEditor({
 }: {
   initial?: TemplateFormValues;
   business?: BrandInfo;
+  // This business's saved Frames, if any — offered in the branding section
+  // below as the recommended alternative to manually positioning each field.
+  frames?: FrameOption[];
   // Business branding (logo/firm name/phone/address/products) only makes
   // sense to overlay on a bundled Starter template — a business's own
   // uploaded artwork ("My templates") already has its branding drawn into
@@ -177,6 +194,15 @@ export default function TemplatePlaceholderEditor({
   const [showGrid, setShowGrid] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
+
+  // This business's default Frame, if any. When set, it overrides every
+  // template's own branding placeholders at send time regardless of what's
+  // configured below (see src/lib/sendWish.ts) — so the manual toolbar stays
+  // collapsed behind an "advanced" toggle by default rather than looking
+  // like positioning these fields here still matters.
+  const defaultFrame = frames.find((f) => f.isDefault) ?? null;
+  const [manualBrandingOpen, setManualBrandingOpen] = useState(false);
+  const brandFieldKeySet = new Set(BRAND_FIELDS.map((d) => d.key));
 
   const scale = PREVIEW_WIDTH / form.canvasWidth;
   const previewHeight = form.canvasHeight * scale;
@@ -612,15 +638,76 @@ export default function TemplatePlaceholderEditor({
           {showBranding && (
             <div>
               <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Your business branding</h3>
-              <div className="grid grid-cols-5 gap-1.5">
-                {BRAND_FIELDS.map((def) => (
-                  <ToolbarButton key={def.key} def={def} />
-                ))}
-              </div>
+
+              {defaultFrame ? (
+                <div className="rounded-lg border border-brand-200 bg-brand-50/60 p-2 mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-md overflow-hidden bg-white border border-brand-200 flex-shrink-0 flex items-center justify-center">
+                      {defaultFrame.overlayUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={defaultFrame.overlayUrl} alt={defaultFrame.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <svg className="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-brand-800">Using Frame &ldquo;{defaultFrame.name}&rdquo;</p>
+                      <p className="text-[11px] text-brand-700 leading-snug">
+                        Its logo/firm name/contact placement applies automatically to every flyer, including this
+                        template — the fields below are ignored while it&rsquo;s your default.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <Link href="/dashboard/frames?folder=my" className="text-[11px] font-medium text-brand-700 hover:text-brand-800">
+                      Manage frames →
+                    </Link>
+                    <button
+                      type="button"
+                      className="text-[11px] font-medium text-gray-500 hover:text-gray-700"
+                      onClick={() => setManualBrandingOpen((v) => !v)}
+                    >
+                      {manualBrandingOpen ? 'Hide manual positioning' : 'Position manually instead (advanced)'}
+                    </button>
+                  </div>
+                </div>
+              ) : frames.length > 0 ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 mb-2 text-[11px] text-amber-800 leading-snug">
+                  You have {frames.length} saved frame{frames.length === 1 ? '' : 's'} but none is set as default.{' '}
+                  <Link href="/dashboard/frames?folder=my" className="font-medium underline">
+                    Set a default frame
+                  </Link>{' '}
+                  to apply its branding automatically to every flyer instead of positioning fields below.
+                </div>
+              ) : (
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-2 mb-2 text-[11px] text-gray-600 leading-snug">
+                  Tip:{' '}
+                  <Link href="/dashboard/frames/new" className="font-medium text-brand-600">
+                    create a reusable Frame
+                  </Link>{' '}
+                  to position your branding once and apply it to every flyer automatically, instead of positioning
+                  each field below.
+                </div>
+              )}
+
+              {(!defaultFrame || manualBrandingOpen) && (
+                <div className="grid grid-cols-5 gap-1.5">
+                  {BRAND_FIELDS.map((def) => (
+                    <ToolbarButton key={def.key} def={def} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
-          {selected && selectedDef && (
+          {selected && selectedDef && (!brandFieldKeySet.has(selected) || !defaultFrame || manualBrandingOpen) && (
             <div className="border-t border-gray-100 pt-2">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm font-semibold text-gray-900">{selectedDef.label}</span>
