@@ -43,6 +43,7 @@ model Business {
   productsText     String? // short line of products/services, e.g. "Sweets · Snacks · Catering"
   firmNameScript   String  @default("ENGLISH") // "ENGLISH" | "MARATHI"
   firmNameMarathi  String? // Marathi-script rendering of the firm name, typed by the business
+  websiteUrl       String? // business's own website, shown in Settings → Business profile
 
   // Wallet — prepaid balance that pays for WhatsApp sends, in paise (₹1 =
   // 100 paise; integers avoid floating-point rounding on money). Recharged
