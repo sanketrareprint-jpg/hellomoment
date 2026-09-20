@@ -45,10 +45,15 @@ export async function sendAisensyCampaign(params: AisensySendParams): Promise<Ai
   if (params.tags) payload.tags = params.tags;
   if (params.attributes) payload.attributes = params.attributes;
 
+  // AiSensy has no documented SLA and can hang; without a bound here a slow
+  // call drags the whole send-test request past the host's proxy timeout,
+  // which kills the connection mid-response and leaves the browser with an
+  // empty body ("Unexpected end of JSON input") instead of a real error.
   const res = await fetch(AISENSY_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(20_000),
   });
 
   let body: unknown = null;

@@ -25,7 +25,8 @@ export default function SendTestWishButton({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ occasion }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
+      if (!data) throw new Error('The server took too long to respond. It may still be sending — check Send logs in a moment.');
       if (!res.ok) throw new Error(data.error || 'Send failed');
       setMessage(
         data.log?.status === 'SUCCESS' ? 'Sent! Check the Send logs page for details.' : `Attempted — status: ${data.log?.status}. See Send logs for details.`

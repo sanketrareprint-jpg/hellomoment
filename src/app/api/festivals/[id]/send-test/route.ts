@@ -46,7 +46,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     );
   }
 
-  await sendWishForFestival({ business, festival, template, contacts: [contact] });
+  try {
+    await sendWishForFestival({ business, festival, template, contacts: [contact] });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Send failed unexpectedly' },
+      { status: 500 }
+    );
+  }
 
   const lastLog = await prisma.sendLog.findFirst({
     where: { businessId: business.id, festivalId: festival.id, contactId: contact.id },

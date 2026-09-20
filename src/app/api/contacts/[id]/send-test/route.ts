@@ -44,7 +44,14 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const today = getTodayInTimezone(business.timezone);
-  await sendWishForContact({ business, contact, template, occasion, todayYear: today.year });
+  try {
+    await sendWishForContact({ business, contact, template, occasion, todayYear: today.year });
+  } catch (err) {
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : 'Send failed unexpectedly' },
+      { status: 500 }
+    );
+  }
 
   const lastLog = await prisma.sendLog.findFirst({
     where: { businessId: business.id, contactId: contact.id },
