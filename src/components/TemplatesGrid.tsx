@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import DeleteTemplateButton from '@/components/DeleteTemplateButton';
 
 const OCCASION_LABEL: Record<string, string> = {
@@ -19,7 +20,25 @@ export interface TemplateRow {
 }
 
 export default function TemplatesGrid({ templates }: { templates: TemplateRow[] }) {
+  const router = useRouter();
   const [query, setQuery] = useState('');
+  const [settingDefault, setSettingDefault] = useState<string | null>(null);
+
+  async function setDefault(id: string) {
+    setSettingDefault(id);
+    try {
+      const res = await fetch(`/api/templates/${id}/set-default`, { method: 'POST' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || 'Could not set as default');
+      }
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not set as default');
+    } finally {
+      setSettingDefault(null);
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -67,11 +86,21 @@ export default function TemplatesGrid({ templates }: { templates: TemplateRow[] 
                   )}
                 </div>
                 <p className="text-sm text-gray-500 mt-1">{OCCASION_LABEL[t.occasion] ?? t.occasion}</p>
-                <div className="flex gap-3 mt-3">
+                <div className="flex gap-3 mt-3 items-center flex-wrap">
                   <Link href={`/dashboard/templates/${t.id}/edit`} className="text-brand-600 font-medium text-sm">
                     Edit
                   </Link>
                   <DeleteTemplateButton id={t.id} name={t.name} />
+                  {!t.isDefault && (
+                    <button
+                      type="button"
+                      className="text-brand-600 font-medium text-sm disabled:opacity-50"
+                      disabled={settingDefault === t.id}
+                      onClick={() => setDefault(t.id)}
+                    >
+                      {settingDefault === t.id ? 'Setting…' : 'Set as default'}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
