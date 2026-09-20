@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic';
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="card p-5">
-      <div className="text-sm text-gray-500">{label}</div>
-      <div className="text-2xl font-bold text-gray-900 mt-1">{value}</div>
+    <div className="card p-3">
+      <div className="text-xs text-gray-500">{label}</div>
+      <div className="text-xl font-bold text-gray-900 mt-0.5">{value}</div>
     </div>
   );
 }
@@ -51,8 +51,8 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4 mb-1">
-        <h1 className="text-2xl font-bold text-gray-900">Signed-up businesses</h1>
+      <div className="flex items-start justify-between gap-4 mb-0.5">
+        <h1 className="text-xl font-bold text-gray-900">Signed-up businesses</h1>
         <div className="flex gap-2">
           <Link href="/admin/templates" className="btn-secondary whitespace-nowrap">
             Manage flyer templates
@@ -62,22 +62,22 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           </Link>
         </div>
       </div>
-      <p className="text-gray-600 mb-6">Every business that has registered on raregreet.com.</p>
+      <p className="text-gray-600 text-sm mb-3">Every business that has registered on raregreet.com.</p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
         <StatCard label="Total businesses" value={totalBusinesses} />
         <StatCard label="New in last 7 days" value={newThisWeek} />
         <StatCard label="Total contacts added" value={totalContacts} />
         <StatCard label="Flyers sent (success)" value={totalSends} />
       </div>
 
-      <form className="mb-4" method="GET">
+      <form className="mb-3" method="GET">
         <input
           type="text"
           name="q"
           defaultValue={q}
           placeholder="Search by business name, email, or WhatsApp number…"
-          className="input max-w-md"
+          className="input max-w-md text-sm"
         />
       </form>
 
@@ -85,17 +85,17 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Business</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Email</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">WhatsApp</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Signed up</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Contacts</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Templates</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Sends</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Wallet</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Last send</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">AiSensy</th>
-              <th className="px-4 py-3 font-medium whitespace-nowrap">Actions</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">Business</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">Email</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">WhatsApp</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">Signed up</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">Contacts</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">Templates</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">Sends</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">Wallet</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">Last send</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">AiSensy</th>
+              <th className="px-4 py-2 font-medium whitespace-nowrap">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -103,20 +103,20 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
               const lastSend = lastSendByBusiness.get(b.id);
               return (
                 <tr key={b.id} className="hover:bg-gray-50 align-top">
-                  <td className="px-4 py-3 font-medium whitespace-nowrap">
+                  <td className="px-4 py-1.5 font-medium whitespace-nowrap">
                     <Link href={`/admin/businesses/${b.id}`} className="text-brand-700 hover:underline">
                       {b.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{b.email}</td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{b.ownerWhatsapp}</td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">{b.email}</td>
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">{b.ownerWhatsapp}</td>
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">
                     {new Date(b.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{b._count.contacts}</td>
-                  <td className="px-4 py-3 text-gray-600">{b._count.templates}</td>
-                  <td className="px-4 py-3 text-gray-600">{b._count.sendLogs}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-4 py-1.5 text-gray-600">{b._count.contacts}</td>
+                  <td className="px-4 py-1.5 text-gray-600">{b._count.templates}</td>
+                  <td className="px-4 py-1.5 text-gray-600">{b._count.sendLogs}</td>
+                  <td className="px-4 py-1.5 whitespace-nowrap">
                     <span className={'font-medium ' + (b.walletBalancePaise < b.walletRatePaise ? 'text-red-600' : 'text-gray-900')}>
                       ₹{(b.walletBalancePaise / 100).toFixed(2)}
                     </span>
@@ -124,10 +124,10 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
                       <div className="text-xs font-medium text-amber-700">{b.trialCoins} trial coins</div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 whitespace-nowrap">
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">
                     {lastSend ? new Date(lastSend).toLocaleDateString('en-IN', { dateStyle: 'medium' }) : '—'}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-1.5">
                     <span
                       className={
                         'text-xs font-medium rounded-full px-2 py-0.5 ' +
@@ -137,7 +137,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
                       {b.aisensyApiKey ? 'Connected' : 'Not set up'}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-1.5">
                     <DeleteBusinessButton
                       id={b.id}
                       name={b.name}
@@ -149,7 +149,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
             })}
             {businesses.length === 0 && (
               <tr>
-                <td colSpan={11} className="px-4 py-10 text-center text-gray-500">
+                <td colSpan={11} className="px-4 py-8 text-center text-gray-500">
                   {q ? 'No businesses match your search.' : 'No businesses have signed up yet.'}
                 </td>
               </tr>
@@ -159,7 +159,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
       </div>
 
       {totalPages > 1 && (
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-3">
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <a
               key={p}

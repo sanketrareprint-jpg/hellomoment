@@ -12,10 +12,10 @@ export default function AdminProtectedLayout({ children }: { children: React.Rea
   return (
     <div className="min-h-screen">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-2.5">
           <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="raregreet.com" width={30} height={30} className="rounded-lg" />
-            <div className="text-lg font-bold text-brand-700">
+            <img src="/logo.png" alt="raregreet.com" width={26} height={26} className="rounded-lg" />
+            <div className="text-base font-bold text-brand-700">
               raregreet<span className="text-gray-400">.com</span>
             </div>
             <span className="ml-2 text-xs font-medium uppercase tracking-wide text-gray-400 border border-gray-200 rounded-full px-2 py-0.5">
@@ -25,7 +25,7 @@ export default function AdminProtectedLayout({ children }: { children: React.Rea
           <AdminLogoutButton />
         </div>
       </header>
-      <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
+      <main className="max-w-6xl mx-auto px-6 py-4">{children}</main>
     </div>
   );
 }

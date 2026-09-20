@@ -10,8 +10,8 @@ export const dynamic = 'force-dynamic';
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="text-sm text-gray-900 mt-0.5">{value ?? <span className="text-gray-400">—</span>}</div>
+      <div className="text-[11px] text-gray-500 leading-tight">{label}</div>
+      <div className="text-sm text-gray-900 leading-snug">{value ?? <span className="text-gray-400">—</span>}</div>
     </div>
   );
 }
@@ -55,7 +55,7 @@ function SortHeader({
   const isActive = field === activeField;
   const nextDir: 'asc' | 'desc' = isActive && activeDir === 'asc' ? 'desc' : 'asc';
   return (
-    <th className="px-4 py-2 font-medium align-top">
+    <th className="px-4 py-1.5 font-medium align-top">
       <a href={hrefFor(field, nextDir)} className="inline-flex items-center gap-1 hover:text-gray-800 whitespace-nowrap">
         {label}
         <span className="text-gray-400">{isActive ? (activeDir === 'asc' ? '▲' : '▼') : '↕'}</span>
@@ -211,14 +211,14 @@ export default async function AdminBusinessDetailPage({
   const statusMap = Object.fromEntries(sendStatusCounts.map((s) => [s.status, s._count._all]));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <Link href="/admin" className="text-sm text-brand-600 font-medium">
             ← All businesses
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">{business.name}</h1>
-          <p className="text-gray-500 text-sm">
+          <h1 className="text-xl font-bold text-gray-900 mt-0.5">{business.name}</h1>
+          <p className="text-gray-500 text-xs">
             Signed up {new Date(business.createdAt).toLocaleDateString('en-IN', { dateStyle: 'long' })}
           </p>
         </div>
@@ -234,10 +234,10 @@ export default async function AdminBusinessDetailPage({
         />
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="card p-5 space-y-4">
-          <h2 className="font-semibold text-gray-900">Account</h2>
-          <div className="grid grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="card p-3 space-y-2">
+          <h2 className="font-semibold text-gray-900 text-sm">Account</h2>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
             <Field label="Business name" value={business.name} />
             <Field label="Login email" value={business.email} />
             <Field label="Owner WhatsApp" value={business.ownerWhatsapp} />
@@ -245,30 +245,30 @@ export default async function AdminBusinessDetailPage({
           </div>
         </div>
 
-        <div className="card p-5 space-y-4">
-          <h2 className="font-semibold text-gray-900">Brand kit (used on flyers)</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="card p-3 space-y-2">
+          <h2 className="font-semibold text-gray-900 text-sm">Brand kit (flyers)</h2>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
             <Field
               label="Logo"
               value={
                 business.logoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={business.logoUrl} alt="Logo" className="h-10 w-10 object-contain rounded border border-gray-200" />
+                  <img src={business.logoUrl} alt="Logo" className="h-7 w-7 object-contain rounded border border-gray-200" />
                 ) : null
               }
             />
             <Field label="Firm name script" value={business.firmNameScript === 'MARATHI' ? `Marathi — ${business.firmNameMarathi || '(not set)'}` : 'English'} />
-            <Field label="Phone shown on flyer" value={business.phoneDisplay} />
-            <Field label="Email shown on flyer" value={business.emailDisplay} />
+            <Field label="Phone on flyer" value={business.phoneDisplay} />
+            <Field label="Email on flyer" value={business.emailDisplay} />
             <Field label="Address" value={business.addressText} />
             <Field label="Website" value={business.websiteUrl} />
-            <Field label="Products / services line" value={business.productsText} />
+            <Field label="Products / services" value={business.productsText} />
           </div>
         </div>
 
-        <div className="card p-5 space-y-4">
-          <h2 className="font-semibold text-gray-900">AiSensy (WhatsApp API)</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="card p-3 space-y-2">
+          <h2 className="font-semibold text-gray-900 text-sm">AiSensy (WhatsApp API)</h2>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
             <Field
               label="Status"
               value={
@@ -288,9 +288,9 @@ export default async function AdminBusinessDetailPage({
           </div>
         </div>
 
-        <div className="card p-5 space-y-4">
-          <h2 className="font-semibold text-gray-900">Usage</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="card p-3 space-y-2">
+          <h2 className="font-semibold text-gray-900 text-sm">Usage</h2>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2">
             <Field label="Contacts" value={business._count.contacts} />
             <Field label="Flyer templates" value={business._count.templates} />
             <Field label="Active festivals" value={business._count.festivals} />
@@ -301,23 +301,23 @@ export default async function AdminBusinessDetailPage({
         </div>
       </div>
 
-      <div className="card p-5 space-y-4">
+      <div className="card p-3 space-y-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="font-semibold text-gray-900">Wallet</h2>
+          <h2 className="font-semibold text-gray-900 text-sm">Wallet</h2>
           <div className="text-sm text-gray-600">
             Balance: <span className="font-bold text-gray-900">₹{(business.walletBalancePaise / 100).toFixed(2)}</span>
             {' · '}
             Rate: ₹{(business.walletRatePaise / 100).toFixed(2)}/message
           </div>
         </div>
-        <p className="text-xs text-gray-500 -mt-2">
+        <p className="text-xs text-gray-500 -mt-1">
           Add real ₹ credit — a goodwill top-up or refund. This doesn't change their locked-in per-message rate, only their balance.
           For free trial offers, use Trial Coins below instead.
         </p>
         <AddCreditForm businessId={business.id} rateRupees={business.walletRatePaise / 100} />
         {walletTransactions.length > 0 && (
-          <div className="pt-2 border-t border-gray-100">
-            <div className="text-xs font-medium text-gray-500 mb-2">Recent wallet activity</div>
+          <div className="pt-1 border-t border-gray-100">
+            <div className="text-xs font-medium text-gray-500 mb-1">Recent wallet activity</div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="text-gray-500 text-left">
@@ -362,20 +362,20 @@ export default async function AdminBusinessDetailPage({
         )}
       </div>
 
-      <div className="card p-5 space-y-4">
+      <div className="card p-3 space-y-2">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h2 className="font-semibold text-gray-900">Trial Coins</h2>
+          <h2 className="font-semibold text-gray-900 text-sm">Trial Coins</h2>
           <div className="text-sm text-gray-600">
             Balance: <span className="font-bold text-gray-900">{business.trialCoins}</span> coin{business.trialCoins === 1 ? '' : 's'}
           </div>
         </div>
-        <p className="text-xs text-gray-500 -mt-2">
+        <p className="text-xs text-gray-500 -mt-1">
           Free, non-monetary sends for a trial offer — spent automatically before their ₹ wallet on every birthday, anniversary, or festival send. Doesn't cost the business anything and never touches their wallet balance.
         </p>
         <AddTrialCoinsForm businessId={business.id} />
         {trialCoinTransactions.length > 0 && (
-          <div className="pt-2 border-t border-gray-100">
-            <div className="text-xs font-medium text-gray-500 mb-2">Recent trial coin activity</div>
+          <div className="pt-1 border-t border-gray-100">
+            <div className="text-xs font-medium text-gray-500 mb-1">Recent trial coin activity</div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="text-gray-500 text-left">
@@ -422,8 +422,8 @@ export default async function AdminBusinessDetailPage({
 
       <div className="card overflow-hidden overflow-x-auto">
         <form method="GET">
-          <div className="px-5 py-3 border-b border-gray-100 space-y-2">
-            <div className="font-semibold text-gray-900">
+          <div className="px-4 py-2 border-b border-gray-100 space-y-1.5">
+            <div className="font-semibold text-gray-900 text-sm">
               Contacts ({contactsTotal} of {business._count.contacts} total) — click a name to see everything sent to them
             </div>
             <div className="flex flex-wrap gap-2 items-center">
@@ -450,7 +450,7 @@ export default async function AdminBusinessDetailPage({
             <thead className="bg-gray-50 text-gray-500 text-left">
               <tr>
                 <SortHeader label="Name" field="name" activeField={contactsSort} activeDir={contactsDir} hrefFor={contactsHrefFor} />
-                <th className="px-4 py-2 font-medium whitespace-nowrap align-top">WhatsApp</th>
+                <th className="px-4 py-1.5 font-medium whitespace-nowrap align-top">WhatsApp</th>
                 <SortHeader
                   label="Relationship"
                   field="relationship"
@@ -475,20 +475,20 @@ export default async function AdminBusinessDetailPage({
             <tbody className="divide-y divide-gray-100">
               {contacts.map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 font-medium whitespace-nowrap">
+                  <td className="px-4 py-1.5 font-medium whitespace-nowrap">
                     <Link href={`/admin/businesses/${business.id}/contacts/${c.id}`} className="text-brand-700 hover:underline">
                       {c.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.whatsapp}</td>
-                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{c.relationship}</td>
-                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">{c.whatsapp}</td>
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">{c.relationship}</td>
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">
                     {c.dob ? new Date(c.dob).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
                   </td>
-                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">
                     {c.anniversary ? new Date(c.anniversary).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
                   </td>
-                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">
                     {new Date(c.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' })}
                   </td>
                 </tr>
@@ -504,7 +504,7 @@ export default async function AdminBusinessDetailPage({
           </table>
         </form>
         {contactsTotalPages > 1 && (
-          <div className="flex gap-2 px-5 py-3 border-t border-gray-100">
+          <div className="flex gap-2 px-4 py-2 border-t border-gray-100">
             {Array.from({ length: contactsTotalPages }, (_, i) => i + 1).map((p) => (
               <a
                 key={p}
@@ -523,8 +523,8 @@ export default async function AdminBusinessDetailPage({
 
       <div id="send-logs" className="card overflow-hidden overflow-x-auto">
         <form method="GET">
-          <div className="px-5 py-3 border-b border-gray-100 space-y-2">
-            <div className="font-semibold text-gray-900">
+          <div className="px-4 py-2 border-b border-gray-100 space-y-1.5">
+            <div className="font-semibold text-gray-900 text-sm">
               Send logs ({sendLogsTotal} of {business._count.sendLogs} total)
             </div>
             <div className="flex flex-wrap gap-2 items-center">
@@ -590,11 +590,11 @@ export default async function AdminBusinessDetailPage({
             <tbody className="divide-y divide-gray-100">
               {sendLogs.map((log) => (
                 <tr key={log.id}>
-                  <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap">
+                  <td className="px-4 py-1.5 font-medium text-gray-900 whitespace-nowrap">
                     {log.contact?.name ?? log.festival?.name ?? '—'}
                   </td>
-                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{log.occasion.toLowerCase()}</td>
-                  <td className="px-4 py-2 whitespace-nowrap">
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">{log.occasion.toLowerCase()}</td>
+                  <td className="px-4 py-1.5 whitespace-nowrap">
                     <span
                       className={
                         'text-xs font-medium rounded-full px-2 py-0.5 ' +
@@ -608,7 +608,7 @@ export default async function AdminBusinessDetailPage({
                       {log.status}
                     </span>
                   </td>
-                  <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                  <td className="px-4 py-1.5 text-gray-600 whitespace-nowrap">
                     {new Date(log.sentAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: business.timezone || 'Asia/Kolkata' })}
                   </td>
                 </tr>
@@ -624,7 +624,7 @@ export default async function AdminBusinessDetailPage({
           </table>
         </form>
         {sendLogsTotalPages > 1 && (
-          <div className="flex gap-2 px-5 py-3 border-t border-gray-100">
+          <div className="flex gap-2 px-4 py-2 border-t border-gray-100">
             {Array.from({ length: sendLogsTotalPages }, (_, i) => i + 1).map((p) => (
               <a
                 key={p}
