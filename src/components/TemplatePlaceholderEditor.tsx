@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
 import { defaultsFor, type TemplateFormValues, type TextPlaceholder } from '@/lib/flyerPlaceholders';
 import PlaceholderControls from '@/components/PlaceholderControls';
+import FloatingNudgePad from '@/components/FloatingNudgePad';
 
 export type { TemplateFormValues };
 
@@ -549,6 +550,24 @@ export default function TemplatePlaceholderEditor({
     dragTarget.current = null;
   }
 
+  // Moves the selected element by an exact (dx, dy) in canvas pixels — the
+  // floating nudge pad's arrows, used instead of dragging when a finger
+  // would otherwise cover the element while placing it.
+  function nudgeSelected(dx: number, dy: number) {
+    if (!selected || isLocked(selected)) return;
+    if (selected === 'photo') {
+      setForm((f) => ({ ...f, photoPlaceholder: { ...f.photoPlaceholder, x: f.photoPlaceholder.x + dx, y: f.photoPlaceholder.y + dy } }));
+      return;
+    }
+    if (selected === 'logo') {
+      setForm((f) => ({ ...f, logoPlaceholder: { ...f.logoPlaceholder, x: f.logoPlaceholder.x + dx, y: f.logoPlaceholder.y + dy } }));
+      return;
+    }
+    const key = selected as TextFieldKey;
+    const p = getTextPlaceholder(key);
+    setTextPlaceholder(key, { ...p, x: p.x + dx, y: p.y + dy });
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -637,6 +656,12 @@ export default function TemplatePlaceholderEditor({
   const selectedNote = selected ? missingBrandDataNote(selected) : null;
 
   return (
+    <>
+    <FloatingNudgePad
+      visible={Boolean(selected) && !isLocked(selected as FieldKey)}
+      label={selectedDef?.label}
+      onNudge={nudgeSelected}
+    />
     <form onSubmit={onSubmit} className="compact-form grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="space-y-2">
         <div className="card p-2 space-y-1.5">
@@ -1159,5 +1184,6 @@ export default function TemplatePlaceholderEditor({
         </div>
       </div>
     </form>
+    </>
   );
 }

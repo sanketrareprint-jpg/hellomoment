@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
 import { frameDefaultsFor, type FrameFormValues } from '@/lib/framePlaceholders';
 import PlaceholderControls from '@/components/PlaceholderControls';
+import FloatingNudgePad from '@/components/FloatingNudgePad';
 import type { BrandInfo } from '@/components/TemplatePlaceholderEditor';
 import type { TextPlaceholder } from '@/lib/flyerPlaceholders';
 
@@ -414,6 +415,20 @@ export default function FramePlaceholderEditor({
     dragTarget.current = null;
   }
 
+  // Moves the selected element by an exact (dx, dy) in canvas pixels — the
+  // floating nudge pad's arrows, used instead of dragging when a finger
+  // would otherwise cover the element while placing it.
+  function nudgeSelected(dx: number, dy: number) {
+    if (!selected || isLocked(selected)) return;
+    if (selected === 'logo') {
+      setForm((f) => ({ ...f, logoPlaceholder: { ...f.logoPlaceholder, x: f.logoPlaceholder.x + dx, y: f.logoPlaceholder.y + dy } }));
+      return;
+    }
+    const key = selected as TextFieldKey;
+    const p = getTextPlaceholder(key);
+    setTextPlaceholder(key, { ...p, x: p.x + dx, y: p.y + dy });
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -495,6 +510,12 @@ export default function FramePlaceholderEditor({
   const selectedNote = selected ? missingBrandDataNote(selected) : null;
 
   return (
+    <>
+    <FloatingNudgePad
+      visible={Boolean(selected) && !isLocked(selected as FieldKey)}
+      label={selectedDef?.label}
+      onNudge={nudgeSelected}
+    />
     <form onSubmit={onSubmit} className="compact-form grid lg:grid-cols-2 gap-4">
       <div className="space-y-2">
         <div className="card p-2 space-y-1.5">
@@ -819,5 +840,6 @@ export default function FramePlaceholderEditor({
         </div>
       </div>
     </form>
+    </>
   );
 }
