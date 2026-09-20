@@ -354,8 +354,13 @@ async function buildTextComposite(
     data = rotated.data;
     w = rotated.width;
     h = rotated.height;
-    rawLeft += rotated.offsetX;
-    rawTop += rotated.offsetY;
+    // rotateBuffer's offsetX/offsetY can be a half-pixel (it's a centering
+    // delta divided by 2, and the pre/post-rotation size difference isn't
+    // always even) — round straight after adding it, or sharp's composite()
+    // rejects a non-integer left/top ("Expected integer for left but
+    // received X.5 of type number") and the whole send fails.
+    rawLeft = Math.round(rawLeft + rotated.offsetX);
+    rawTop = Math.round(rawTop + rotated.offsetY);
   }
 
   // sharp refuses to composite an overlay that would extend past the base
@@ -369,8 +374,8 @@ async function buildTextComposite(
     h = cropHeight;
   }
 
-  const left = Math.min(Math.max(0, rawLeft), Math.max(0, canvasWidth - w));
-  const top = Math.min(Math.max(0, rawTop), Math.max(0, canvasHeight - h));
+  const left = Math.round(Math.min(Math.max(0, rawLeft), Math.max(0, canvasWidth - w)));
+  const top = Math.round(Math.min(Math.max(0, rawTop), Math.max(0, canvasHeight - h)));
 
   return { input: data, left, top };
 }
