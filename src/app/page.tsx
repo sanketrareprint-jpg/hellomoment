@@ -82,7 +82,7 @@ export default async function LandingPage() {
   if (business) redirect('/dashboard');
 
   const banners = await prisma.dashboardBanner.findMany({
-    where: { isActive: true },
+    where: { isActive: true, placement: 'LANDING' },
     orderBy: { order: 'asc' },
     select: { id: true, imageUrl: true, linkUrl: true },
   });

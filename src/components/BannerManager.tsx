@@ -11,7 +11,13 @@ export interface BannerRow {
   isActive: boolean;
 }
 
-export default function BannerManager({ banners }: { banners: BannerRow[] }) {
+export default function BannerManager({
+  banners,
+  placement,
+}: {
+  banners: BannerRow[];
+  placement: 'DASHBOARD' | 'LANDING';
+}) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [linkUrl, setLinkUrl] = useState('');
@@ -30,14 +36,15 @@ export default function BannerManager({ banners }: { banners: BannerRow[] }) {
     try {
       const formData = new FormData();
       formData.set('file', file);
+      formData.set('placement', placement);
       if (linkUrl.trim()) formData.set('linkUrl', linkUrl.trim());
       const res = await fetch('/api/admin/banners', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       setFile(null);
       setLinkUrl('');
-      (document.getElementById('banner-file-input') as HTMLInputElement | null)?.value &&
-        ((document.getElementById('banner-file-input') as HTMLInputElement).value = '');
+      const input = document.getElementById(`banner-file-input-${placement}`) as HTMLInputElement | null;
+      if (input) input.value = '';
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
@@ -94,7 +101,7 @@ export default function BannerManager({ banners }: { banners: BannerRow[] }) {
           <div>
             <label className="label">Banner image</label>
             <input
-              id="banner-file-input"
+              id={`banner-file-input-${placement}`}
               type="file"
               accept="image/png,image/jpeg,image/webp"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
@@ -122,7 +129,8 @@ export default function BannerManager({ banners }: { banners: BannerRow[] }) {
 
       <div className="card p-5">
         <h2 className="font-semibold text-gray-900 mb-3">
-          Banners ({banners.length}) — shown as a slider on every business&apos;s dashboard
+          Banners ({banners.length}) — shown as a slider on{' '}
+          {placement === 'DASHBOARD' ? "every business's dashboard" : 'the landing page'}
         </h2>
         {banners.length === 0 ? (
           <p className="text-sm text-gray-500">No banners yet. Add one above.</p>
