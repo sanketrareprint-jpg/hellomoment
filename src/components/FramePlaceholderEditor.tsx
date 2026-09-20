@@ -113,6 +113,20 @@ export default function FramePlaceholderEditor({
   const previewRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
 
+  // Local edits to the actual branding TEXT (as opposed to its position/
+  // style, which lives in `form` above) — e.g. typing a new address right
+  // here instead of going to Settings first. These are Business-level
+  // fields (Settings → Brand kit), shared by every template and frame, so
+  // they're saved through their own endpoint (see saveBrandText below)
+  // rather than through this form's own "Save changes" button, and layered
+  // on top of the `business` prop so the preview reflects them immediately.
+  const [brandOverride, setBrandOverride] = useState<Partial<BrandInfo>>({});
+  const [brandSaving, setBrandSaving] = useState<FieldKey | null>(null);
+  const [brandSavedAt, setBrandSavedAt] = useState<Partial<Record<FieldKey, number>>>({});
+  const [brandSaveError, setBrandSaveError] = useState<string | null>(null);
+
+  const effectiveBusiness: BrandInfo | undefined = business ? { ...business, ...brandOverride } : business;
+
   const scale = PREVIEW_WIDTH / form.canvasWidth;
   const previewHeight = form.canvasHeight * scale;
 
@@ -120,11 +134,65 @@ export default function FramePlaceholderEditor({
     return (FONT_FAMILIES.find((f) => f.id === id) ?? FONT_FAMILIES.find((f) => f.id === 'default'))!.cssFamily;
   }
 
-  const firmNamePreviewText = business
-    ? business.firmNameScript === 'MARATHI'
-      ? business.firmNameMarathi || business.name
-      : business.name.toUpperCase()
+  const firmNamePreviewText = effectiveBusiness
+    ? effectiveBusiness.firmNameScript === 'MARATHI'
+      ? effectiveBusiness.firmNameMarathi || effectiveBusiness.name
+      : effectiveBusiness.name.toUpperCase()
     : 'YOUR FIRM NAME';
+
+  // Only these five fields are safe to edit right here: each is a plain
+  // flyer-display string with no other meaning. Firm name (English) isn't
+  // included — the flyer shows the business's actual account name
+  // (uppercased), so editing it lives in Settings instead of a placement
+  // editor; the Marathi firm name has no such double duty and is editable.
+  type EditableBrandKey = 'phoneDisplay' | 'emailDisplay' | 'addressText' | 'websiteUrl' | 'productsText' | 'firmNameMarathi';
+
+  function brandKeyFor(key: FieldKey): EditableBrandKey | null {
+    switch (key) {
+      case 'phone':
+        return 'phoneDisplay';
+      case 'email':
+        return 'emailDisplay';
+      case 'address':
+        return 'addressText';
+      case 'website':
+        return 'websiteUrl';
+      case 'products':
+        return 'productsText';
+      case 'firmName':
+        return effectiveBusiness?.firmNameScript === 'MARATHI' ? 'firmNameMarathi' : null;
+      default:
+        return null;
+    }
+  }
+
+  function updateBrandDraft(key: FieldKey, value: string) {
+    const brandKey = brandKeyFor(key);
+    if (!brandKey) return;
+    setBrandOverride((prev) => ({ ...prev, [brandKey]: value }));
+    setBrandSavedAt((prev) => ({ ...prev, [key]: undefined }));
+  }
+
+  async function saveBrandText(key: FieldKey) {
+    const brandKey = brandKeyFor(key);
+    if (!brandKey || !effectiveBusiness) return;
+    const value = effectiveBusiness[brandKey] ?? '';
+    setBrandSaving(key);
+    setBrandSaveError(null);
+    try {
+      const res = await fetch('/api/settings/brand', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [brandKey]: value }),
+      });
+      if (!res.ok) throw new Error('Could not save this text');
+      setBrandSavedAt((prev) => ({ ...prev, [key]: Date.now() }));
+    } catch (err) {
+      setBrandSaveError(err instanceof Error ? err.message : 'Could not save this text');
+    } finally {
+      setBrandSaving(null);
+    }
+  }
 
   function isFieldOn(key: FieldKey): boolean {
     switch (key) {
@@ -207,12 +275,12 @@ export default function FramePlaceholderEditor({
   }
 
   function missingBrandDataNote(key: FieldKey): string | null {
-    if (key === 'logo' && !business?.logoUrl) return 'Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.';
-    if (key === 'phone' && !business?.phoneDisplay) return 'Add a phone number in Settings → Brand kit for flyers first.';
-    if (key === 'email' && !business?.emailDisplay) return 'Add an email in Settings → Brand kit for flyers first.';
-    if (key === 'address' && !business?.addressText) return 'Add an address in Settings → Brand kit for flyers first.';
-    if (key === 'website' && !business?.websiteUrl) return 'Add a website in Settings → Brand kit for flyers first.';
-    if (key === 'products' && !business?.productsText) return 'Add a products/services line in Settings → Brand kit for flyers first.';
+    if (key === 'logo' && !effectiveBusiness?.logoUrl) return 'Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.';
+    if (key === 'phone' && !effectiveBusiness?.phoneDisplay) return 'Type a phone number below.';
+    if (key === 'email' && !effectiveBusiness?.emailDisplay) return 'Type an email below.';
+    if (key === 'address' && !effectiveBusiness?.addressText) return 'Type an address below.';
+    if (key === 'website' && !effectiveBusiness?.websiteUrl) return 'Type a website below.';
+    if (key === 'products' && !effectiveBusiness?.productsText) return 'Type a products/services line below.';
     return null;
   }
 
@@ -221,15 +289,15 @@ export default function FramePlaceholderEditor({
       case 'firmName':
         return firmNamePreviewText;
       case 'phone':
-        return business?.phoneDisplay || 'Your phone number';
+        return effectiveBusiness?.phoneDisplay || 'Your phone number';
       case 'email':
-        return business?.emailDisplay || 'Your email';
+        return effectiveBusiness?.emailDisplay || 'Your email';
       case 'address':
-        return business?.addressText || 'Your address';
+        return effectiveBusiness?.addressText || 'Your address';
       case 'website':
-        return business?.websiteUrl || 'www.yourbusiness.com';
+        return effectiveBusiness?.websiteUrl || 'www.yourbusiness.com';
       case 'products':
-        return business?.productsText || 'Your products / services';
+        return effectiveBusiness?.productsText || 'Your products / services';
     }
   }
 
@@ -442,6 +510,43 @@ export default function FramePlaceholderEditor({
               </div>
 
               {selectedNote && <p className="text-xs text-amber-600 mb-1.5">{selectedNote}</p>}
+
+              {brandKeyFor(selected) && effectiveBusiness && (
+                <div className="mb-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="label mb-0">Text shown on the flyer</label>
+                    {brandSaving === selected ? (
+                      <span className="text-xs text-gray-400">Saving…</span>
+                    ) : brandSavedAt[selected] ? (
+                      <span className="text-xs text-green-600">Saved</span>
+                    ) : null}
+                  </div>
+                  <textarea
+                    className="input"
+                    rows={2}
+                    value={effectiveBusiness[brandKeyFor(selected)!] ?? ''}
+                    onChange={(e) => updateBrandDraft(selected, e.target.value)}
+                    onBlur={() => saveBrandText(selected)}
+                    placeholder="Type the text to show on the flyer…"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Press Enter to start a new line. Saved straight to Settings → Brand kit, so it updates on every
+                    template and frame too.
+                  </p>
+                </div>
+              )}
+
+              {selected === 'firmName' && effectiveBusiness && effectiveBusiness.firmNameScript !== 'MARATHI' && (
+                <p className="text-xs text-gray-500 mb-2">
+                  Shown in capitals, from your business name in{' '}
+                  <a href="/dashboard/settings" className="text-brand-600 font-medium">
+                    Settings
+                  </a>
+                  .
+                </p>
+              )}
+
+              {brandSaveError && <p className="text-xs text-red-600 mb-1.5">{brandSaveError}</p>}
 
               {isFieldOn(selected) && selected === 'logo' && (
                 <div className="grid grid-cols-2 gap-3">
