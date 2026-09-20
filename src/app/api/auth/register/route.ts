@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { hashPassword, signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from '@/lib/auth';
 import { SIGNUP_TRIAL_COINS } from '@/lib/pricing';
+import { seedStarterTemplatesForBusiness } from '@/lib/seedStarterTemplates';
 
 const schema = z.object({
   businessName: z.string().min(2, 'Business name is required'),
@@ -54,6 +55,11 @@ export async function POST(req: NextRequest) {
       description: 'Welcome trial coins',
     },
   });
+
+  // Give the new business a ready-to-send flyer for every occasion right
+  // away, instead of making them click "Add / refresh starter flyer
+  // designs" before they can send their first wish.
+  await seedStarterTemplatesForBusiness(business.id);
 
   const token = signSession({ businessId: business.id });
   const res = NextResponse.json({ ok: true });

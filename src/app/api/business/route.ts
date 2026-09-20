@@ -6,6 +6,7 @@ import { requireApiBusiness } from '@/lib/session';
 import { getFamilyBusinesses, rootIdOf } from '@/lib/businessFamily';
 import { hashPassword, signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from '@/lib/auth';
 import { SIGNUP_TRIAL_COINS } from '@/lib/pricing';
+import { seedStarterTemplatesForBusiness } from '@/lib/seedStarterTemplates';
 
 // "Companies" under one login — see src/lib/businessFamily.ts for the model.
 // GET lists every company in the current login's family (for the dashboard
@@ -74,6 +75,11 @@ export async function POST(req: NextRequest) {
       description: 'Welcome trial coins',
     },
   });
+
+  // Give the new company a ready-to-send flyer for every occasion right
+  // away, instead of making them click "Add / refresh starter flyer
+  // designs" before they can send their first wish.
+  await seedStarterTemplatesForBusiness(company.id);
 
   const token = signSession({ businessId: company.id });
   const res = NextResponse.json({ ok: true, businessId: company.id });
