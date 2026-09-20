@@ -1,6 +1,9 @@
 import sharp from 'sharp';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { wrapText } from './textWrap';
+
+export { wrapText };
 
 /**
  * Composites a business's uploaded flyer background with everything that
@@ -193,39 +196,6 @@ function resolveFont(
   // unqualified description could otherwise resolve to the other weight.
   const description = `${family} ${isBold ? 'Bold' : 'Normal'} ${Math.round(fontSize)}`;
   return { fontfile, description };
-}
-
-/**
- * No canvas measureText available (we deliberately avoid node-canvas to
- * sidestep its native cairo build requirements), so we wrap using an
- * average-character-width heuristic. It's not pixel-perfect but is a safe,
- * conservative estimate that reliably prevents text overflowing the flyer.
- */
-export function wrapText(text: string, maxWidth: number | undefined, fontSize: number, maxLines = 2): string[] {
-  if (!maxWidth) return [text];
-  const avgCharWidth = fontSize * 0.58;
-  const maxCharsPerLine = Math.max(1, Math.floor(maxWidth / avgCharWidth));
-
-  const words = text.split(/\s+/).filter(Boolean);
-  const lines: string[] = [];
-  let current = '';
-
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length > maxCharsPerLine && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = candidate;
-    }
-    if (lines.length === maxLines - 1 && current.length > maxCharsPerLine) {
-      // Truncate the final allowed line with an ellipsis rather than overflow.
-      current = current.slice(0, Math.max(0, maxCharsPerLine - 1)).trimEnd() + '…';
-      break;
-    }
-  }
-  if (current) lines.push(current);
-  return lines.slice(0, maxLines);
 }
 
 // Outline icons shown next to the phone/email/address/website text on a
