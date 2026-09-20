@@ -27,6 +27,13 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   'image/webp': 'webp',
 };
 
+// Flyer background art (both a business's own uploads and admin's starter
+// template library) is WebP-only — keeps every flyer background compressed
+// and consistent, unlike photos/logos/banners which still take JPG/PNG too.
+const ALLOWED_TEMPLATE_IMAGE_TYPES: Record<string, string> = {
+  'image/webp': 'webp',
+};
+
 export interface SavedUpload {
   url: string; // servable URL path, e.g. /api/files/photos/<file>
   absolutePath: string; // filesystem path, for server-side processing (e.g. sharp)
@@ -38,9 +45,11 @@ export interface SavedUpload {
  * filesystem path. Rejects anything that isn't a recognized image type.
  */
 export async function saveImageUpload(file: File, subdir: 'photos' | 'templates' | 'logos' | 'banners'): Promise<SavedUpload> {
-  const ext = ALLOWED_IMAGE_TYPES[file.type];
+  const allowed = subdir === 'templates' ? ALLOWED_TEMPLATE_IMAGE_TYPES : ALLOWED_IMAGE_TYPES;
+  const ext = allowed[file.type];
   if (!ext) {
-    throw new Error(`Unsupported image type: ${file.type || 'unknown'}. Use JPG, PNG, or WebP.`);
+    const allowedLabel = subdir === 'templates' ? 'WebP' : 'JPG, PNG, or WebP';
+    throw new Error(`Unsupported image type: ${file.type || 'unknown'}. Use ${allowedLabel}.`);
   }
   const MAX_BYTES = 10 * 1024 * 1024; // 10MB
   if (file.size > MAX_BYTES) {

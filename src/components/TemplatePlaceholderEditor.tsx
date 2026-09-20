@@ -533,7 +533,8 @@ export default function TemplatePlaceholderEditor({
             ))}
           <div>
             <label className="label">Flyer background image</label>
-            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={onBackgroundChange} />
+            <input type="file" accept="image/webp" onChange={onBackgroundChange} />
+            <p className="text-xs text-gray-500 mt-1">WebP only.</p>
             {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
             {form.backgroundUrl && (
               <p className="text-xs text-gray-500 mt-1">
