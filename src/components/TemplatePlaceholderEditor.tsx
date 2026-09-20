@@ -767,11 +767,17 @@ export default function TemplatePlaceholderEditor({
             // toolbar button, sized and colored to match the text next to
             // it — same icon shown on the actual sent flyer (see flyer.ts).
             const iconPath = key === 'phone' || key === 'address' ? BRAND_FIELDS.find((d) => d.key === key)?.icon : null;
+            // Mirror the server-side wrapping in flyer.ts: once a max width
+            // is set, long text (a long address, products line, etc.) wraps
+            // onto up to maxLines lines instead of overflowing the flyer —
+            // matching what actually gets sent, rather than just running off
+            // the edge of the preview canvas.
+            const wrapped = Boolean(p.maxWidth);
             return (
               <div
                 key={key}
                 onPointerDown={startDrag(key)}
-                className="absolute cursor-move px-1 whitespace-nowrap flex items-center gap-1"
+                className={`absolute cursor-move px-1 flex ${wrapped ? 'items-start' : 'items-center'} gap-1`}
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
@@ -794,7 +800,25 @@ export default function TemplatePlaceholderEditor({
                     <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
                   </svg>
                 )}
-                <span style={{ fontSize: fontPx, fontWeight: p.fontWeight, fontFamily: cssFontFamilyFor(p.fontFamily) }}>
+                <span
+                  style={{
+                    fontSize: fontPx,
+                    fontWeight: p.fontWeight,
+                    fontFamily: cssFontFamilyFor(p.fontFamily),
+                    textAlign: p.align,
+                    ...(wrapped
+                      ? {
+                          maxWidth: p.maxWidth * scale,
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                          display: '-webkit-box',
+                          WebkitBoxOrient: 'vertical' as const,
+                          WebkitLineClamp: p.maxLines ?? 2,
+                          overflow: 'hidden',
+                        }
+                      : { whiteSpace: 'nowrap' }),
+                  }}
+                >
                   {previewTextFor(key)}
                 </span>
               </div>
