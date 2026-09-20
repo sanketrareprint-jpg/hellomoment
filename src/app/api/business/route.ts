@@ -5,7 +5,6 @@ import { prisma } from '@/lib/db';
 import { requireApiBusiness } from '@/lib/session';
 import { getFamilyBusinesses, rootIdOf } from '@/lib/businessFamily';
 import { hashPassword, signSession, SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from '@/lib/auth';
-import { SIGNUP_TRIAL_COINS } from '@/lib/pricing';
 
 // "Companies" under one login — see src/lib/businessFamily.ts for the model.
 // GET lists every company in the current login's family (for the dashboard
@@ -52,6 +51,11 @@ export async function POST(req: NextRequest) {
 
   const DEFAULT_AISENSY_CAMPAIGN = 'hellomomentwishes';
 
+  // No free trial coins here — those are a signup incentive for a brand new
+  // account (see /api/auth/register), not something to collect by adding
+  // more companies under one login. A new company starts at 0 coins/₹0;
+  // fund it the same way as any other business, from /admin or its own
+  // Wallet page.
   const company = await prisma.business.create({
     data: {
       name,
@@ -62,16 +66,6 @@ export async function POST(req: NextRequest) {
       aisensyBirthdayCampaign: DEFAULT_AISENSY_CAMPAIGN,
       aisensyAnniversaryCampaign: DEFAULT_AISENSY_CAMPAIGN,
       aisensyFestivalCampaign: DEFAULT_AISENSY_CAMPAIGN,
-      trialCoins: SIGNUP_TRIAL_COINS,
-    },
-  });
-
-  await prisma.trialCoinTransaction.create({
-    data: {
-      businessId: company.id,
-      type: 'GRANT',
-      coins: SIGNUP_TRIAL_COINS,
-      description: 'Welcome trial coins',
     },
   });
 
