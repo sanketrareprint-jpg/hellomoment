@@ -26,6 +26,7 @@ export interface TextPlaceholder {
   align?: Align;
   maxWidth?: number; // wraps onto multiple lines if the text would exceed this
   maxLines?: number; // default 2
+  rotation?: number; // degrees, clockwise, about the placeholder's own center
 }
 
 export interface PhotoPlaceholder {
@@ -41,12 +42,14 @@ export interface PhotoPlaceholder {
   shape?: 'circle' | 'square' | 'rounded' | 'hexagon';
   borderColor?: string;
   borderWidth?: number;
+  rotation?: number; // degrees, clockwise, about the box's own center
 }
 
 export interface LogoPlaceholder {
   x: number;
   y: number;
   size: number; // the logo is scaled to fit inside this size×size box (aspect ratio preserved, not cropped)
+  rotation?: number; // degrees, clockwise, about the box's own center
 }
 
 export interface GenerateFlyerOptions {
@@ -80,6 +83,38 @@ export interface GenerateFlyerOptions {
   productsText?: string | null;
 
   outputPath: string; // absolute filesystem path to write the composited JPEG
+}
+
+/**
+ * Rotates an already-rendered RGBA PNG buffer clockwise by `degrees` about
+ * its own center, expanding the canvas (transparent background) so nothing
+ * gets clipped — sharp's default `rotate()` behavior. Returns the offset to
+ * add to the buffer's originally-intended (left, top) so the *center* of the
+ * rotated result lands on the same point the *center* of the unrotated
+ * buffer would have: for a box positioned at (left, top) sized w×h rotated
+ * to w'×h', that center-preserving offset is always ((w-w')/2, (h-h')/2)
+ * regardless of how (left, top) was derived (alignment, etc.) — because
+ * rotating about a fixed center always shifts the bounding box by exactly
+ * half of its size delta on each axis.
+ */
+async function rotateBuffer(
+  data: Buffer,
+  width: number,
+  height: number,
+  degrees: number
+): Promise<{ data: Buffer; width: number; height: number; offsetX: number; offsetY: number }> {
+  if (!degrees) return { data, width, height, offsetX: 0, offsetY: 0 };
+  const rotated = await sharp(data)
+    .rotate(degrees, { background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  return {
+    data: rotated.data,
+    width: rotated.info.width,
+    height: rotated.info.height,
+    offsetX: (width - rotated.info.width) / 2,
+    offsetY: (height - rotated.info.height) / 2,
+  };
 }
 
 function escapeXml(input: string): string {
@@ -302,6 +337,27 @@ async function buildTextComposite(
     h = combined.height;
   }
 
+  // Position (and rotation, next) is computed off the block's unrotated
+  // size — rotating about a fixed center shifts the bounding box the same
+  // way regardless of alignment, so this stays correct even after rotation
+  // grows the canvas below.
+  let rawLeft =
+    placeholder.align === 'center'
+      ? Math.round(placeholder.x - w / 2)
+      : placeholder.align === 'right'
+        ? Math.round(placeholder.x - w)
+        : Math.round(placeholder.x);
+  let rawTop = Math.round(placeholder.y - h / 2);
+
+  if (placeholder.rotation) {
+    const rotated = await rotateBuffer(data, w, h, placeholder.rotation);
+    data = rotated.data;
+    w = rotated.width;
+    h = rotated.height;
+    rawLeft += rotated.offsetX;
+    rawTop += rotated.offsetY;
+  }
+
   // sharp refuses to composite an overlay that would extend past the base
   // canvas at the given offset, so clamp/crop defensively — an unusually
   // long name shouldn't be able to fail an entire send.
@@ -312,14 +368,6 @@ async function buildTextComposite(
     w = cropWidth;
     h = cropHeight;
   }
-
-  const rawLeft =
-    placeholder.align === 'center'
-      ? Math.round(placeholder.x - w / 2)
-      : placeholder.align === 'right'
-        ? Math.round(placeholder.x - w)
-        : Math.round(placeholder.x);
-  const rawTop = Math.round(placeholder.y - h / 2);
 
   const left = Math.min(Math.max(0, rawLeft), Math.max(0, canvasWidth - w));
   const top = Math.min(Math.max(0, rawTop), Math.max(0, canvasHeight - h));
@@ -370,8 +418,18 @@ async function buildPhotoComposite(
     photo = photo.composite([{ input: maskSvg, blend: 'dest-in' }]);
   }
 
-  const photoBuffer = await photo.png().toBuffer();
-  return { input: photoBuffer, left: Math.round(placeholder.x), top: Math.round(placeholder.y) };
+  let photoBuffer = await photo.png().toBuffer();
+  let left = Math.round(placeholder.x);
+  let top = Math.round(placeholder.y);
+
+  if (placeholder.rotation) {
+    const rotated = await rotateBuffer(photoBuffer, w, h, placeholder.rotation);
+    photoBuffer = rotated.data;
+    left = Math.round(left + rotated.offsetX);
+    top = Math.round(top + rotated.offsetY);
+  }
+
+  return { input: photoBuffer, left, top };
 }
 
 /**
@@ -384,11 +442,21 @@ async function buildLogoComposite(
   placeholder: LogoPlaceholder
 ): Promise<{ input: Buffer; left: number; top: number }> {
   const size = Math.round(placeholder.size);
-  const logoBuffer = await sharp(logoPath)
+  let logoBuffer = await sharp(logoPath)
     .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .png()
     .toBuffer();
-  return { input: logoBuffer, left: Math.round(placeholder.x), top: Math.round(placeholder.y) };
+  let left = Math.round(placeholder.x);
+  let top = Math.round(placeholder.y);
+
+  if (placeholder.rotation) {
+    const rotated = await rotateBuffer(logoBuffer, size, size, placeholder.rotation);
+    logoBuffer = rotated.data;
+    left = Math.round(left + rotated.offsetX);
+    top = Math.round(top + rotated.offsetY);
+  }
+
+  return { input: logoBuffer, left, top };
 }
 
 export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string> {
