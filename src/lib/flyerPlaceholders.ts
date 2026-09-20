@@ -58,8 +58,12 @@ export interface TemplateFormValues {
   firmNamePlaceholder: TextPlaceholder;
   usePhone: boolean;
   phonePlaceholder: TextPlaceholder;
+  useEmail: boolean;
+  emailPlaceholder: TextPlaceholder;
   useAddress: boolean;
   addressPlaceholder: TextPlaceholder;
+  useWebsite: boolean;
+  websitePlaceholder: TextPlaceholder;
   useProducts: boolean;
   productsPlaceholder: TextPlaceholder;
 }
@@ -73,7 +77,9 @@ export function defaultsFor(width: number, height: number): Pick<
   | 'logoPlaceholder'
   | 'firmNamePlaceholder'
   | 'phonePlaceholder'
+  | 'emailPlaceholder'
   | 'addressPlaceholder'
+  | 'websitePlaceholder'
   | 'productsPlaceholder'
 > {
   return {
@@ -144,6 +150,20 @@ export function defaultsFor(width: number, height: number): Pick<
       maxWidth: Math.round(width * 0.55),
       maxLines: 1,
     },
+    // Email/website mirror phone/address in size and style, but default to
+    // the opposite (right) side of the flyer, right-aligned, so they don't
+    // land stacked on top of the phone/address block — each is still
+    // independently draggable like every other field.
+    emailPlaceholder: {
+      x: Math.round(width * 0.95),
+      y: Math.round(height * 0.925),
+      fontSize: Math.round(width * 0.026),
+      color: '#ffffff',
+      fontWeight: 400,
+      align: 'right',
+      maxWidth: Math.round(width * 0.55),
+      maxLines: 1,
+    },
     addressPlaceholder: {
       x: Math.round(width * 0.05),
       y: Math.round(height * 0.95),
@@ -153,6 +173,16 @@ export function defaultsFor(width: number, height: number): Pick<
       align: 'left',
       maxWidth: Math.round(width * 0.55),
       maxLines: 2,
+    },
+    websitePlaceholder: {
+      x: Math.round(width * 0.95),
+      y: Math.round(height * 0.95),
+      fontSize: Math.round(width * 0.022),
+      color: '#ffffff',
+      fontWeight: 400,
+      align: 'right',
+      maxWidth: Math.round(width * 0.55),
+      maxLines: 1,
     },
     productsPlaceholder: {
       x: Math.round(width * 0.05),

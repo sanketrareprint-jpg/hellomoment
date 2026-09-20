@@ -93,7 +93,9 @@ export async function POST(req: NextRequest) {
         logoPlaceholder: starter.logoPlaceholder,
         firmNamePlaceholder: starter.firmNamePlaceholder,
         phonePlaceholder: starter.phonePlaceholder,
+        emailPlaceholder: starter.emailPlaceholder,
         addressPlaceholder: starter.addressPlaceholder,
+        websitePlaceholder: starter.websitePlaceholder,
         productsPlaceholder: starter.productsPlaceholder,
       },
     });

@@ -15,6 +15,7 @@ const schema = z.object({
   aisensyFestivalCampaign: z.string().optional().nullable(),
   logoUrl: z.string().optional().nullable(),
   phoneDisplay: z.string().optional().nullable(),
+  emailDisplay: z.string().optional().nullable(),
   addressText: z.string().optional().nullable(),
   productsText: z.string().optional().nullable(),
   firmNameScript: z.enum(['ENGLISH', 'MARATHI']).optional(),
@@ -39,18 +40,25 @@ export async function PUT(req: NextRequest) {
     }
   }
 
+  // Businesses paste their website in all sorts of forms ("https://…",
+  // "http://www…", "www…", or a bare domain) — stripping any protocol
+  // before storing means what ends up on the flyer never starts with
+  // "https://"/"http://", whatever form they typed it in.
+  const websiteUrl = parsed.data.websiteUrl?.trim().replace(/^https?:\/\//i, '') || null;
+
   const updated = await prisma.business.update({
     where: { id: business.id },
     data: {
       ...parsed.data,
       email,
-      websiteUrl: parsed.data.websiteUrl || null,
+      websiteUrl,
       aisensyApiKey: parsed.data.aisensyApiKey || null,
       aisensyBirthdayCampaign: parsed.data.aisensyBirthdayCampaign || null,
       aisensyAnniversaryCampaign: parsed.data.aisensyAnniversaryCampaign || null,
       aisensyFestivalCampaign: parsed.data.aisensyFestivalCampaign || null,
       logoUrl: parsed.data.logoUrl || null,
       phoneDisplay: parsed.data.phoneDisplay || null,
+      emailDisplay: parsed.data.emailDisplay || null,
       addressText: parsed.data.addressText || null,
       productsText: parsed.data.productsText || null,
       firmNameMarathi: parsed.data.firmNameMarathi || null,

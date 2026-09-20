@@ -22,6 +22,7 @@ export default async function SettingsPage() {
           aisensyFestivalCampaign: business.aisensyFestivalCampaign ?? '',
           logoUrl: business.logoUrl ?? '',
           phoneDisplay: business.phoneDisplay ?? '',
+          emailDisplay: business.emailDisplay ?? '',
           addressText: business.addressText ?? '',
           productsText: business.productsText ?? '',
           firmNameScript: (business.firmNameScript as 'ENGLISH' | 'MARATHI') ?? 'ENGLISH',

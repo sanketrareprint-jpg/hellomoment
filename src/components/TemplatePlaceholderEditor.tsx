@@ -15,7 +15,9 @@ export interface BrandInfo {
   logoUrl: string | null;
   name: string;
   phoneDisplay: string | null;
+  emailDisplay: string | null;
   addressText: string | null;
+  websiteUrl: string | null;
   productsText: string | null;
   firmNameScript: 'ENGLISH' | 'MARATHI';
   firmNameMarathi: string | null;
@@ -24,7 +26,7 @@ export interface BrandInfo {
 // Fields whose placeholder is a plain TextPlaceholder (font/size/color/align
 // etc.) — i.e. everything except the photo box and the logo image, which
 // each have their own shape.
-type TextFieldKey = 'name' | 'designation' | 'date' | 'firmName' | 'phone' | 'address' | 'products';
+type TextFieldKey = 'name' | 'designation' | 'date' | 'firmName' | 'phone' | 'email' | 'address' | 'website' | 'products';
 type FieldKey = TextFieldKey | 'photo' | 'logo';
 
 export const EMPTY_TEMPLATE: TemplateFormValues = {
@@ -49,7 +51,9 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
   useLogo: true,
   useFirmName: false,
   usePhone: false,
+  useEmail: false,
   useAddress: false,
+  useWebsite: false,
   useProducts: false,
   ...defaultsFor(1080, 1080),
 };
@@ -104,9 +108,19 @@ const BRAND_FIELDS: { key: FieldKey; label: string; icon: string }[] = [
     icon: 'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z',
   },
   {
+    key: 'email',
+    label: 'Email',
+    icon: 'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75',
+  },
+  {
     key: 'address',
     label: 'Address',
     icon: 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z',
+  },
+  {
+    key: 'website',
+    label: 'Website',
+    icon: 'M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0112 16.5c-3.162 0-6.133-.815-8.716-2.247m0 0A8.959 8.959 0 013 12c0-1.605.42-3.113 1.157-4.418',
   },
   {
     key: 'products',
@@ -196,8 +210,12 @@ export default function TemplatePlaceholderEditor({
         return showBranding && form.useFirmName;
       case 'phone':
         return showBranding && form.usePhone;
+      case 'email':
+        return showBranding && form.useEmail;
       case 'address':
         return showBranding && form.useAddress;
+      case 'website':
+        return showBranding && form.useWebsite;
       case 'products':
         return showBranding && form.useProducts;
       default:
@@ -222,8 +240,12 @@ export default function TemplatePlaceholderEditor({
           return { ...f, useFirmName: value };
         case 'phone':
           return { ...f, usePhone: value };
+        case 'email':
+          return { ...f, useEmail: value };
         case 'address':
           return { ...f, useAddress: value };
+        case 'website':
+          return { ...f, useWebsite: value };
         case 'products':
           return { ...f, useProducts: value };
         default:
@@ -244,8 +266,12 @@ export default function TemplatePlaceholderEditor({
         return form.firmNamePlaceholder;
       case 'phone':
         return form.phonePlaceholder;
+      case 'email':
+        return form.emailPlaceholder;
       case 'address':
         return form.addressPlaceholder;
+      case 'website':
+        return form.websitePlaceholder;
       case 'products':
         return form.productsPlaceholder;
     }
@@ -264,8 +290,12 @@ export default function TemplatePlaceholderEditor({
           return { ...f, firmNamePlaceholder: p };
         case 'phone':
           return { ...f, phonePlaceholder: p };
+        case 'email':
+          return { ...f, emailPlaceholder: p };
         case 'address':
           return { ...f, addressPlaceholder: p };
+        case 'website':
+          return { ...f, websitePlaceholder: p };
         case 'products':
           return { ...f, productsPlaceholder: p };
         default:
@@ -283,7 +313,9 @@ export default function TemplatePlaceholderEditor({
       return 'If a contact has a Title saved (e.g. "Mr.", "Dr."), it\'s shown automatically right before their name here — contacts without one just show their name.';
     if (key === 'logo' && !business?.logoUrl) return 'Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.';
     if (key === 'phone' && !business?.phoneDisplay) return 'Add a phone number in Settings → Brand kit for flyers first.';
+    if (key === 'email' && !business?.emailDisplay) return 'Add an email in Settings → Brand kit for flyers first.';
     if (key === 'address' && !business?.addressText) return 'Add an address in Settings → Brand kit for flyers first.';
+    if (key === 'website' && !business?.websiteUrl) return 'Add a website in Settings → Brand kit for flyers first.';
     if (key === 'products' && !business?.productsText) return 'Add a products/services line in Settings → Brand kit for flyers first.';
     return null;
   }
@@ -300,8 +332,12 @@ export default function TemplatePlaceholderEditor({
         return firmNamePreviewText;
       case 'phone':
         return business?.phoneDisplay || 'Your phone number';
+      case 'email':
+        return business?.emailDisplay || 'Your email';
       case 'address':
         return business?.addressText || 'Your address';
+      case 'website':
+        return business?.websiteUrl || 'www.yourbusiness.com';
       case 'products':
         return business?.productsText || 'Your products / services';
     }
@@ -422,7 +458,9 @@ export default function TemplatePlaceholderEditor({
         logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
         firmNamePlaceholder: isFieldOn('firmName') ? form.firmNamePlaceholder : null,
         phonePlaceholder: isFieldOn('phone') ? form.phonePlaceholder : null,
+        emailPlaceholder: isFieldOn('email') ? form.emailPlaceholder : null,
         addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
+        websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
         productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
       };
       const url = form.id ? `${apiBase}/${form.id}` : apiBase;
@@ -769,20 +807,29 @@ export default function TemplatePlaceholderEditor({
             </div>
           )}
 
-          {(['name', 'designation', 'date', 'firmName', 'phone', 'address', 'products'] as TextFieldKey[]).map((key) => {
+          {(['name', 'designation', 'date', 'firmName', 'phone', 'email', 'address', 'website', 'products'] as TextFieldKey[]).map((key) => {
             if (!isFieldOn(key) || !form.backgroundUrl) return null;
             const p = getTextPlaceholder(key);
             const minFontPx = key === 'name' ? 10 : key === 'date' ? 9 : 8;
             const fontPx = Math.max(minFontPx, p.fontSize * scale);
-            // Phone and address get the same outline icon used for their
-            // toolbar button, sized and colored to match the text next to
-            // it — same icon shown on the actual sent flyer (see flyer.ts).
-            const iconPath = key === 'phone' || key === 'address' ? BRAND_FIELDS.find((d) => d.key === key)?.icon : null;
+            // Phone/email/address/website get the same outline icon used for
+            // their toolbar button, sized and colored to match the text next
+            // to it — same icon shown on the actual sent flyer (see flyer.ts).
+            const iconPath =
+              key === 'phone' || key === 'email' || key === 'address' || key === 'website'
+                ? BRAND_FIELDS.find((d) => d.key === key)?.icon
+                : null;
+            // Mirror the server-side wrapping in flyer.ts: once a max width
+            // is set, long text (a long address, products line, etc.) wraps
+            // onto up to maxLines lines instead of overflowing the flyer —
+            // matching what actually gets sent, rather than just running off
+            // the edge of the preview canvas.
+            const wrapped = Boolean(p.maxWidth);
             return (
               <div
                 key={key}
                 onPointerDown={startDrag(key)}
-                className="absolute cursor-move px-1 whitespace-nowrap flex items-center gap-1"
+                className={`absolute cursor-move px-1 flex ${wrapped ? 'items-start' : 'items-center'} gap-1`}
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
@@ -805,7 +852,25 @@ export default function TemplatePlaceholderEditor({
                     <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
                   </svg>
                 )}
-                <span style={{ fontSize: fontPx, fontWeight: p.fontWeight, fontFamily: cssFontFamilyFor(p.fontFamily) }}>
+                <span
+                  style={{
+                    fontSize: fontPx,
+                    fontWeight: p.fontWeight,
+                    fontFamily: cssFontFamilyFor(p.fontFamily),
+                    textAlign: p.align,
+                    ...(wrapped
+                      ? {
+                          maxWidth: p.maxWidth * scale,
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                          display: '-webkit-box',
+                          WebkitBoxOrient: 'vertical' as const,
+                          WebkitLineClamp: p.maxLines ?? 2,
+                          overflow: 'hidden',
+                        }
+                      : { whiteSpace: 'nowrap' }),
+                  }}
+                >
                   {previewTextFor(key)}
                 </span>
               </div>
