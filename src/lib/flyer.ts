@@ -1,9 +1,6 @@
 import sharp from 'sharp';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { wrapText } from './textWrap';
-
-export { wrapText };
 
 /**
  * Composites a business's uploaded flyer background with everything that
@@ -24,8 +21,10 @@ export interface TextPlaceholder {
   fontWeight?: number | string; // e.g. 400, 600, 700
   fontFamily?: string; // defaults to our bundled font (see BUNDLED_FONT_FAMILY below)
   align?: Align;
-  maxWidth?: number; // wraps onto multiple lines if the text would exceed this
-  maxLines?: number; // default 2
+  // Multi-line text is opt-in and manual: a literal newline typed into the
+  // underlying text (Settings, contact record, etc.) becomes a line break
+  // here. There is no automatic width-based wrapping or truncation — the
+  // business controls line breaks themselves and checks the live preview.
   rotation?: number; // degrees, clockwise, about the placeholder's own center
 }
 
@@ -311,7 +310,12 @@ async function buildTextComposite(
   canvasHeight: number,
   icon?: 'phone' | 'email' | 'address' | 'website'
 ): Promise<{ input: Buffer; left: number; top: number }> {
-  const lines = wrapText(text, placeholder.maxWidth, placeholder.fontSize, placeholder.maxLines ?? 2);
+  // No auto-wrapping or truncation: lines break only where the source text
+  // itself contains a newline (typed with Enter in Settings/the template
+  // editor). Text wider than the placeholder's spot on the flyer simply
+  // renders at its natural width — the business is expected to check the
+  // live preview and break the line manually if needed.
+  const lines = text.split('\n');
   const markup = lines.map((line) => escapeXml(line)).join('\n');
   const { fontfile, description: fontDescription } = resolveFont(
     placeholder.fontWeight,
