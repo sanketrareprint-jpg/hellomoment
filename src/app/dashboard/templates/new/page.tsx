@@ -1,9 +1,15 @@
+import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
 import TemplatePlaceholderEditor, { BrandInfo } from '@/components/TemplatePlaceholderEditor';
 
 export default async function NewTemplatePage() {
   const business = await getCurrentBusiness();
   if (!business) return null;
+
+  const messageTemplates = await prisma.messageTemplate.findMany({
+    where: { isActive: true },
+    orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+  });
 
   const brand: BrandInfo = {
     logoUrl: business.logoUrl,
@@ -23,7 +29,7 @@ export default async function NewTemplatePage() {
       {/* Templates created here are always "My templates" (source: CUSTOM) —
           the business's own uploaded artwork already has its branding drawn
           in, so the branding overlay options are for Starter templates only. */}
-      <TemplatePlaceholderEditor business={brand} showBranding={false} />
+      <TemplatePlaceholderEditor business={brand} showBranding={false} messageTemplates={messageTemplates} />
     </div>
   );
 }

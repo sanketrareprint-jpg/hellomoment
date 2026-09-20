@@ -57,6 +57,9 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           <Link href="/admin/templates" className="btn-secondary whitespace-nowrap">
             Manage flyer templates
           </Link>
+          <Link href="/admin/message-templates" className="btn-secondary whitespace-nowrap">
+            Manage message templates
+          </Link>
           <Link href="/admin/banners" className="btn-secondary whitespace-nowrap">
             Manage dashboard banners
           </Link>

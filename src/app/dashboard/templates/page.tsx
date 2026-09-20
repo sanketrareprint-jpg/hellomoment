@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
 import AddStarterTemplatesButton from '@/components/AddStarterTemplatesButton';
 import TemplatesGrid from '@/components/TemplatesGrid';
+import MessageTemplatesGrid from '@/components/MessageTemplatesGrid';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,21 @@ function FolderIcon({ className }: { className?: string }) {
   );
 }
 
+function ChatIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.75 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+      />
+    </svg>
+  );
+}
+
+const FOLDERS = new Set(['my', 'starter', 'text']);
+
 export default async function TemplatesPage({
   searchParams,
 }: {
@@ -27,15 +43,23 @@ export default async function TemplatesPage({
   const business = await getCurrentBusiness();
   if (!business) return null;
 
-  const templates = await prisma.flyerTemplate.findMany({
-    where: { businessId: business.id },
-    orderBy: { createdAt: 'desc' },
-  });
+  const [templates, messageTemplates] = await Promise.all([
+    prisma.flyerTemplate.findMany({
+      where: { businessId: business.id },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.messageTemplate.findMany({
+      where: { isActive: true },
+      orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+    }),
+  ]);
 
   const starterTemplates = templates.filter((t) => t.source === 'STARTER');
   const myTemplates = templates.filter((t) => t.source !== 'STARTER');
 
-  const folder = searchParams.folder === 'my' || searchParams.folder === 'starter' ? searchParams.folder : null;
+  const folder = searchParams.folder && FOLDERS.has(searchParams.folder) ? searchParams.folder : null;
+
+  const folderTitle = folder === 'my' ? 'My templates' : folder === 'starter' ? 'Starter templates' : 'Text templates';
 
   return (
     <div className="max-w-5xl">
@@ -45,7 +69,7 @@ export default async function TemplatesPage({
       </div>
 
       {!folder ? (
-        <div className="grid sm:grid-cols-2 gap-6 max-w-2xl">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl">
           <Link
             href="/dashboard/templates?folder=my"
             className="group relative overflow-hidden rounded-2xl p-7 flex flex-col items-center text-center gap-3 bg-gradient-to-br from-brand-500 to-fuchsia-600 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200"
@@ -77,6 +101,22 @@ export default async function TemplatesPage({
               {starterTemplates.length} template{starterTemplates.length === 1 ? '' : 's'}
             </span>
           </Link>
+
+          <Link
+            href="/dashboard/templates?folder=text"
+            className="group relative overflow-hidden rounded-2xl p-7 flex flex-col items-center text-center gap-3 bg-gradient-to-br from-emerald-500 to-teal-600 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200"
+          >
+            <span className="absolute -right-6 -top-6 w-28 h-28 rounded-full bg-white/10" />
+            <span className="absolute -right-2 -bottom-8 w-20 h-20 rounded-full bg-white/10" />
+            <span className="relative w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-white group-hover:scale-105 transition-transform">
+              <ChatIcon className="w-8 h-8" />
+            </span>
+            <span className="relative font-bold text-lg text-white">Text templates</span>
+            <span className="relative text-sm text-white/80">WhatsApp messages we send</span>
+            <span className="relative mt-1 text-xs font-semibold bg-white/20 text-white rounded-full px-3 py-1">
+              {messageTemplates.length} template{messageTemplates.length === 1 ? '' : 's'}
+            </span>
+          </Link>
         </div>
       ) : (
         <div className="card p-5">
@@ -88,18 +128,17 @@ export default async function TemplatesPage({
           </Link>
 
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-            <h2 className="font-semibold text-gray-900">{folder === 'my' ? 'My templates' : 'Starter templates'}</h2>
-            {folder === 'my' ? (
+            <h2 className="font-semibold text-gray-900">{folderTitle}</h2>
+            {folder === 'my' && (
               <Link href="/dashboard/templates/new" className="btn-primary">
                 + New template
               </Link>
-            ) : (
-              <AddStarterTemplatesButton />
             )}
+            {folder === 'starter' && <AddStarterTemplatesButton />}
           </div>
 
-          {folder === 'my' ? (
-            myTemplates.length === 0 ? (
+          {folder === 'my' &&
+            (myTemplates.length === 0 ? (
               <p className="text-gray-500 text-sm">
                 No templates of your own yet.{' '}
                 <Link href="/dashboard/templates/new" className="text-brand-600 font-medium">
@@ -109,15 +148,26 @@ export default async function TemplatesPage({
               </p>
             ) : (
               <TemplatesGrid templates={myTemplates} />
-            )
-          ) : starterTemplates.length === 0 ? (
-            <p className="text-gray-500 text-sm">
-              Click <strong>+ Add / refresh starter flyer designs</strong> above for ready-made birthday and
-              anniversary flyers — no designing or uploading needed.
-            </p>
-          ) : (
-            <TemplatesGrid templates={starterTemplates} />
-          )}
+            ))}
+
+          {folder === 'starter' &&
+            (starterTemplates.length === 0 ? (
+              <p className="text-gray-500 text-sm">
+                Click <strong>+ Add / refresh starter flyer designs</strong> above for ready-made birthday and
+                anniversary flyers — no designing or uploading needed.
+              </p>
+            ) : (
+              <TemplatesGrid templates={starterTemplates} />
+            ))}
+
+          {folder === 'text' &&
+            (messageTemplates.length === 0 ? (
+              <p className="text-gray-500 text-sm">
+                No message templates yet — these are added by raregreet.com, not by you. Check back soon.
+              </p>
+            ) : (
+              <MessageTemplatesGrid templates={messageTemplates} />
+            ))}
         </div>
       )}
     </div>

@@ -129,6 +129,21 @@ const BRAND_FIELDS: { key: FieldKey; label: string; icon: string }[] = [
   },
 ];
 
+export interface MessageTemplateOption {
+  id: string;
+  name: string;
+  occasion: string;
+  campaignName: string;
+  bodyText: string;
+}
+
+const MESSAGE_TEMPLATE_OCCASION_LABEL: Record<string, string> = {
+  ALL: 'Any occasion',
+  BIRTHDAY: 'Birthday',
+  ANNIVERSARY: 'Anniversary',
+  FESTIVAL: 'Festival',
+};
+
 export default function TemplatePlaceholderEditor({
   initial,
   business,
@@ -137,6 +152,7 @@ export default function TemplatePlaceholderEditor({
   apiBase = '/api/templates',
   uploadUrl = '/api/uploads/template',
   redirectPath = '/dashboard/templates',
+  messageTemplates = [],
 }: {
   initial?: TemplateFormValues;
   business?: BrandInfo;
@@ -156,6 +172,12 @@ export default function TemplatePlaceholderEditor({
   apiBase?: string;
   uploadUrl?: string;
   redirectPath?: string;
+  // Admin-curated WhatsApp message templates (see /admin/message-templates)
+  // offered as a picker for the AiSensy campaign name below, so a business
+  // can see what a campaign actually says before choosing it. Only relevant
+  // where showPerBusinessOptions is true (the admin StarterTemplate editor
+  // never passes this).
+  messageTemplates?: MessageTemplateOption[];
 }) {
   const router = useRouter();
   const [form, setForm] = useState<TemplateFormValues>(initial ?? EMPTY_TEMPLATE);
@@ -167,6 +189,13 @@ export default function TemplatePlaceholderEditor({
   // on every template just confuses people. Auto-open it if a template
   // being edited already has a value set, so it isn't silently hidden.
   const [showAdvanced, setShowAdvanced] = useState(Boolean(initial?.aisensyCampaignName));
+  // Which message template the picker below shows as "selected" — derived
+  // from the saved campaign name matching one of admin's templates, so
+  // reopening an already-configured template shows its preview again
+  // instead of defaulting to "Custom". '' means "Custom / type manually".
+  const [selectedMessageTemplateId, setSelectedMessageTemplateId] = useState(
+    () => messageTemplates.find((t) => t.campaignName === initial?.aisensyCampaignName)?.id ?? ''
+  );
   // Which single toolbar item is "selected" — its settings show in the one
   // shared properties panel below the toolbar, Word/Photoshop-style,
   // instead of every field's settings being permanently expanded at once.
@@ -568,14 +597,54 @@ export default function TemplatePlaceholderEditor({
                 + Advanced options (optional)
               </button>
             ) : (
-              <div>
-                <label className="label">AiSensy campaign name (optional)</label>
-                <input
-                  className="input"
-                  value={form.aisensyCampaignName}
-                  onChange={(e) => setForm({ ...form, aisensyCampaignName: e.target.value })}
-                  placeholder="Leave blank to use your Settings default"
-                />
+              <div className="space-y-2">
+                {messageTemplates.length > 0 && (
+                  <div>
+                    <label className="label">Select a text template</label>
+                    <select
+                      className="input"
+                      value={selectedMessageTemplateId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setSelectedMessageTemplateId(id);
+                        const picked = messageTemplates.find((t) => t.id === id);
+                        if (picked) setForm((f) => ({ ...f, aisensyCampaignName: picked.campaignName }));
+                      }}
+                    >
+                      <option value="">Custom / type the campaign name myself</option>
+                      {messageTemplates.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} — {MESSAGE_TEMPLATE_OCCASION_LABEL[t.occasion] ?? t.occasion}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedMessageTemplateId && (
+                      <div className="mt-1.5 rounded-xl bg-[#dcf8c6] px-3 py-2 text-sm text-gray-800 whitespace-pre-wrap">
+                        {messageTemplates.find((t) => t.id === selectedMessageTemplateId)?.bodyText}
+                      </div>
+                    )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Picking one fills in the campaign name below — you still need a &ldquo;Live&rdquo; campaign of
+                      that exact name and wording approved in your own AiSensy account. See{' '}
+                      <a href="/dashboard/templates?folder=text" className="text-brand-600 font-medium">
+                        Text templates
+                      </a>{' '}
+                      for the full list.
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <label className="label">AiSensy campaign name (optional)</label>
+                  <input
+                    className="input"
+                    value={form.aisensyCampaignName}
+                    onChange={(e) => {
+                      setSelectedMessageTemplateId('');
+                      setForm({ ...form, aisensyCampaignName: e.target.value });
+                    }}
+                    placeholder="Leave blank to use your Settings default"
+                  />
+                </div>
               </div>
             ))}
           <div>

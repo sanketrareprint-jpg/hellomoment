@@ -299,6 +299,38 @@ model StarterTemplate {
   @@index([occasion, isActive, order])
 }
 
+// A WhatsApp message template (the actual text AiSensy sends) curated by
+// admin (Vrushali) — the in-app equivalent of browsing AiSensy's own
+// "Template Messages" library, so a business can see what a campaign
+// actually says before picking it, without needing access to AiSensy's
+// dashboard themselves. Global, not per-business, same pattern as
+// DashboardBanner/StarterTemplate above.
+//
+// campaignName is only a *suggestion*: each business connects their own
+// AiSensy account (Business.aisensyApiKey) and must have a "Live" campaign
+// of that exact name approved there with this same wording before sends
+// using it will work — hellomoment.in does not create or approve AiSensy
+// templates on a business's behalf (see src/lib/aisensy.ts). Picking one
+// here (Flyer template → Advanced options) just fills in the campaign name
+// field for them, which stays editable.
+// occasion: "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL" | "ALL" (shown as an
+// option regardless of the flyer template's own occasion)
+model MessageTemplate {
+  id           String  @id @default(cuid())
+  name         String // internal label, e.g. "hellomomentwishes"
+  occasion     String  @default("ALL")
+  campaignName String // AiSensy "Live" campaign name businesses should create with this wording
+  bodyText     String // the approved WhatsApp message text, shown as a preview
+
+  isActive Boolean @default(true) // only active templates are offered to businesses
+  order    Int     @default(0) // lower shows first
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, order])
+}
+
 model Festival {
   id         String   @id @default(cuid())
   businessId String

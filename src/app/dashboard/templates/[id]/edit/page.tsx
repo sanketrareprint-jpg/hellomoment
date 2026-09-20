@@ -11,6 +11,11 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
   const template = await prisma.flyerTemplate.findUnique({ where: { id: params.id } });
   if (!template || template.businessId !== business.id) notFound();
 
+  const messageTemplates = await prisma.messageTemplate.findMany({
+    where: { isActive: true },
+    orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+  });
+
   // Scaled to *this* template's own canvas size — not a fixed 1080×1080
   // guess — so a field a business is switching on for the first time (e.g.
   // Designation, never dragged before) lands in a sensible spot relative to
@@ -58,6 +63,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
       <TemplatePlaceholderEditor
         business={brand}
         showBranding={template.source === 'STARTER'}
+        messageTemplates={messageTemplates}
         initial={{
           id: template.id,
           name: template.name,
