@@ -18,8 +18,6 @@ const placeholderSchema = z.object({
   fontWeight: z.union([z.number(), z.string()]).optional(),
   fontFamily: z.string().optional(),
   align: z.enum(['left', 'center', 'right']).optional(),
-  maxWidth: z.number().optional(),
-  maxLines: z.number().optional(),
   size: z.number().optional(),
   width: z.number().optional(),
   height: z.number().optional(),

@@ -169,12 +169,14 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="label">Address</label>
-            <input
+            <textarea
               className="input"
+              rows={2}
               value={form.addressText}
               onChange={(e) => setForm({ ...form, addressText: e.target.value })}
               placeholder="Shop address"
             />
+            <p className="text-xs text-gray-500 mt-0.5">Press Enter to control exactly where it breaks onto a new line on the flyer.</p>
           </div>
           <div>
             <label className="label">Website</label>
@@ -190,12 +192,14 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="label">Products / services</label>
-            <input
+            <textarea
               className="input"
+              rows={2}
               value={form.productsText}
               onChange={(e) => setForm({ ...form, productsText: e.target.value })}
               placeholder="Sweets · Snacks · Catering"
             />
+            <p className="text-xs text-gray-500 mt-0.5">Press Enter to control exactly where it breaks onto a new line on the flyer.</p>
           </div>
           <div>
             <label className="label">Firm name script</label>

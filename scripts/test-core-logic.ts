@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 
-import { generateFlyer, wrapText } from '../src/lib/flyer';
+import { generateFlyer } from '../src/lib/flyer';
 import {
   isSameMonthDay,
   ordinal,
@@ -66,12 +66,6 @@ async function main() {
   assert.equal(normalizeWhatsappNumber('919876543210'), '919876543210');
   console.log('  aisensy OK');
 
-  // ---- wrapText ----
-  console.log('Testing flyer.wrapText...');
-  const lines = wrapText('Happy Birthday Vrushali Pimpalkar', 500, 48, 2);
-  assert.ok(lines.length <= 2, 'should not exceed maxLines');
-  console.log('  wrapText produced:', lines);
-
   // ---- generateFlyer end-to-end with synthetic images ----
   console.log('Testing flyer.generateFlyer (end-to-end composite)...');
   const backgroundPath = path.join(TMP, 'bg.jpg');
@@ -101,17 +95,14 @@ async function main() {
       color: '#ffffff',
       fontWeight: 700,
       align: 'center',
-      maxWidth: 900,
-      maxLines: 2,
     },
-    name: 'Happy Birthday, Vrushali Pimpalkar!',
+    name: 'Happy Birthday,\nVrushali Pimpalkar!',
     datePlaceholder: {
       x: 540,
       y: 920,
       fontSize: 32,
       color: '#ffffff',
       align: 'center',
-      maxWidth: 900,
     },
     dateText: '25 August',
     photoPlaceholder: { x: 390, y: 140, size: 300, shape: 'circle' },

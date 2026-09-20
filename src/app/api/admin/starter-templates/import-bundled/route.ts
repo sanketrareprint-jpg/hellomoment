@@ -31,8 +31,6 @@ function corePlaceholders(photoShape: 'circle' | 'square' | 'rounded' | 'hexagon
       color: '#ffffff',
       fontWeight: 700,
       align: 'center' as const,
-      maxWidth: Math.round(width * 0.85),
-      maxLines: 2,
     },
     datePlaceholder: {
       x: Math.round(width / 2),
@@ -41,8 +39,6 @@ function corePlaceholders(photoShape: 'circle' | 'square' | 'rounded' | 'hexagon
       color: '#ffffff',
       fontWeight: 400,
       align: 'center' as const,
-      maxWidth: Math.round(width * 0.85),
-      maxLines: 1,
     },
     photoPlaceholder: {
       x: Math.round(width * 0.36),

@@ -229,7 +229,9 @@ model FlyerTemplate {
   canvasHeight  Int      @default(1080)
 
   // Placeholder positions/styles, stored as JSON, e.g.
-  // { "x":100, "y":800, "fontSize":48, "color":"#ffffff", "fontWeight":"700", "align":"center", "maxWidth":880 }
+  // { "x":100, "y":800, "fontSize":48, "color":"#ffffff", "fontWeight":"700", "align":"center" }
+  // Text is never auto-wrapped or truncated — a literal "\n" in the saved
+  // text is the only way a line breaks (see src/lib/flyer.ts).
   namePlaceholder        String? // JSON, optional (omit to not print the contact's name)
   titlePlaceholder       String? // JSON text placeholder — contact's optional title (e.g. "Mr.", "Dr.")
   designationPlaceholder String? // JSON text placeholder — contact's optional designation (e.g. "Manager")
