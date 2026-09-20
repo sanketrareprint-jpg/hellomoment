@@ -7,6 +7,7 @@ const NAV: { href: string; label: string; icon: string }[] = [
   { href: '/dashboard', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7m-9-2v10a1 1 0 001 1h3m6-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
   { href: '/dashboard/contacts', label: 'Contacts', icon: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 100-8 4 4 0 000 8zm6 3.13a4 4 0 10-8 0' },
   { href: '/dashboard/templates', label: 'Flyer templates', icon: 'M4 5a2 2 0 012-2h12a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm4 3h.01M6 17l4-4a2 2 0 012.8 0l1.2 1.2M14 13l1-1a2 2 0 012.8 0L20 14' },
+  { href: '/dashboard/frames', label: 'Frames', icon: 'M3 3h18v18H3V3zm4 0v18m10-18v18M3 8h4m10 0h4M3 16h4m10 0h4' },
   { href: '/dashboard/festivals', label: 'Festivals', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
   { href: '/dashboard/logs', label: 'Send logs', icon: 'M14 5l7 7m0 0l-7 7m7-7H3' },
   { href: '/dashboard/wallet', label: 'Wallet', icon: 'M3 7a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm0 4h18M16 15h2' },
