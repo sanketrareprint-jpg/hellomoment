@@ -25,6 +25,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Incorrect email or password' }, { status: 401 });
   }
 
+  // Member companies (see src/lib/businessFamily.ts) have a synthesized
+  // login email nobody actually knows, so this shouldn't normally be
+  // reachable — but block it explicitly rather than relying on that alone.
+  if (business.ownerBusinessId) {
+    return NextResponse.json(
+      { error: 'Log in with your main account and switch companies from the dashboard' },
+      { status: 401 }
+    );
+  }
+
   const token = signSession({ businessId: business.id });
   const res = NextResponse.json({ ok: true });
   res.cookies.set(SESSION_COOKIE, token, SESSION_COOKIE_OPTIONS);

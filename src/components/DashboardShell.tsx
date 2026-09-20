@@ -4,12 +4,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import LogoutButton from '@/components/LogoutButton';
 import DashboardNav from '@/components/DashboardNav';
+import CompanySwitcher from '@/components/CompanySwitcher';
+
+interface Company {
+  id: string;
+  name: string;
+  isRoot: boolean;
+}
 
 interface DashboardShellProps {
   businessName: string;
   businessEmail: string;
   walletBalancePaise: number;
   trialCoins: number;
+  companies: Company[];
+  activeBusinessId: string;
   children: React.ReactNode;
 }
 
@@ -18,6 +27,8 @@ export default function DashboardShell({
   businessEmail,
   walletBalancePaise,
   trialCoins,
+  companies,
+  activeBusinessId,
   children,
 }: DashboardShellProps) {
   const [open, setOpen] = useState(false);
@@ -98,10 +109,13 @@ export default function DashboardShell({
               <div className="text-xs font-semibold text-amber-700 mt-0.5">{trialCoins} trial coins</div>
             )}
           </Link>
-          <div className="px-1">
-            <div className="text-xs font-medium text-gray-700 truncate">{businessName}</div>
-            <div className="text-xs text-gray-500 truncate">{businessEmail}</div>
-          </div>
+          <CompanySwitcher
+            businessName={businessName}
+            businessEmail={businessEmail}
+            companies={companies}
+            activeId={activeBusinessId}
+            onNavigate={() => setOpen(false)}
+          />
           <LogoutButton />
         </div>
       </aside>

@@ -61,6 +61,20 @@ model Business {
   // wallet on every send, at COINS_PER_SEND coins/message (src/lib/pricing.ts).
   trialCoins Int @default(0)
 
+  // Multi-company accounts — "one login, several companies" (e.g. Sanket
+  // logs in once and switches between Rareprint, JCI Chandrapur, and
+  // RareGreet, each with its own contacts/templates/wallet/coins, exactly
+  // like separate businesses today). ownerBusinessId is null for every
+  // existing/standalone business — nothing changes for them. When set, this
+  // row is an additional "company" created from within another business's
+  // dashboard (see /api/business); it has its own synthesized, unused
+  // login email/password (nobody logs into it directly — see
+  // POST /api/business/switch) and is otherwise a fully independent tenant
+  // just like its root.
+  ownerBusinessId  String?
+  ownerBusiness    Business?  @relation("BusinessFamily", fields: [ownerBusinessId], references: [id], onDelete: Cascade)
+  memberBusinesses Business[] @relation("BusinessFamily")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -72,6 +86,8 @@ model Business {
   trialCoinTransactions TrialCoinTransaction[]
   rechargeOrders      RechargeOrder[]
   passwordResetTokens PasswordResetToken[]
+
+  @@index([ownerBusinessId])
 }
 
 // A one-time-use "forgot password" link. Created when a business requests a
