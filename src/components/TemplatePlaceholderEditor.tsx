@@ -215,6 +215,12 @@ export default function TemplatePlaceholderEditor({
   const defaultFrame = frames.find((f) => f.isDefault) ?? null;
   const [manualBrandingOpen, setManualBrandingOpen] = useState(false);
   const brandFieldKeySet = new Set(BRAND_FIELDS.map((d) => d.key));
+  // While a default Frame applies (and the business hasn't opened manual
+  // positioning), the frame's own overlay graphic renders branding at send
+  // time (see defaultFrame handling in sendWish.ts) — so the preview should
+  // show that overlay instead of this template's own logo/firmName/phone/
+  // email/address/website/products placeholders, which are ignored then.
+  const frameActive = Boolean(defaultFrame) && !manualBrandingOpen;
 
   // Whether an element is locked in place (drag disabled) lives on its own
   // placeholder object — the same `locked` flag saved to the DB alongside
@@ -1084,7 +1090,22 @@ export default function TemplatePlaceholderEditor({
             </div>
           )}
 
-          {isFieldOn('logo') && form.backgroundUrl && (
+          {frameActive && defaultFrame?.overlayUrl && (
+            // The frame's overlay graphic itself, in place of the manual
+            // logo/firmName/phone/email/address/website/products markers
+            // below — anchored to the bottom edge and scaled to the flyer's
+            // full width (its own aspect ratio decides the height), matching
+            // how the overlay graphic is designed to sit along the bottom of
+            // the flyer.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={defaultFrame.overlayUrl}
+              alt={`${defaultFrame.name} frame`}
+              className="absolute bottom-0 left-0 w-full pointer-events-none"
+            />
+          )}
+
+          {!frameActive && isFieldOn('logo') && form.backgroundUrl && (
             // Shown as a dashed marker box even without a real logo image to
             // preview (no business logo saved yet, or — in the admin starter
             // template library — no specific business at all) so it stays
@@ -1117,6 +1138,10 @@ export default function TemplatePlaceholderEditor({
 
           {(['name', 'designation', 'date', 'firmName', 'phone', 'email', 'address', 'website', 'products'] as TextFieldKey[]).map((key) => {
             if (!isFieldOn(key) || !form.backgroundUrl) return null;
+            // Brand fields are drawn by the frame's own overlay graphic
+            // above while a default Frame applies — skip the manual marker
+            // for those so the preview doesn't show both at once.
+            if (frameActive && brandFieldKeySet.has(key)) return null;
             const p = getTextPlaceholder(key);
             // No artificial floor: flyer.ts never enforces a minimum font
             // size server-side, so clamping this preview to one (10/9/8px)
