@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FONT_FAMILIES } from '@/lib/fontFamilies';
-import { defaultsFor, type TemplateFormValues, type TextPlaceholder, type LogoPlaceholder } from '@/lib/flyerPlaceholders';
+import { FONT_FAMILIES, type FontFamilyId } from '@/lib/fontFamilies';
+import { defaultsFor, type TemplateFormValues, type TextPlaceholder, type LogoPlaceholder, type Align } from '@/lib/flyerPlaceholders';
 import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder } from '@/lib/framePlaceholders';
 import PlaceholderControls from '@/components/PlaceholderControls';
 import FloatingNudgePad from '@/components/FloatingNudgePad';
@@ -161,6 +161,64 @@ const BRAND_FIELDS: { key: FieldKey; label: string; icon: string }[] = [
   },
 ];
 
+// Pure read/write helpers over an arbitrary TemplateFormValues snapshot
+// (not just the component's live `form` state) — needed so a "group" action
+// below (apply one style, or lay several fields out at once) can fold
+// several fields' updates into a single setForm call instead of racing
+// separate ones against each other's stale closures.
+function textPlaceholderIn(f: TemplateFormValues, key: TextFieldKey): TextPlaceholder {
+  switch (key) {
+    case 'name':
+      return f.namePlaceholder;
+    case 'designation':
+      return f.designationPlaceholder;
+    case 'date':
+      return f.datePlaceholder;
+    case 'firmName':
+      return f.firmNamePlaceholder;
+    case 'phone':
+      return f.phonePlaceholder;
+    case 'email':
+      return f.emailPlaceholder;
+    case 'address':
+      return f.addressPlaceholder;
+    case 'website':
+      return f.websitePlaceholder;
+    case 'products':
+      return f.productsPlaceholder;
+  }
+}
+
+function withTextPlaceholder(f: TemplateFormValues, key: TextFieldKey, patch: Partial<TextPlaceholder>): TemplateFormValues {
+  const updated = { ...textPlaceholderIn(f, key), ...patch };
+  switch (key) {
+    case 'name':
+      return { ...f, namePlaceholder: updated };
+    case 'designation':
+      return { ...f, designationPlaceholder: updated };
+    case 'date':
+      return { ...f, datePlaceholder: updated };
+    case 'firmName':
+      return { ...f, firmNamePlaceholder: updated };
+    case 'phone':
+      return { ...f, phonePlaceholder: updated };
+    case 'email':
+      return { ...f, emailPlaceholder: updated };
+    case 'address':
+      return { ...f, addressPlaceholder: updated };
+    case 'website':
+      return { ...f, websitePlaceholder: updated };
+    case 'products':
+      return { ...f, productsPlaceholder: updated };
+  }
+}
+
+// The fields a "group style"/"auto-layout" action below acts on — the
+// icon-style contact-info line (phone/email/address/website/products),
+// deliberately excluding firmName (usually a distinct heading, styled
+// bigger/bolder) and the non-brand contact fields.
+const BRAND_TEXT_GROUP_KEYS: TextFieldKey[] = ['phone', 'email', 'address', 'website', 'products'];
+
 export default function TemplatePlaceholderEditor({
   initial,
   business,
@@ -243,6 +301,14 @@ export default function TemplatePlaceholderEditor({
   const defaultFrame = frames.find((f) => f.isDefault) ?? null;
   const [manualBrandingOpen, setManualBrandingOpen] = useState(false);
   const brandFieldKeySet = new Set(BRAND_FIELDS.map((d) => d.key));
+
+  // The style "Apply to all" below writes onto the phone/email/address/
+  // website/products group — plain local state, not read from any one
+  // field, since it's a starting point to apply, not a reflection of what
+  // those fields currently look like (they may not even match each other).
+  const [groupFontFamily, setGroupFontFamily] = useState<FontFamilyId>('default');
+  const [groupFontSize, setGroupFontSize] = useState(28);
+  const [groupColor, setGroupColor] = useState('#1f2937');
   // While a default Frame applies (and the business hasn't opened manual
   // positioning), the frame's own overlay graphic and its own logo/firmName/
   // phone/email/address/website/products placeholders render branding at
@@ -411,53 +477,68 @@ export default function TemplatePlaceholderEditor({
   }
 
   function getTextPlaceholder(key: TextFieldKey): TextPlaceholder {
-    switch (key) {
-      case 'name':
-        return form.namePlaceholder;
-      case 'designation':
-        return form.designationPlaceholder;
-      case 'date':
-        return form.datePlaceholder;
-      case 'firmName':
-        return form.firmNamePlaceholder;
-      case 'phone':
-        return form.phonePlaceholder;
-      case 'email':
-        return form.emailPlaceholder;
-      case 'address':
-        return form.addressPlaceholder;
-      case 'website':
-        return form.websitePlaceholder;
-      case 'products':
-        return form.productsPlaceholder;
-    }
+    return textPlaceholderIn(form, key);
   }
 
   function setTextPlaceholder(key: TextFieldKey, p: TextPlaceholder) {
+    setForm((f) => withTextPlaceholder(f, key, p));
+  }
+
+  // The phone/email/address/website/products fields currently switched on —
+  // what "apply to all"/"stack"/"line up" below actually act on.
+  function brandTextGroupKeys(): TextFieldKey[] {
+    return BRAND_TEXT_GROUP_KEYS.filter((k) => isFieldOn(k));
+  }
+
+  // Copies one font/size/color onto every currently-on field in the group,
+  // so phone/email/address/etc. read as one consistent line instead of
+  // needing each styled by hand.
+  function applyGroupTextStyle() {
+    const keys = brandTextGroupKeys();
+    if (keys.length === 0) return;
+    setForm((f) =>
+      keys.reduce(
+        (acc, key) => withTextPlaceholder(acc, key, { fontFamily: groupFontFamily, fontSize: groupFontSize, color: groupColor }),
+        f
+      )
+    );
+  }
+
+  // Re-lays-out the group as an evenly-spaced vertical stack, centered
+  // horizontally, starting from the topmost field's current y — a starting
+  // point the business can still fine-tune afterward by dragging.
+  function stackBrandTextGroup() {
+    const keys = brandTextGroupKeys();
+    if (keys.length === 0) return;
     setForm((f) => {
-      switch (key) {
-        case 'name':
-          return { ...f, namePlaceholder: p };
-        case 'designation':
-          return { ...f, designationPlaceholder: p };
-        case 'date':
-          return { ...f, datePlaceholder: p };
-        case 'firmName':
-          return { ...f, firmNamePlaceholder: p };
-        case 'phone':
-          return { ...f, phonePlaceholder: p };
-        case 'email':
-          return { ...f, emailPlaceholder: p };
-        case 'address':
-          return { ...f, addressPlaceholder: p };
-        case 'website':
-          return { ...f, websitePlaceholder: p };
-        case 'products':
-          return { ...f, productsPlaceholder: p };
-        default:
-          return f;
-      }
+      const centerX = Math.round(f.canvasWidth / 2);
+      const startY = Math.min(...keys.map((k) => textPlaceholderIn(f, k).y));
+      const gap = Math.round(Math.max(...keys.map((k) => textPlaceholderIn(f, k).fontSize)) * 1.6);
+      return keys.reduce((acc, key, i) => withTextPlaceholder(acc, key, { x: centerX, y: startY + i * gap, align: 'center' }), f);
     });
+  }
+
+  // Re-lays-out the group as one evenly-spaced horizontal row at their
+  // current average y — first field left-aligned, last right-aligned, any
+  // in between centered, so the row reads naturally left to right.
+  function lineUpBrandTextGroup() {
+    const keys = brandTextGroupKeys();
+    if (keys.length === 0) return;
+    setForm((f) => {
+      const y = Math.round(keys.reduce((sum, k) => sum + textPlaceholderIn(f, k).y, 0) / keys.length);
+      const margin = Math.round(f.canvasWidth * 0.08);
+      const usableWidth = f.canvasWidth - margin * 2;
+      const step = keys.length > 1 ? usableWidth / (keys.length - 1) : 0;
+      return keys.reduce((acc, key, i) => {
+        const x = keys.length > 1 ? Math.round(margin + step * i) : centerXOf(f);
+        const align: Align = keys.length === 1 ? 'center' : i === 0 ? 'left' : i === keys.length - 1 ? 'right' : 'center';
+        return withTextPlaceholder(acc, key, { x, y, align });
+      }, f);
+    });
+  }
+
+  function centerXOf(f: TemplateFormValues): number {
+    return Math.round(f.canvasWidth / 2);
   }
 
   // A field a business hasn't filled in yet (Settings → Brand kit) can still
@@ -963,6 +1044,67 @@ export default function TemplatePlaceholderEditor({
                   ))}
                 </div>
               )}
+
+              {(!defaultFrame || manualBrandingOpen) && (
+                <div className="mt-1.5 rounded-lg border border-gray-200 bg-gray-50 p-1.5">
+                  <h4 className="text-[11px] font-semibold text-gray-600 mb-1">
+                    Style &amp; layout for Phone/Email/Address/Website/Products together
+                  </h4>
+                  <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+                    <div>
+                      <label className="label">Font</label>
+                      <select className="input" value={groupFontFamily} onChange={(e) => setGroupFontFamily(e.target.value as FontFamilyId)}>
+                        {FONT_FAMILIES.map((f) => (
+                          <option key={f.id} value={f.id}>
+                            {f.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Size</label>
+                      <input
+                        className="input"
+                        type="number"
+                        value={groupFontSize}
+                        onChange={(e) => setGroupFontSize(Number(e.target.value))}
+                      />
+                    </div>
+                    <div>
+                      <label className="label">Color</label>
+                      <input className="input" type="color" value={groupColor} onChange={(e) => setGroupColor(e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={applyGroupTextStyle}
+                      className="rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      Apply style to all
+                    </button>
+                    <button
+                      type="button"
+                      onClick={stackBrandTextGroup}
+                      className="rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      Stack vertically
+                    </button>
+                    <button
+                      type="button"
+                      onClick={lineUpBrandTextGroup}
+                      className="rounded-md border border-gray-300 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      Line up horizontally
+                    </button>
+                  </div>
+                  {brandTextGroupKeys().length === 0 && (
+                    <p className="text-[11px] text-amber-600 mt-1">
+                      Turn on Phone, Email, Address, Website or Products above first.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1218,7 +1360,9 @@ export default function TemplatePlaceholderEditor({
                   backgroundImage:
                     'linear-gradient(to right, rgba(255,255,255,0.55) 1px, transparent 1px), ' +
                     'linear-gradient(to bottom, rgba(255,255,255,0.55) 1px, transparent 1px)',
-                  backgroundSize: `${previewWidth / 10}px ${(previewHeight || previewWidth) / 10}px`,
+                  // 20 divisions (not 10) — a tighter grid for finer
+                  // alignment; still purely a visual guide, never saved.
+                  backgroundSize: `${previewWidth / 20}px ${(previewHeight || previewWidth) / 20}px`,
                   mixBlendMode: 'difference',
                 }}
               />
