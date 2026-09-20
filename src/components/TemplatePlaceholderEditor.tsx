@@ -4,7 +4,6 @@ import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
 import { defaultsFor, type Align, type TemplateFormValues, type TextPlaceholder } from '@/lib/flyerPlaceholders';
-import { wrapText } from '@/lib/textWrap';
 
 export type { TemplateFormValues };
 
@@ -820,21 +819,11 @@ export default function TemplatePlaceholderEditor({
               key === 'phone' || key === 'email' || key === 'address' || key === 'website'
                 ? BRAND_FIELDS.find((d) => d.key === key)?.icon
                 : null;
-            // Wrap with the *exact same* heuristic flyer.ts uses server-side
-            // (see src/lib/textWrap.ts), instead of letting the browser's own
-            // (much more precise, and therefore inconsistent) text layout
-            // decide line breaks. Relying on native CSS wrapping previously
-            // meant the preview could wrap/clip earlier or later than the
-            // real flyer actually would — this keeps the two guaranteed to
-            // match, wrapping onto up to maxLines lines exactly like a long
-            // address/products line does on the sent flyer.
-            const lines = wrapText(previewTextFor(key), p.maxWidth, p.fontSize, p.maxLines ?? 2);
-            const alignItems = p.align === 'center' ? 'center' : p.align === 'right' ? 'flex-end' : 'flex-start';
             return (
               <div
                 key={key}
                 onPointerDown={startDrag(key)}
-                className={`absolute cursor-move px-1 flex ${lines.length > 1 ? 'items-start' : 'items-center'} gap-1`}
+                className="absolute cursor-move px-1 whitespace-nowrap flex items-center gap-1"
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
@@ -857,21 +846,9 @@ export default function TemplatePlaceholderEditor({
                     <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
                   </svg>
                 )}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems }}>
-                  {lines.map((line, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        fontSize: fontPx,
-                        fontWeight: p.fontWeight,
-                        fontFamily: cssFontFamilyFor(p.fontFamily),
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {line}
-                    </span>
-                  ))}
-                </div>
+                <span style={{ fontSize: fontPx, fontWeight: p.fontWeight, fontFamily: cssFontFamilyFor(p.fontFamily) }}>
+                  {previewTextFor(key)}
+                </span>
               </div>
             );
           })}
