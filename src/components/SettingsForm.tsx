@@ -87,9 +87,9 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-6 max-w-xl">
-      <div className="card p-6 space-y-4">
-        <h2 className="font-semibold text-gray-900">Business profile</h2>
+    <form onSubmit={onSubmit} className="compact-form space-y-4 max-w-xl">
+      <div className="card p-4 space-y-3">
+        <h2 className="font-semibold text-gray-900 text-sm">Business profile</h2>
         <div>
           <label className="label">Business name</label>
           <input className="input" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
@@ -117,8 +117,8 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
         </div>
       </div>
 
-      <div className="card p-6 space-y-4">
-        <h2 className="font-semibold text-gray-900">Brand kit for flyers</h2>
+      <div className="card p-4 space-y-3">
+        <h2 className="font-semibold text-gray-900 text-sm">Brand kit for flyers</h2>
         <p className="text-sm text-gray-600">
           These details are saved once here and can be shown on any flyer template — logo, firm name, phone,
           address, products. Each template you design decides where (or whether) to show them; you don&rsquo;t

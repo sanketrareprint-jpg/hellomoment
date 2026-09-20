@@ -101,8 +101,8 @@ export default function ChangePasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card p-6 space-y-4">
-      <h2 className="font-semibold text-gray-900">Password</h2>
+    <form onSubmit={onSubmit} className="compact-form card p-4 space-y-3">
+      <h2 className="font-semibold text-gray-900 text-sm">Password</h2>
       <PasswordField label="Current password" value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />
       <PasswordField label="New password" value={newPassword} onChange={setNewPassword} autoComplete="new-password" />
       <PasswordField label="Confirm new password" value={confirmPassword} onChange={setConfirmPassword} autoComplete="new-password" />
