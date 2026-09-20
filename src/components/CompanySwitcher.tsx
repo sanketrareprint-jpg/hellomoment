@@ -102,23 +102,37 @@ export default function CompanySwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-2 rounded-lg px-1 py-1 hover:bg-gray-50 text-left"
+        className={
+          'w-full flex items-center gap-2 rounded-xl px-3 py-2.5 text-left border transition-colors ' +
+          (open ? 'border-brand-300 bg-brand-50' : 'border-gray-200 bg-white hover:border-brand-200 hover:bg-brand-50/50')
+        }
       >
-        <div className="min-w-0">
-          <div className="text-xs font-medium text-gray-700 truncate">{businessName}</div>
-          <div className="text-xs text-gray-500 truncate">{businessEmail}</div>
-        </div>
-        {companies.length > 1 && (
-          <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-brand-500 to-fuchsia-600 text-white flex items-center justify-center shrink-0">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1.75}
+              d="M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 11h.01M15 11h.01M9 15h.01M15 15h.01"
+            />
           </svg>
-        )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-xs text-gray-400 leading-none mb-0.5">
+            {companies.length > 1 ? `${companies.length} companies` : 'Company'}
+          </div>
+          <div className="text-sm font-semibold text-gray-900 truncate">{businessName}</div>
+        </div>
+        <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+        </svg>
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-0 mb-1 w-64 rounded-xl border border-gray-200 bg-white shadow-lg z-10 overflow-hidden">
+        <div className="absolute top-full left-0 mt-1 w-64 rounded-xl border border-gray-200 bg-white shadow-lg z-20 overflow-hidden">
           {!adding ? (
             <>
+              <div className="px-3 pt-2.5 pb-1.5 text-xs text-gray-400 truncate border-b border-gray-100">{businessEmail}</div>
               <div className="max-h-48 overflow-y-auto py-1">
                 {companies.map((c) => (
                   <button

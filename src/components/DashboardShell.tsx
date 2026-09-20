@@ -96,6 +96,15 @@ export default function DashboardShell({
             </svg>
           </button>
         </div>
+        <div className="px-3 pt-4 pb-1">
+          <CompanySwitcher
+            businessName={businessName}
+            businessEmail={businessEmail}
+            companies={companies}
+            activeId={activeBusinessId}
+            onNavigate={() => setOpen(false)}
+          />
+        </div>
         <DashboardNav onNavigate={() => setOpen(false)} />
         <div className="px-3 py-4 border-t border-gray-100 space-y-2">
           <Link
@@ -109,13 +118,6 @@ export default function DashboardShell({
               <div className="text-xs font-semibold text-amber-700 mt-0.5">{trialCoins} trial coins</div>
             )}
           </Link>
-          <CompanySwitcher
-            businessName={businessName}
-            businessEmail={businessEmail}
-            companies={companies}
-            activeId={activeBusinessId}
-            onNavigate={() => setOpen(false)}
-          />
           <LogoutButton />
         </div>
       </aside>
