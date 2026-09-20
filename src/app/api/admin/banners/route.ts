@@ -3,16 +3,25 @@ import { prisma } from '@/lib/db';
 import { requireApiAdmin } from '@/lib/session';
 import { saveImageUpload } from '@/lib/uploads';
 
-// Dashboard banners are managed only from the admin panel (Vrushali's own
-// dashboard) — a business never uploads or edits these themselves, unlike
-// their own flyer templates. This is the site-wide "slider banner" shown at
-// the top of every business's dashboard overview.
+// Banners are managed only from the admin panel (Vrushali's own dashboard) —
+// a business never uploads or edits these themselves, unlike their own
+// flyer templates. `placement` splits this into two independent slots:
+// "DASHBOARD" (top of every business's dashboard overview) and "LANDING"
+// (public landing page), each with its own image set and ordering.
+
+function parsePlacement(value: unknown): 'DASHBOARD' | 'LANDING' | null {
+  return value === 'DASHBOARD' || value === 'LANDING' ? value : null;
+}
 
 export async function GET(req: NextRequest) {
   const denied = requireApiAdmin(req);
   if (denied) return denied;
 
-  const banners = await prisma.dashboardBanner.findMany({ orderBy: { order: 'asc' } });
+  const placement = parsePlacement(req.nextUrl.searchParams.get('placement'));
+  const banners = await prisma.dashboardBanner.findMany({
+    where: placement ? { placement } : undefined,
+    orderBy: { order: 'asc' },
+  });
   return NextResponse.json({ banners });
 }
 
@@ -27,14 +36,16 @@ export async function POST(req: NextRequest) {
   }
   const linkUrlRaw = formData?.get('linkUrl');
   const linkUrl = typeof linkUrlRaw === 'string' && linkUrlRaw.trim() ? linkUrlRaw.trim() : null;
+  const placement = parsePlacement(formData?.get('placement')) ?? 'DASHBOARD';
 
   try {
     const saved = await saveImageUpload(file, 'banners');
-    const maxOrder = await prisma.dashboardBanner.aggregate({ _max: { order: true } });
+    const maxOrder = await prisma.dashboardBanner.aggregate({ where: { placement }, _max: { order: true } });
     const banner = await prisma.dashboardBanner.create({
       data: {
         imageUrl: saved.url,
         linkUrl,
+        placement,
         order: (maxOrder._max.order ?? -1) + 1,
       },
     });

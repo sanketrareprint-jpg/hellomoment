@@ -22,7 +22,7 @@ export default async function DashboardOverview() {
     }),
     prisma.contact.findMany({ where: { businessId: business.id } }),
     prisma.dashboardBanner.findMany({
-      where: { isActive: true },
+      where: { isActive: true, placement: 'DASHBOARD' },
       orderBy: { order: 'asc' },
       select: { id: true, imageUrl: true, linkUrl: true },
     }),
