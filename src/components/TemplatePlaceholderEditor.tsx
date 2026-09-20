@@ -309,6 +309,20 @@ export default function TemplatePlaceholderEditor({
   const [groupFontFamily, setGroupFontFamily] = useState<FontFamilyId>('default');
   const [groupFontSize, setGroupFontSize] = useState(28);
   const [groupColor, setGroupColor] = useState('#1f2937');
+  // Which of the group's fields "Apply style"/"Stack"/"Line up" actually
+  // act on — ticked individually rather than always all of them, so (say)
+  // Address can be left alone while Phone/Website get lined up together.
+  // Starts with everyone in, matching the old all-or-nothing behavior.
+  const [groupSelectedKeys, setGroupSelectedKeys] = useState<Set<TextFieldKey>>(new Set(BRAND_TEXT_GROUP_KEYS));
+
+  function toggleGroupKey(key: TextFieldKey) {
+    setGroupSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
   // While a default Frame applies (and the business hasn't opened manual
   // positioning), the frame's own overlay graphic and its own logo/firmName/
   // phone/email/address/website/products placeholders render branding at
@@ -484,10 +498,11 @@ export default function TemplatePlaceholderEditor({
     setForm((f) => withTextPlaceholder(f, key, p));
   }
 
-  // The phone/email/address/website/products fields currently switched on —
-  // what "apply to all"/"stack"/"line up" below actually act on.
+  // What "apply to all"/"stack"/"line up" below actually act on: whichever
+  // of phone/email/address/website/products are both switched on (shown on
+  // the flyer at all) and ticked in the group panel below.
   function brandTextGroupKeys(): TextFieldKey[] {
-    return BRAND_TEXT_GROUP_KEYS.filter((k) => isFieldOn(k));
+    return BRAND_TEXT_GROUP_KEYS.filter((k) => isFieldOn(k) && groupSelectedKeys.has(k));
   }
 
   // Copies one font/size/color onto every currently-on field in the group,
@@ -1050,6 +1065,16 @@ export default function TemplatePlaceholderEditor({
                   <h4 className="text-[11px] font-semibold text-gray-600 mb-1">
                     Style &amp; layout for Phone/Email/Address/Website/Products together
                   </h4>
+                  {BRAND_TEXT_GROUP_KEYS.some((k) => isFieldOn(k)) && (
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mb-1.5">
+                      {BRAND_TEXT_GROUP_KEYS.filter((k) => isFieldOn(k)).map((k) => (
+                        <label key={k} className="flex items-center gap-1 text-[11px] text-gray-700">
+                          <input type="checkbox" checked={groupSelectedKeys.has(k)} onChange={() => toggleGroupKey(k)} />
+                          {BRAND_FIELDS.find((d) => d.key === k)?.label}
+                        </label>
+                      ))}
+                    </div>
+                  )}
                   <div className="grid grid-cols-3 gap-1.5 mb-1.5">
                     <div>
                       <label className="label">Font</label>
@@ -1182,6 +1207,17 @@ export default function TemplatePlaceholderEditor({
                     Press Enter to start a new line. Saved straight to Settings → Brand kit, so it updates on every
                     template and frame too.
                   </p>
+                  {defaultFrame && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Heads up: this text is also used by your default Frame &ldquo;{defaultFrame.name}&rdquo; — a
+                      line-break change here can make it overflow that Frame&rsquo;s own box on every flyer, not just
+                      this template. Check{' '}
+                      <Link href="/dashboard/frames?folder=my" className="font-medium underline">
+                        Manage frames
+                      </Link>{' '}
+                      after editing.
+                    </p>
+                  )}
                 </div>
               )}
 
