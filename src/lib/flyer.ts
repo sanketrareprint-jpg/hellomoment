@@ -224,6 +224,55 @@ export function wrapText(text: string, maxWidth: number | undefined, fontSize: n
   return lines.slice(0, maxLines);
 }
 
+// Outline icons shown next to the phone/address text on a flyer — the exact
+// same Heroicons paths as the "Phone"/"Address" toolbar buttons in
+// TemplatePlaceholderEditor.tsx (BRAND_FIELDS), duplicated here rather than
+// imported because that file is a 'use client' component. Kept in sync by
+// hand; if either icon there ever changes, update it here too.
+const ICON_PATHS: Record<'phone' | 'address', string> = {
+  phone:
+    'M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z',
+  address: 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z',
+};
+
+/**
+ * Renders the phone/address icon at the same pixel size as the text it sits
+ * next to (so "the icon size follows the text size") and in the exact same
+ * color, then composites icon + text side by side onto one transparent
+ * canvas — which buildTextComposite below then positions/aligns as a single
+ * block, exactly like a plain text placeholder would be.
+ */
+async function buildIconTextComposite(
+  icon: 'phone' | 'address',
+  color: string,
+  fontSize: number,
+  textData: Buffer,
+  textWidth: number,
+  textHeight: number
+): Promise<{ data: Buffer; width: number; height: number }> {
+  const iconSize = Math.round(fontSize);
+  const gap = Math.round(iconSize * 0.25);
+  const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" stroke="${escapeXml(
+    color
+  )}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${ICON_PATHS[icon]}"/></svg>`;
+  const iconBuffer = await sharp(Buffer.from(iconSvg)).png().toBuffer();
+
+  const width = iconSize + gap + textWidth;
+  const height = Math.max(iconSize, textHeight);
+
+  const data = await sharp({
+    create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+  })
+    .composite([
+      { input: iconBuffer, left: 0, top: Math.round((height - iconSize) / 2) },
+      { input: textData, left: iconSize + gap, top: Math.round((height - textHeight) / 2) },
+    ])
+    .png()
+    .toBuffer();
+
+  return { data, width, height };
+}
+
 /**
  * Renders one text placeholder (possibly multiple wrapped lines) to its own
  * small transparent PNG via sharp's native text renderer, using our bundled
@@ -233,12 +282,16 @@ export function wrapText(text: string, maxWidth: number | undefined, fontSize: n
  * template editor's live preview already positions these markers
  * (`translate(-50%, -50%)` etc. in TemplatePlaceholderEditor.tsx) — so what
  * a business drags into place in the editor is what actually gets sent.
+ *
+ * `icon`, when set, prepends the matching outline icon (see ICON_PATHS)
+ * before the text — used for phone/address, same as the editor preview.
  */
 async function buildTextComposite(
   placeholder: TextPlaceholder,
   text: string,
   canvasWidth: number,
-  canvasHeight: number
+  canvasHeight: number,
+  icon?: 'phone' | 'address'
 ): Promise<{ input: Buffer; left: number; top: number }> {
   const lines = wrapText(text, placeholder.maxWidth, placeholder.fontSize, placeholder.maxLines ?? 2);
   const markup = lines.map((line) => escapeXml(line)).join('\n');
@@ -263,6 +316,13 @@ async function buildTextComposite(
   let { data } = buffer;
   let w = buffer.info.width;
   let h = buffer.info.height;
+
+  if (icon) {
+    const combined = await buildIconTextComposite(icon, placeholder.color, placeholder.fontSize, data, w, h);
+    data = combined.data;
+    w = combined.width;
+    h = combined.height;
+  }
 
   // sharp refuses to composite an overlay that would extend past the base
   // canvas at the given offset, so clamp/crop defensively — an unusually
@@ -377,7 +437,7 @@ export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string>
     }
   }
 
-  const textEntries: { placeholder: TextPlaceholder; text: string }[] = [];
+  const textEntries: { placeholder: TextPlaceholder; text: string; icon?: 'phone' | 'address' }[] = [];
   if (opts.namePlaceholder && opts.name) {
     textEntries.push({ placeholder: opts.namePlaceholder, text: opts.name });
   }
@@ -391,17 +451,17 @@ export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string>
     textEntries.push({ placeholder: opts.firmNamePlaceholder, text: opts.firmNameText });
   }
   if (opts.phonePlaceholder && opts.phoneText) {
-    textEntries.push({ placeholder: opts.phonePlaceholder, text: opts.phoneText });
+    textEntries.push({ placeholder: opts.phonePlaceholder, text: opts.phoneText, icon: 'phone' });
   }
   if (opts.addressPlaceholder && opts.addressText) {
-    textEntries.push({ placeholder: opts.addressPlaceholder, text: opts.addressText });
+    textEntries.push({ placeholder: opts.addressPlaceholder, text: opts.addressText, icon: 'address' });
   }
   if (opts.productsPlaceholder && opts.productsText) {
     textEntries.push({ placeholder: opts.productsPlaceholder, text: opts.productsText });
   }
-  for (const { placeholder, text } of textEntries) {
+  for (const { placeholder, text, icon } of textEntries) {
     if (!text.trim()) continue;
-    composites.push(await buildTextComposite(placeholder, text, opts.canvasWidth, opts.canvasHeight));
+    composites.push(await buildTextComposite(placeholder, text, opts.canvasWidth, opts.canvasHeight, icon));
   }
 
   await sharp(opts.backgroundPath)

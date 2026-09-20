@@ -727,10 +727,15 @@ export default function TemplatePlaceholderEditor({
             </div>
           )}
 
-          {isFieldOn('logo') && form.backgroundUrl && business?.logoUrl && (
+          {isFieldOn('logo') && form.backgroundUrl && (
+            // Shown as a dashed marker box even without a real logo image to
+            // preview (no business logo saved yet, or — in the admin starter
+            // template library — no specific business at all) so it stays
+            // draggable into place just like every other field, the same
+            // way the Photo box above doesn't need a real photo either.
             <div
               onPointerDown={startDrag('logo')}
-              className="absolute border-2 border-dashed border-amber-500 cursor-move flex items-center justify-center overflow-hidden bg-white/10"
+              className="absolute border-2 border-dashed border-amber-500 cursor-move flex items-center justify-center overflow-hidden bg-white/10 text-[10px] font-medium text-amber-700"
               style={{
                 left: form.logoPlaceholder.x * scale,
                 top: form.logoPlaceholder.y * scale,
@@ -738,8 +743,12 @@ export default function TemplatePlaceholderEditor({
                 height: form.logoPlaceholder.size * scale,
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={business.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain pointer-events-none" />
+              {business?.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={business.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain pointer-events-none" />
+              ) : (
+                'Logo'
+              )}
             </div>
           )}
 
@@ -747,25 +756,42 @@ export default function TemplatePlaceholderEditor({
             if (!isFieldOn(key) || !form.backgroundUrl) return null;
             const p = getTextPlaceholder(key);
             const minFontPx = key === 'name' ? 10 : key === 'date' ? 9 : 8;
+            const fontPx = Math.max(minFontPx, p.fontSize * scale);
+            // Phone and address get the same outline icon used for their
+            // toolbar button, sized and colored to match the text next to
+            // it — same icon shown on the actual sent flyer (see flyer.ts).
+            const iconPath = key === 'phone' || key === 'address' ? BRAND_FIELDS.find((d) => d.key === key)?.icon : null;
             return (
               <div
                 key={key}
                 onPointerDown={startDrag(key)}
-                className="absolute cursor-move px-1 whitespace-nowrap"
+                className="absolute cursor-move px-1 whitespace-nowrap flex items-center gap-1"
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
                   transform:
                     p.align === 'center' ? 'translate(-50%, -50%)' : p.align === 'right' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
-                  fontSize: Math.max(minFontPx, p.fontSize * scale),
-                  fontWeight: p.fontWeight,
-                  fontFamily: cssFontFamilyFor(p.fontFamily),
                   color: p.color,
                   textShadow: '0 1px 3px rgba(0,0,0,0.5)',
                   outline: selected === key ? '1px dashed rgba(255,255,255,0.8)' : undefined,
                 }}
               >
-                {previewTextFor(key)}
+                {iconPath && (
+                  <svg
+                    width={fontPx}
+                    height={fontPx}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                    className="flex-shrink-0"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
+                  </svg>
+                )}
+                <span style={{ fontSize: fontPx, fontWeight: p.fontWeight, fontFamily: cssFontFamilyFor(p.fontFamily) }}>
+                  {previewTextFor(key)}
+                </span>
               </div>
             );
           })}
