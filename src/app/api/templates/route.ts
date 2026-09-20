@@ -16,6 +16,7 @@ const placeholderSchema = z.object({
   height: z.number().optional(),
   shape: z.enum(['circle', 'square', 'rounded', 'hexagon']).optional(),
   rotation: z.number().optional(),
+  locked: z.boolean().optional(),
 });
 
 const templateSchema = z.object({
