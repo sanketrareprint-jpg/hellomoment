@@ -336,6 +336,12 @@ export default function TemplatePlaceholderEditor({
     return (e: React.PointerEvent) => {
       e.preventDefault();
       dragTarget.current = target;
+      // Touching a marker also selects it, opening its properties panel
+      // below — same as clicking its toolbar button — so you don't have to
+      // hunt for the matching toolbar icon after clicking a field directly
+      // on the flyer preview. Not for the photo box's resize handle, which
+      // isn't its own field.
+      if (target && target !== 'photo-resize') setSelected(target);
     };
   }
 
@@ -772,7 +778,6 @@ export default function TemplatePlaceholderEditor({
                   transform:
                     p.align === 'center' ? 'translate(-50%, -50%)' : p.align === 'right' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
                   color: p.color,
-                  textShadow: '0 1px 3px rgba(0,0,0,0.5)',
                   outline: selected === key ? '1px dashed rgba(255,255,255,0.8)' : undefined,
                 }}
               >
