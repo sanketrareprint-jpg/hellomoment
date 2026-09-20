@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
+import FlyerThumb from '@/components/FlyerThumb';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,8 +85,7 @@ export default async function LogsPage({ searchParams }: { searchParams: { page?
                 <td className="px-4 py-3 text-gray-600 capitalize">{log.occasion.toLowerCase()}</td>
                 <td className="px-4 py-3">
                   {log.flyerUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={log.flyerUrl} alt="Flyer" className="w-12 h-12 rounded object-cover border border-gray-200" />
+                    <FlyerThumb url={log.flyerUrl} recipient={log.contact?.name ?? log.occasion} />
                   ) : (
                     '—'
                   )}
@@ -127,8 +127,9 @@ export default async function LogsPage({ searchParams }: { searchParams: { page?
               {group.items.map((log) => (
                 <div key={log.id} className="p-3 flex items-start gap-3">
                   {log.flyerUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={log.flyerUrl} alt="Flyer" className="w-12 h-12 rounded object-cover border border-gray-200 shrink-0" />
+                    <div className="shrink-0">
+                      <FlyerThumb url={log.flyerUrl} recipient={log.contact?.name ?? log.occasion} />
+                    </div>
                   ) : (
                     <div className="w-12 h-12 rounded bg-gray-100 shrink-0" />
                   )}
