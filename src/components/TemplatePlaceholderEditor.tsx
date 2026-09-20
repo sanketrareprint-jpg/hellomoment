@@ -171,6 +171,9 @@ export default function TemplatePlaceholderEditor({
   // shared properties panel below the toolbar, Word/Photoshop-style,
   // instead of every field's settings being permanently expanded at once.
   const [selected, setSelected] = useState<FieldKey | null>(null);
+  // Purely a visual aid for lining elements up while dragging — never saved,
+  // doesn't affect the actual generated flyer.
+  const [showGrid, setShowGrid] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
 
@@ -755,9 +758,15 @@ export default function TemplatePlaceholderEditor({
           at the column's natural position), so it keeps this column
           pinned near the top while scrolling without that snap. */}
       <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
-        <p className="text-sm text-gray-600 mb-2">
-          Drag the labeled markers on the flyer to position them. Numbers below give exact control.
-        </p>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm text-gray-600">
+            Drag the labeled markers on the flyer to position them. Numbers below give exact control.
+          </p>
+          <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap ml-2">
+            <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
+            Show grid
+          </label>
+        </div>
         <div
           ref={previewRef}
           onPointerMove={onPointerMove}
@@ -772,6 +781,23 @@ export default function TemplatePlaceholderEditor({
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
               Upload a background to start positioning
+            </div>
+          )}
+
+          {showGrid && form.backgroundUrl && (
+            <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(to right, rgba(255,255,255,0.55) 1px, transparent 1px), ' +
+                    'linear-gradient(to bottom, rgba(255,255,255,0.55) 1px, transparent 1px)',
+                  backgroundSize: `${PREVIEW_WIDTH / 10}px ${(previewHeight || PREVIEW_WIDTH) / 10}px`,
+                  mixBlendMode: 'difference',
+                }}
+              />
+              <div className="absolute inset-y-0 left-1/2 w-px bg-red-500/80" />
+              <div className="absolute inset-x-0 top-1/2 h-px bg-red-500/80" />
             </div>
           )}
 
