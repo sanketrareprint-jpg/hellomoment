@@ -12,8 +12,10 @@ export default async function SettingsPage() {
       <SettingsForm
         initial={{
           name: business.name,
+          email: business.email,
           ownerWhatsapp: business.ownerWhatsapp,
           timezone: business.timezone,
+          websiteUrl: business.websiteUrl ?? '',
           aisensyApiKey: business.aisensyApiKey ?? '',
           aisensyBirthdayCampaign: business.aisensyBirthdayCampaign ?? '',
           aisensyAnniversaryCampaign: business.aisensyAnniversaryCampaign ?? '',

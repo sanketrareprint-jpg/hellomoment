@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 
 export interface SettingsFormValues {
   name: string;
+  email: string;
   ownerWhatsapp: string;
   timezone: string;
+  websiteUrl: string;
   aisensyApiKey: string;
   aisensyBirthdayCampaign: string;
   aisensyAnniversaryCampaign: string;
@@ -106,6 +108,28 @@ export default function SettingsForm({ initial }: { initial: SettingsFormValues 
           </div>
         </div>
         <p className="text-xs text-gray-500">Owner WhatsApp receives a copy of every wish sent to your contacts.</p>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="label">Email</label>
+            <input
+              className="input"
+              type="email"
+              required
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
+          <div>
+            <label className="label">Website</label>
+            <input
+              className="input"
+              type="url"
+              value={form.websiteUrl}
+              onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })}
+              placeholder="https://yourbusiness.com"
+            />
+          </div>
+        </div>
         <div>
           <label className="label">Timezone</label>
           <select className="input" value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })}>
