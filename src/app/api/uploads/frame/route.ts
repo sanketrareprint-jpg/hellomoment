@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { requireApiBusiness } from '@/lib/session';
-import { saveImageUpload } from '@/lib/uploads';
+import { saveImageUpload, trimOverlayPadding } from '@/lib/uploads';
 
 // Uploads a business's own decorative frame overlay graphic (PNG/WebP/JPG —
 // unlike flyer backgrounds, PNG with transparency is expected here, since
@@ -18,12 +18,16 @@ export async function POST(req: NextRequest) {
 
   try {
     const saved = await saveImageUpload(file, 'frames');
-    const metadata = await sharp(saved.absolutePath).metadata();
-    return NextResponse.json({
-      url: saved.url,
-      width: metadata.width ?? 1080,
-      height: metadata.height ?? 1080,
-    });
+    let width: number | undefined;
+    let height: number | undefined;
+    try {
+      // Trim any transparent padding baked into the uploaded artwork itself,
+      // so the graphic reaches the file's own edges — see trimOverlayPadding.
+      ({ width, height } = await trimOverlayPadding(saved.absolutePath));
+    } catch {
+      ({ width, height } = await sharp(saved.absolutePath).metadata());
+    }
+    return NextResponse.json({ url: saved.url, width: width ?? 1080, height: height ?? 1080 });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Upload failed' }, { status: 400 });
   }
