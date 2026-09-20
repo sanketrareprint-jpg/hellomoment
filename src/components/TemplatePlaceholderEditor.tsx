@@ -671,6 +671,19 @@ export default function TemplatePlaceholderEditor({
                       <option value="hexagon">Hexagon</option>
                     </select>
                   </div>
+                  <div className="col-span-2">
+                    <label className="label">Rotation (degrees)</label>
+                    <input
+                      className="input"
+                      type="number"
+                      min={-180}
+                      max={180}
+                      value={form.photoPlaceholder.rotation ?? 0}
+                      onChange={(e) =>
+                        setForm({ ...form, photoPlaceholder: { ...form.photoPlaceholder, rotation: Number(e.target.value) } })
+                      }
+                    />
+                  </div>
                   <p className="col-span-2 text-xs text-gray-500">
                     Tip: drag the dot at the photo box&rsquo;s bottom-right corner in the preview to stretch it freely.
                   </p>
@@ -687,6 +700,19 @@ export default function TemplatePlaceholderEditor({
                       value={form.logoPlaceholder.size}
                       onChange={(e) =>
                         setForm({ ...form, logoPlaceholder: { ...form.logoPlaceholder, size: Number(e.target.value) } })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Rotation (degrees)</label>
+                    <input
+                      className="input"
+                      type="number"
+                      min={-180}
+                      max={180}
+                      value={form.logoPlaceholder.rotation ?? 0}
+                      onChange={(e) =>
+                        setForm({ ...form, logoPlaceholder: { ...form.logoPlaceholder, rotation: Number(e.target.value) } })
                       }
                     />
                   </div>
@@ -768,6 +794,7 @@ export default function TemplatePlaceholderEditor({
                   form.photoPlaceholder.shape === 'hexagon'
                     ? 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)'
                     : undefined,
+                transform: form.photoPlaceholder.rotation ? `rotate(${form.photoPlaceholder.rotation}deg)` : undefined,
               }}
             >
               Photo
@@ -796,6 +823,7 @@ export default function TemplatePlaceholderEditor({
                 top: form.logoPlaceholder.y * scale,
                 width: form.logoPlaceholder.size * scale,
                 height: form.logoPlaceholder.size * scale,
+                transform: form.logoPlaceholder.rotation ? `rotate(${form.logoPlaceholder.rotation}deg)` : undefined,
               }}
             >
               {business?.logoUrl ? (
@@ -833,8 +861,12 @@ export default function TemplatePlaceholderEditor({
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
-                  transform:
+                  transform: [
                     p.align === 'center' ? 'translate(-50%, -50%)' : p.align === 'right' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
+                    p.rotation ? `rotate(${p.rotation}deg)` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' '),
                   color: p.color,
                   outline: selected === key ? '1px dashed rgba(255,255,255,0.8)' : undefined,
                 }}
@@ -954,6 +986,17 @@ function PlaceholderControls({
             max={4}
             value={placeholder.maxLines}
             onChange={(e) => onChange({ ...placeholder, maxLines: Number(e.target.value) })}
+          />
+        </div>
+        <div>
+          <label className="label">Rotation (degrees)</label>
+          <input
+            className="input"
+            type="number"
+            min={-180}
+            max={180}
+            value={placeholder.rotation ?? 0}
+            onChange={(e) => onChange({ ...placeholder, rotation: Number(e.target.value) })}
           />
         </div>
       </div>

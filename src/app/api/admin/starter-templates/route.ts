@@ -24,6 +24,7 @@ const placeholderSchema = z.object({
   width: z.number().optional(),
   height: z.number().optional(),
   shape: z.enum(['circle', 'square', 'rounded', 'hexagon']).optional(),
+  rotation: z.number().optional(),
 });
 
 const templateSchema = z.object({

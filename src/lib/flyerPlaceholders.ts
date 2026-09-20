@@ -19,6 +19,10 @@ export interface TextPlaceholder {
   align: Align;
   maxWidth: number;
   maxLines: number;
+  // Degrees, clockwise, rotated about the placeholder's own center. Optional
+  // for backward compatibility with templates saved before rotation existed
+  // — treated as 0 wherever it's missing.
+  rotation?: number;
 }
 
 export interface PhotoPlaceholder {
@@ -27,12 +31,14 @@ export interface PhotoPlaceholder {
   width: number;
   height: number;
   shape: 'circle' | 'square' | 'rounded' | 'hexagon';
+  rotation?: number;
 }
 
 export interface LogoPlaceholder {
   x: number;
   y: number;
   size: number;
+  rotation?: number;
 }
 
 export interface TemplateFormValues {
@@ -92,6 +98,7 @@ export function defaultsFor(width: number, height: number): Pick<
       align: 'center',
       maxWidth: Math.round(width * 0.85),
       maxLines: 2,
+      rotation: 0,
     },
     designationPlaceholder: {
       x: Math.round(width / 2),
@@ -102,6 +109,7 @@ export function defaultsFor(width: number, height: number): Pick<
       align: 'center',
       maxWidth: Math.round(width * 0.85),
       maxLines: 1,
+      rotation: 0,
     },
     datePlaceholder: {
       x: Math.round(width / 2),
@@ -112,6 +120,7 @@ export function defaultsFor(width: number, height: number): Pick<
       align: 'center',
       maxWidth: Math.round(width * 0.85),
       maxLines: 1,
+      rotation: 0,
     },
     photoPlaceholder: {
       x: Math.round(width * 0.36),
@@ -119,6 +128,7 @@ export function defaultsFor(width: number, height: number): Pick<
       width: Math.round(width * 0.28),
       height: Math.round(width * 0.28),
       shape: 'circle',
+      rotation: 0,
     },
     // Business branding block — grouped as one cluster in the bottom-left
     // corner (logo on top, firm name/phone/address/products stacked
@@ -129,6 +139,7 @@ export function defaultsFor(width: number, height: number): Pick<
       x: Math.round(width * 0.05),
       y: Math.round(height * 0.76),
       size: Math.round(width * 0.13),
+      rotation: 0,
     },
     firmNamePlaceholder: {
       x: Math.round(width * 0.05),
@@ -139,6 +150,7 @@ export function defaultsFor(width: number, height: number): Pick<
       align: 'left',
       maxWidth: Math.round(width * 0.55),
       maxLines: 1,
+      rotation: 0,
     },
     phonePlaceholder: {
       x: Math.round(width * 0.05),
@@ -149,6 +161,7 @@ export function defaultsFor(width: number, height: number): Pick<
       align: 'left',
       maxWidth: Math.round(width * 0.55),
       maxLines: 1,
+      rotation: 0,
     },
     // Email/website mirror phone/address in size and style, but default to
     // the opposite (right) side of the flyer, right-aligned, so they don't
@@ -163,6 +176,7 @@ export function defaultsFor(width: number, height: number): Pick<
       align: 'right',
       maxWidth: Math.round(width * 0.55),
       maxLines: 1,
+      rotation: 0,
     },
     addressPlaceholder: {
       x: Math.round(width * 0.05),
@@ -173,6 +187,7 @@ export function defaultsFor(width: number, height: number): Pick<
       align: 'left',
       maxWidth: Math.round(width * 0.55),
       maxLines: 2,
+      rotation: 0,
     },
     websitePlaceholder: {
       x: Math.round(width * 0.95),
@@ -183,6 +198,7 @@ export function defaultsFor(width: number, height: number): Pick<
       align: 'right',
       maxWidth: Math.round(width * 0.55),
       maxLines: 1,
+      rotation: 0,
     },
     productsPlaceholder: {
       x: Math.round(width * 0.05),
@@ -193,6 +209,7 @@ export function defaultsFor(width: number, height: number): Pick<
       align: 'left',
       maxWidth: Math.round(width * 0.55),
       maxLines: 1,
+      rotation: 0,
     },
   };
 }
