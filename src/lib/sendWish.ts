@@ -8,7 +8,7 @@ import { servedUrlToAbsolutePath, STORAGE_DIR } from './uploads';
 import { formatDateForDisplay } from './dateUtils';
 import { COINS_PER_SEND } from './pricing';
 import { getWalletOwner } from './businessFamily';
-import { scaleLogoPlaceholder, scaleTextPlaceholder } from './framePlaceholders';
+import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder } from './framePlaceholders';
 
 /**
  * The single place that turns "it's Priya's birthday" (or a festival) into
@@ -321,32 +321,37 @@ async function renderFlyer(
 
   if (defaultFrame) {
     // The frame's placeholders were positioned against its own canvas size
-    // (frame.canvasWidth/Height), which may not match this particular
-    // template's background dimensions — scale proportionally so the same
-    // frame still lands in the right relative spot on every template.
-    const scaleX = template.canvasWidth / defaultFrame.canvasWidth;
-    const scaleY = template.canvasHeight / defaultFrame.canvasHeight;
+    // (frame.canvasWidth/Height, the overlay graphic's own native pixel
+    // size) — scale uniformly by width (never stretching the banner's own
+    // aspect ratio) and anchor to this template's bottom edge, the same way
+    // its overlay graphic renders below. See frameLayoutFor's own comment.
+    const { scale: frameScale, topOffset: frameTopOffset } = frameLayoutFor(
+      template.canvasWidth,
+      template.canvasHeight,
+      defaultFrame.canvasWidth,
+      defaultFrame.canvasHeight
+    );
 
     logoPlaceholder = defaultFrame.logoPlaceholder
-      ? scaleLogoPlaceholder(JSON.parse(defaultFrame.logoPlaceholder), scaleX, scaleY)
+      ? scaleLogoPlaceholder(JSON.parse(defaultFrame.logoPlaceholder), frameScale, frameTopOffset)
       : null;
     firmNamePlaceholder = defaultFrame.firmNamePlaceholder
-      ? scaleTextPlaceholder(JSON.parse(defaultFrame.firmNamePlaceholder), scaleX, scaleY)
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.firmNamePlaceholder), frameScale, frameTopOffset)
       : null;
     phonePlaceholder = defaultFrame.phonePlaceholder
-      ? scaleTextPlaceholder(JSON.parse(defaultFrame.phonePlaceholder), scaleX, scaleY)
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.phonePlaceholder), frameScale, frameTopOffset)
       : null;
     emailPlaceholder = defaultFrame.emailPlaceholder
-      ? scaleTextPlaceholder(JSON.parse(defaultFrame.emailPlaceholder), scaleX, scaleY)
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.emailPlaceholder), frameScale, frameTopOffset)
       : null;
     addressPlaceholder = defaultFrame.addressPlaceholder
-      ? scaleTextPlaceholder(JSON.parse(defaultFrame.addressPlaceholder), scaleX, scaleY)
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.addressPlaceholder), frameScale, frameTopOffset)
       : null;
     websitePlaceholder = defaultFrame.websitePlaceholder
-      ? scaleTextPlaceholder(JSON.parse(defaultFrame.websitePlaceholder), scaleX, scaleY)
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.websitePlaceholder), frameScale, frameTopOffset)
       : null;
     productsPlaceholder = defaultFrame.productsPlaceholder
-      ? scaleTextPlaceholder(JSON.parse(defaultFrame.productsPlaceholder), scaleX, scaleY)
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.productsPlaceholder), frameScale, frameTopOffset)
       : null;
     overlayPath = defaultFrame.overlayUrl ? servedUrlToAbsolutePath(defaultFrame.overlayUrl) : null;
   }

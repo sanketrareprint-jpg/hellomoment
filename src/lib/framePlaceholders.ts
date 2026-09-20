@@ -31,22 +31,41 @@ export interface FrameFormValues {
 }
 
 /**
- * Scales a text placeholder saved against a Frame's own canvas size onto a
- * different canvas size (a FlyerTemplate's) — needed because one Frame is
- * applied across every flyer a business sends, and those flyers' background
- * images aren't guaranteed to all be the same size as the Frame was designed
- * against. x/y each scale by their own axis; fontSize scales by the average
- * of both axes so it doesn't stretch unevenly on a non-square resize.
+ * A Frame's overlay graphic and its placeholders are authored against the
+ * frame's own canvas — its overlay image's native pixel size (see
+ * FramePlaceholderEditor's onOverlayChange, which sets canvasWidth/Height
+ * from the uploaded file's own dimensions). That's typically a short, wide
+ * banner meant to sit along the bottom of *any* flyer a business sends,
+ * regardless of that flyer's own canvas size — so it must land there scaled
+ * uniformly by width (preserving the banner's own aspect ratio; never
+ * stretched to fill a taller/shorter canvas, which is what distorted both
+ * the overlay art and its text badly on a portrait template) and anchored
+ * to the flyer's bottom edge, the same way the overlay graphic itself is
+ * displayed (see flyer.ts's overlay compositing and the frame preview in
+ * TemplatePlaceholderEditor.tsx).
  */
-export function scaleTextPlaceholder(p: TextPlaceholder, scaleX: number, scaleY: number): TextPlaceholder {
-  const scale = (scaleX + scaleY) / 2;
-  return { ...p, x: Math.round(p.x * scaleX), y: Math.round(p.y * scaleY), fontSize: Math.round(p.fontSize * scale) };
+export function frameLayoutFor(
+  canvasWidth: number,
+  canvasHeight: number,
+  frameCanvasWidth: number,
+  frameCanvasHeight: number
+): { scale: number; topOffset: number } {
+  const scale = canvasWidth / frameCanvasWidth;
+  return { scale, topOffset: canvasHeight - frameCanvasHeight * scale };
+}
+
+/**
+ * Scales a text placeholder saved against a Frame's own canvas size onto a
+ * different canvas size (a FlyerTemplate's), per frameLayoutFor above —
+ * `scale` and `topOffset` come from it.
+ */
+export function scaleTextPlaceholder(p: TextPlaceholder, scale: number, topOffset: number): TextPlaceholder {
+  return { ...p, x: Math.round(p.x * scale), y: Math.round(p.y * scale + topOffset), fontSize: Math.round(p.fontSize * scale) };
 }
 
 /** Same idea as scaleTextPlaceholder, for a logo box's position + size. */
-export function scaleLogoPlaceholder(p: LogoPlaceholder, scaleX: number, scaleY: number): LogoPlaceholder {
-  const scale = (scaleX + scaleY) / 2;
-  return { ...p, x: Math.round(p.x * scaleX), y: Math.round(p.y * scaleY), size: Math.round(p.size * scale) };
+export function scaleLogoPlaceholder(p: LogoPlaceholder, scale: number, topOffset: number): LogoPlaceholder {
+  return { ...p, x: Math.round(p.x * scale), y: Math.round(p.y * scale + topOffset), size: Math.round(p.size * scale) };
 }
 
 /** The 7 branding placeholder defaults, scaled to (width, height) — reuses the same starting layout as a flyer template's own branding cluster. */
