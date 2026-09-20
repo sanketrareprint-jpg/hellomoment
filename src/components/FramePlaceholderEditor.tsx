@@ -109,25 +109,26 @@ export default function FramePlaceholderEditor({
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<FieldKey | null>(null);
-  // Elements locked in place so they stop being draggable — handy once
-  // several markers overlap. A working aid for this editing session only,
-  // not saved with the frame.
-  const [locked, setLocked] = useState<Set<FieldKey>>(new Set());
   const [showGrid, setShowGrid] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
 
+  // Whether an element is locked in place (drag disabled) lives on its own
+  // placeholder object — the same `locked` flag saved to the DB alongside
+  // its x/y/font/etc — so a frame reopens with locks exactly as they were
+  // left, instead of resetting every time.
   function isLocked(key: FieldKey): boolean {
-    return locked.has(key);
+    if (key === 'logo') return Boolean(form.logoPlaceholder.locked);
+    return Boolean(getTextPlaceholder(key).locked);
   }
 
   function toggleLock(key: FieldKey) {
-    setLocked((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+    if (key === 'logo') {
+      setForm((f) => ({ ...f, logoPlaceholder: { ...f.logoPlaceholder, locked: !f.logoPlaceholder.locked } }));
+      return;
+    }
+    const current = getTextPlaceholder(key);
+    setTextPlaceholder(key, { ...current, locked: !current.locked });
   }
 
   // Local edits to the actual branding TEXT (as opposed to its position/

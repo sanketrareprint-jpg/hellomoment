@@ -18,6 +18,7 @@ const placeholderSchema = z.object({
   align: z.enum(['left', 'center', 'right']).optional(),
   size: z.number().optional(),
   rotation: z.number().optional(),
+  locked: z.boolean().optional(),
 });
 
 const frameSchema = z.object({

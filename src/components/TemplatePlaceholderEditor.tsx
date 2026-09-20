@@ -193,12 +193,6 @@ export default function TemplatePlaceholderEditor({
   // shared properties panel below the toolbar, Word/Photoshop-style,
   // instead of every field's settings being permanently expanded at once.
   const [selected, setSelected] = useState<FieldKey | null>(null);
-  // Elements a business has locked in place so they stop being draggable —
-  // handy once several markers overlap (e.g. name/date sitting on top of a
-  // photo box) and dragging one keeps bumping another by accident. Purely a
-  // working aid for this editing session — not saved with the template —
-  // so a freshly opened editor always starts with everything unlocked.
-  const [locked, setLocked] = useState<Set<FieldKey>>(new Set());
   // Purely a visual aid for lining elements up while dragging — never saved,
   // doesn't affect the actual generated flyer.
   const [showGrid, setShowGrid] = useState(true);
@@ -215,17 +209,27 @@ export default function TemplatePlaceholderEditor({
   const [manualBrandingOpen, setManualBrandingOpen] = useState(false);
   const brandFieldKeySet = new Set(BRAND_FIELDS.map((d) => d.key));
 
+  // Whether an element is locked in place (drag disabled) lives on its own
+  // placeholder object — the same `locked` flag saved to the DB alongside
+  // its x/y/font/etc — so a template/frame reopens with locks exactly as
+  // they were left, instead of resetting every time.
   function isLocked(key: FieldKey): boolean {
-    return locked.has(key);
+    if (key === 'photo') return Boolean(form.photoPlaceholder.locked);
+    if (key === 'logo') return Boolean(form.logoPlaceholder.locked);
+    return Boolean(getTextPlaceholder(key).locked);
   }
 
   function toggleLock(key: FieldKey) {
-    setLocked((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
+    if (key === 'photo') {
+      setForm((f) => ({ ...f, photoPlaceholder: { ...f.photoPlaceholder, locked: !f.photoPlaceholder.locked } }));
+      return;
+    }
+    if (key === 'logo') {
+      setForm((f) => ({ ...f, logoPlaceholder: { ...f.logoPlaceholder, locked: !f.logoPlaceholder.locked } }));
+      return;
+    }
+    const current = getTextPlaceholder(key);
+    setTextPlaceholder(key, { ...current, locked: !current.locked });
   }
 
   // Shrinks the preview canvas to fit its column on narrow screens (e.g. a
