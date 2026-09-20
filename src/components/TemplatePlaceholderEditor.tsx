@@ -810,8 +810,14 @@ export default function TemplatePlaceholderEditor({
           {(['name', 'designation', 'date', 'firmName', 'phone', 'email', 'address', 'website', 'products'] as TextFieldKey[]).map((key) => {
             if (!isFieldOn(key) || !form.backgroundUrl) return null;
             const p = getTextPlaceholder(key);
-            const minFontPx = key === 'name' ? 10 : key === 'date' ? 9 : 8;
-            const fontPx = Math.max(minFontPx, p.fontSize * scale);
+            // No artificial floor: flyer.ts never enforces a minimum font
+            // size server-side, so clamping this preview to one (10/9/8px)
+            // made any field whose configured fontSize maps below that at
+            // this preview's scale render visibly larger here than what
+            // actually gets sent — measured at ~34% oversized for a real
+            // template's Name field. The preview must track fontSize*scale
+            // with no floor to stay proportionally accurate.
+            const fontPx = Math.max(1, p.fontSize * scale);
             // Phone/email/address/website get the same outline icon used for
             // their toolbar button, sized and colored to match the text next
             // to it — same icon shown on the actual sent flyer (see flyer.ts).
