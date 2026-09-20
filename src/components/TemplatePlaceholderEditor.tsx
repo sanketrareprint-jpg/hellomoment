@@ -183,8 +183,14 @@ export default function TemplatePlaceholderEditor({
   // Resolves a placeholder's chosen font to the matching CSS font-family for
   // the live preview only — the actual flyer PNG is always rendered
   // server-side from the bundled .ttf files in assets/fonts (see flyer.ts).
+  // `id` is undefined for every placeholder whose Font dropdown was never
+  // touched (defaultsFor() never sets fontFamily) — resolveFont() in
+  // flyer.ts treats that the same as the 'default' bundled font, so this
+  // must too. Falling back to CSS 'inherit' here (as this used to) pulled in
+  // the *editor page's own* UI font instead, which is exactly why fonts in
+  // the preview didn't match the real sent flyer.
   function cssFontFamilyFor(id?: string) {
-    return FONT_FAMILIES.find((f) => f.id === id)?.cssFamily ?? 'inherit';
+    return (FONT_FAMILIES.find((f) => f.id === id) ?? FONT_FAMILIES.find((f) => f.id === 'default'))!.cssFamily;
   }
 
   const firmNamePreviewText = business
@@ -883,7 +889,7 @@ export default function TemplatePlaceholderEditor({
               <div
                 key={key}
                 onPointerDown={startDrag(key)}
-                className="absolute cursor-move px-1 whitespace-nowrap flex items-center gap-1"
+                className="absolute cursor-move px-1 flex items-center gap-1"
                 style={{
                   left: p.x * scale,
                   top: p.y * scale,
@@ -910,7 +916,19 @@ export default function TemplatePlaceholderEditor({
                     <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
                   </svg>
                 )}
-                <span style={{ fontSize: fontPx, fontWeight: p.fontWeight, fontFamily: cssFontFamilyFor(p.fontFamily) }}>
+                {/* No auto-wrap/truncation here either — matches flyer.ts exactly:
+                    a literal newline the business typed (Enter, in Settings or the
+                    contact record) becomes a line break via `white-space: pre-line`;
+                    anything else renders at its natural width, even past this box. */}
+                <span
+                  style={{
+                    fontSize: fontPx,
+                    fontWeight: p.fontWeight,
+                    fontFamily: cssFontFamilyFor(p.fontFamily),
+                    whiteSpace: 'pre-line',
+                    textAlign: p.align,
+                  }}
+                >
                   {previewTextFor(key)}
                 </span>
               </div>
@@ -993,26 +1011,6 @@ function PlaceholderControls({
             <option value={700}>Bold</option>
             <option value={800}>Extra bold</option>
           </select>
-        </div>
-        <div>
-          <label className="label">Max width (px)</label>
-          <input
-            className="input"
-            type="number"
-            value={placeholder.maxWidth}
-            onChange={(e) => onChange({ ...placeholder, maxWidth: Number(e.target.value) })}
-          />
-        </div>
-        <div>
-          <label className="label">Max lines</label>
-          <input
-            className="input"
-            type="number"
-            min={1}
-            max={4}
-            value={placeholder.maxLines}
-            onChange={(e) => onChange({ ...placeholder, maxLines: Number(e.target.value) })}
-          />
         </div>
         <div>
           <label className="label">Rotation (degrees)</label>

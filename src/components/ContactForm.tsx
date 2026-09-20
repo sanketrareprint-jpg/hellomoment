@@ -163,12 +163,14 @@ export default function ContactForm({ initial }: { initial?: ContactFormValues }
 
       <div>
         <label className="label">Designation (optional)</label>
-        <input
+        <textarea
           className="input"
+          rows={2}
           value={form.designation}
           onChange={(e) => setForm({ ...form, designation: e.target.value })}
           placeholder="e.g. Manager, Director"
         />
+        <p className="text-xs text-gray-500 mt-0.5">Press Enter to control exactly where it breaks onto a new line on the flyer.</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

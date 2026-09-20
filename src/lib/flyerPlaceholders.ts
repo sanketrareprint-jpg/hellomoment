@@ -17,8 +17,6 @@ export interface TextPlaceholder {
   fontWeight: number;
   fontFamily?: FontFamilyId;
   align: Align;
-  maxWidth: number;
-  maxLines: number;
   // Degrees, clockwise, rotated about the placeholder's own center. Optional
   // for backward compatibility with templates saved before rotation existed
   // — treated as 0 wherever it's missing.
@@ -96,8 +94,6 @@ export function defaultsFor(width: number, height: number): Pick<
       color: '#ffffff',
       fontWeight: 700,
       align: 'center',
-      maxWidth: Math.round(width * 0.85),
-      maxLines: 2,
       rotation: 0,
     },
     designationPlaceholder: {
@@ -107,8 +103,6 @@ export function defaultsFor(width: number, height: number): Pick<
       color: '#ffffff',
       fontWeight: 400,
       align: 'center',
-      maxWidth: Math.round(width * 0.85),
-      maxLines: 1,
       rotation: 0,
     },
     datePlaceholder: {
@@ -118,8 +112,6 @@ export function defaultsFor(width: number, height: number): Pick<
       color: '#ffffff',
       fontWeight: 400,
       align: 'center',
-      maxWidth: Math.round(width * 0.85),
-      maxLines: 1,
       rotation: 0,
     },
     photoPlaceholder: {
@@ -148,8 +140,6 @@ export function defaultsFor(width: number, height: number): Pick<
       color: '#ffffff',
       fontWeight: 800,
       align: 'left',
-      maxWidth: Math.round(width * 0.55),
-      maxLines: 1,
       rotation: 0,
     },
     phonePlaceholder: {
@@ -159,8 +149,6 @@ export function defaultsFor(width: number, height: number): Pick<
       color: '#ffffff',
       fontWeight: 400,
       align: 'left',
-      maxWidth: Math.round(width * 0.55),
-      maxLines: 1,
       rotation: 0,
     },
     // Email/website mirror phone/address in size and style, but default to
@@ -174,8 +162,6 @@ export function defaultsFor(width: number, height: number): Pick<
       color: '#ffffff',
       fontWeight: 400,
       align: 'right',
-      maxWidth: Math.round(width * 0.55),
-      maxLines: 1,
       rotation: 0,
     },
     addressPlaceholder: {
@@ -185,8 +171,6 @@ export function defaultsFor(width: number, height: number): Pick<
       color: '#ffffff',
       fontWeight: 400,
       align: 'left',
-      maxWidth: Math.round(width * 0.55),
-      maxLines: 2,
       rotation: 0,
     },
     websitePlaceholder: {
@@ -196,8 +180,6 @@ export function defaultsFor(width: number, height: number): Pick<
       color: '#ffffff',
       fontWeight: 400,
       align: 'right',
-      maxWidth: Math.round(width * 0.55),
-      maxLines: 1,
       rotation: 0,
     },
     productsPlaceholder: {
@@ -207,8 +189,6 @@ export function defaultsFor(width: number, height: number): Pick<
       color: '#ffffff',
       fontWeight: 600,
       align: 'left',
-      maxWidth: Math.round(width * 0.55),
-      maxLines: 1,
       rotation: 0,
     },
   };
