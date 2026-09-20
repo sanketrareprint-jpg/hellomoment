@@ -183,8 +183,14 @@ export default function TemplatePlaceholderEditor({
   // Resolves a placeholder's chosen font to the matching CSS font-family for
   // the live preview only — the actual flyer PNG is always rendered
   // server-side from the bundled .ttf files in assets/fonts (see flyer.ts).
+  // `id` is undefined for every placeholder whose Font dropdown was never
+  // touched (defaultsFor() never sets fontFamily) — resolveFont() in
+  // flyer.ts treats that the same as the 'default' bundled font, so this
+  // must too. Falling back to CSS 'inherit' here (as this used to) pulled in
+  // the *editor page's own* UI font instead, which is exactly why fonts in
+  // the preview didn't match the real sent flyer.
   function cssFontFamilyFor(id?: string) {
-    return FONT_FAMILIES.find((f) => f.id === id)?.cssFamily ?? 'inherit';
+    return (FONT_FAMILIES.find((f) => f.id === id) ?? FONT_FAMILIES.find((f) => f.id === 'default'))!.cssFamily;
   }
 
   const firmNamePreviewText = business
