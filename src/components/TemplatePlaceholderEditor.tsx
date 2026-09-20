@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
 import { defaultsFor, type TemplateFormValues, type TextPlaceholder } from '@/lib/flyerPlaceholders';
@@ -59,7 +59,11 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
   ...defaultsFor(1080, 1080),
 };
 
-const PREVIEW_WIDTH = 420;
+// Upper bound on the preview canvas's width — on any screen wide enough to
+// fit it (desktop, tablet), it renders at exactly this size. On a narrow
+// phone screen it shrinks to fit instead (see previewWidth state below), so
+// the flyer preview is always fully visible without horizontal scrolling.
+const MAX_PREVIEW_WIDTH = 420;
 type DragTarget = FieldKey | 'photo-resize' | null;
 
 // One toolbar button per placeable element, icon-first like a Word/Photoshop
@@ -176,9 +180,27 @@ export default function TemplatePlaceholderEditor({
   // doesn't affect the actual generated flyer.
   const [showGrid, setShowGrid] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
+  const previewColumnRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
 
-  const scale = PREVIEW_WIDTH / form.canvasWidth;
+  // Shrinks the preview canvas to fit its column on narrow screens (e.g. a
+  // phone in the mobile drawer layout, where the column is narrower than
+  // MAX_PREVIEW_WIDTH) instead of overflowing and forcing a horizontal
+  // scroll. `scale` derives from this, so drag math (onPointerMove, which
+  // reads the same rendered box via getBoundingClientRect) stays correct at
+  // any size.
+  const [previewWidth, setPreviewWidth] = useState(MAX_PREVIEW_WIDTH);
+  useEffect(() => {
+    const el = previewColumnRef.current;
+    if (!el) return;
+    const update = () => setPreviewWidth(Math.max(120, Math.min(MAX_PREVIEW_WIDTH, el.clientWidth)));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const scale = previewWidth / form.canvasWidth;
   const previewHeight = form.canvasHeight * scale;
 
   // Resolves a placeholder's chosen font to the matching CSS font-family for
@@ -526,7 +548,7 @@ export default function TemplatePlaceholderEditor({
   const selectedNote = selected ? missingBrandDataNote(selected) : null;
 
   return (
-    <form onSubmit={onSubmit} className="compact-form grid lg:grid-cols-2 gap-4">
+    <form onSubmit={onSubmit} className="compact-form grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="space-y-2">
         <div className="card p-2 space-y-1.5">
           <div>
@@ -764,7 +786,7 @@ export default function TemplatePlaceholderEditor({
           selected. top-0 has nothing to "jump" to (it's already satisfied
           at the column's natural position), so it keeps this column
           pinned near the top while scrolling without that snap. */}
-      <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+      <div ref={previewColumnRef} className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm text-gray-600">
             Drag the labeled markers on the flyer to position them. Numbers below give exact control.
@@ -780,7 +802,7 @@ export default function TemplatePlaceholderEditor({
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerUp}
           className="relative rounded-lg overflow-hidden border border-gray-300 bg-gray-100 select-none touch-none"
-          style={{ width: PREVIEW_WIDTH, height: previewHeight || PREVIEW_WIDTH }}
+          style={{ width: previewWidth, height: previewHeight || previewWidth }}
         >
           {form.backgroundUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -799,7 +821,7 @@ export default function TemplatePlaceholderEditor({
                   backgroundImage:
                     'linear-gradient(to right, rgba(255,255,255,0.55) 1px, transparent 1px), ' +
                     'linear-gradient(to bottom, rgba(255,255,255,0.55) 1px, transparent 1px)',
-                  backgroundSize: `${PREVIEW_WIDTH / 10}px ${(previewHeight || PREVIEW_WIDTH) / 10}px`,
+                  backgroundSize: `${previewWidth / 10}px ${(previewHeight || previewWidth) / 10}px`,
                   mixBlendMode: 'difference',
                 }}
               />
