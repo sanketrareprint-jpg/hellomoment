@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
+import { getWalletOwner } from '@/lib/businessFamily';
 import { RECHARGE_TIERS, COINS_PER_SEND } from '@/lib/pricing';
 import RechargeOptions from '@/components/RechargeOptions';
 
@@ -13,14 +14,19 @@ export default async function WalletPage({ searchParams }: { searchParams: { pag
 
   const page = Math.max(1, Number(searchParams.page ?? '1'));
 
+  // The ₹ wallet is shared across every company under the same login (see
+  // src/lib/businessFamily.ts) — trial coins below stay per-company.
+  const walletOwner = await getWalletOwner(business);
+  const sharedWithOtherCompanies = walletOwner.id !== business.id;
+
   const [transactions, total, trialCoinTransactions] = await Promise.all([
     prisma.walletTransaction.findMany({
-      where: { businessId: business.id },
+      where: { businessId: walletOwner.id },
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * TXN_PAGE_SIZE,
       take: TXN_PAGE_SIZE,
     }),
-    prisma.walletTransaction.count({ where: { businessId: business.id } }),
+    prisma.walletTransaction.count({ where: { businessId: walletOwner.id } }),
     prisma.trialCoinTransaction.findMany({
       where: { businessId: business.id },
       orderBy: { createdAt: 'desc' },
@@ -30,10 +36,10 @@ export default async function WalletPage({ searchParams }: { searchParams: { pag
   const totalPages = Math.max(1, Math.ceil(total / TXN_PAGE_SIZE));
   const hasTrialCoinActivity = business.trialCoins > 0 || trialCoinTransactions.length > 0;
 
-  const balanceRupees = business.walletBalancePaise / 100;
-  const rateRupees = business.walletRatePaise / 100;
-  const messagesLeft = business.walletRatePaise > 0 ? Math.floor(business.walletBalancePaise / business.walletRatePaise) : 0;
-  const lowBalance = business.walletBalancePaise < business.walletRatePaise;
+  const balanceRupees = walletOwner.walletBalancePaise / 100;
+  const rateRupees = walletOwner.walletRatePaise / 100;
+  const messagesLeft = walletOwner.walletRatePaise > 0 ? Math.floor(walletOwner.walletBalancePaise / walletOwner.walletRatePaise) : 0;
+  const lowBalance = walletOwner.walletBalancePaise < walletOwner.walletRatePaise;
 
   return (
     <div className="max-w-5xl">
@@ -41,6 +47,7 @@ export default async function WalletPage({ searchParams }: { searchParams: { pag
       <p className="text-gray-600 mb-6">
         Every birthday, anniversary, and festival wish costs one message from your balance. Recharge any time — a
         bigger recharge unlocks a cheaper rate per message.
+        {sharedWithOtherCompanies && ' This wallet is shared with every company under your login — recharging here funds all of them.'}
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 mb-6">
@@ -113,7 +120,7 @@ export default async function WalletPage({ searchParams }: { searchParams: { pag
 
       <div className="card p-5 mb-8">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">Recharge wallet</h2>
-        <RechargeOptions tiers={RECHARGE_TIERS} business={{ name: business.name, email: business.email }} />
+        <RechargeOptions tiers={RECHARGE_TIERS} business={{ name: walletOwner.name, email: walletOwner.email }} />
       </div>
 
       <h2 className="text-sm font-semibold text-gray-900 mb-3">Transaction history</h2>

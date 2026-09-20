@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getCurrentBusiness } from '@/lib/session';
-import { getFamilyBusinesses, rootIdOf } from '@/lib/businessFamily';
-import { prisma } from '@/lib/db';
+import { getFamilyBusinesses, getWalletOwner } from '@/lib/businessFamily';
 import DashboardShell from '@/components/DashboardShell';
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -10,18 +9,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const companies = await getFamilyBusinesses(business);
 
-  // The email shown under the company switcher is the *login* — always the
-  // root account's real email, never a member company's synthesized one
-  // (see src/lib/businessFamily.ts).
-  const loginEmail = business.ownerBusinessId
-    ? (await prisma.business.findUnique({ where: { id: rootIdOf(business) }, select: { email: true } }))?.email ?? business.email
-    : business.email;
+  // The ₹ wallet is shared across the whole family (see
+  // src/lib/businessFamily.ts) — this also gives us the root account's real
+  // login email to show under the company switcher, instead of a member
+  // company's synthesized one.
+  const walletOwner = await getWalletOwner(business);
 
   return (
     <DashboardShell
       businessName={business.name}
-      businessEmail={loginEmail}
-      walletBalancePaise={business.walletBalancePaise}
+      businessEmail={walletOwner.email}
+      walletBalancePaise={walletOwner.walletBalancePaise}
       trialCoins={business.trialCoins}
       companies={companies}
       activeBusinessId={business.id}

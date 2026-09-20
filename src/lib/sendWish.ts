@@ -7,6 +7,7 @@ import { sendAisensyCampaign } from './aisensy';
 import { servedUrlToAbsolutePath, STORAGE_DIR } from './uploads';
 import { formatDateForDisplay } from './dateUtils';
 import { COINS_PER_SEND } from './pricing';
+import { getWalletOwner } from './businessFamily';
 
 /**
  * The single place that turns "it's Priya's birthday" (or a festival) into
@@ -42,13 +43,17 @@ export async function sendWishForContact(params: {
 }) {
   const { business, contact, template, occasion } = params;
 
+  // The ₹ wallet is shared across every company under the same login (see
+  // getWalletOwner) — trial coins are the one balance that stays per-company.
+  const walletOwner = await getWalletOwner(business);
+
   // Spending gate: a send is covered either by trial coins (spent first —
-  // see COINS_PER_SEND in src/lib/pricing.ts) or by business.walletRatePaise
-  // from the ₹ wallet (locked in at their last recharge). If neither can
-  // cover one more message, skip it rather than sending for free — the
-  // business sees exactly why in their Send logs / this contact's timeline.
+  // see COINS_PER_SEND in src/lib/pricing.ts) or by the shared wallet's
+  // walletRatePaise (locked in at its last recharge). If neither can cover
+  // one more message, skip it rather than sending for free — the business
+  // sees exactly why in their Send logs / this contact's timeline.
   const useCoins = business.trialCoins >= COINS_PER_SEND;
-  if (!useCoins && business.walletBalancePaise < business.walletRatePaise) {
+  if (!useCoins && walletOwner.walletBalancePaise < walletOwner.walletRatePaise) {
     await prisma.sendLog.create({
       data: {
         businessId: business.id,
@@ -56,7 +61,7 @@ export async function sendWishForContact(params: {
         templateId: template.id,
         occasion,
         status: 'SKIPPED',
-        errorMessage: insufficientBalanceMessage(business),
+        errorMessage: insufficientBalanceMessage(walletOwner),
       },
     });
     return;
@@ -155,7 +160,7 @@ export async function sendWishForContact(params: {
   });
 
   if (status === 'SUCCESS') {
-    await chargeForSend(business, sendLog.id, `${occasionWord} wish sent to ${contact.name}`, useCoins);
+    await chargeForSend(business, walletOwner, sendLog.id, `${occasionWord} wish sent to ${contact.name}`, useCoins);
   }
 }
 
@@ -171,16 +176,20 @@ export async function sendWishForFestival(params: {
   const apiKey = resolveAisensyApiKey(business);
   const fromName = brandFirmNameText(business) || business.name;
 
+  // The ₹ wallet is shared across every company under the same login —
+  // trial coins stay per-company (see getWalletOwner in businessFamily.ts).
+  const walletOwner = await getWalletOwner(business);
+
   // Tracked locally rather than re-reading from the DB every iteration —
   // this loop runs sequentially in one process, so running totals are
   // enough to stop sending once neither pool can cover the next message,
   // even mid-batch. Trial coins are spent first, same as sendWishForContact.
-  let remainingBalance = business.walletBalancePaise;
+  let remainingBalance = walletOwner.walletBalancePaise;
   let remainingCoins = business.trialCoins;
 
   for (const contact of contacts) {
     const useCoins = remainingCoins >= COINS_PER_SEND;
-    if (!useCoins && remainingBalance < business.walletRatePaise) {
+    if (!useCoins && remainingBalance < walletOwner.walletRatePaise) {
       await prisma.sendLog.create({
         data: {
           businessId: business.id,
@@ -189,7 +198,7 @@ export async function sendWishForFestival(params: {
           templateId: template.id,
           occasion: 'FESTIVAL',
           status: 'SKIPPED',
-          errorMessage: insufficientBalanceMessage(business),
+          errorMessage: insufficientBalanceMessage(walletOwner),
         },
       });
       continue;
@@ -246,9 +255,9 @@ export async function sendWishForFestival(params: {
       if (useCoins) {
         remainingCoins -= COINS_PER_SEND;
       } else {
-        remainingBalance -= business.walletRatePaise;
+        remainingBalance -= walletOwner.walletRatePaise;
       }
-      await chargeForSend(business, sendLog.id, `${festival.name} wish sent to ${contact.name}`, useCoins);
+      await chargeForSend(business, walletOwner, sendLog.id, `${festival.name} wish sent to ${contact.name}`, useCoins);
     }
   }
 }
@@ -339,8 +348,16 @@ function insufficientBalanceMessage(business: Business): string {
  * logging to the matching transaction table so each balance keeps its own
  * clean history.
  */
-async function chargeForSend(business: Business, sendLogId: string, description: string, useCoins: boolean): Promise<void> {
+async function chargeForSend(
+  business: Business,
+  walletOwner: Business,
+  sendLogId: string,
+  description: string,
+  useCoins: boolean
+): Promise<void> {
   if (useCoins) {
+    // Trial coins are per-company, always charged to the sending business
+    // itself — never the shared wallet owner.
     await prisma.$transaction([
       prisma.business.update({
         where: { id: business.id },
@@ -358,21 +375,25 @@ async function chargeForSend(business: Business, sendLogId: string, description:
     ]);
     return;
   }
-  await debitWallet(business, sendLogId, description);
+  // Note which company this send was for when it's paid from another
+  // company's shared wallet — otherwise the root account's wallet history
+  // would just show identical-looking debits with no way to tell them apart.
+  const fullDescription = walletOwner.id === business.id ? description : `${description} — ${business.name}`;
+  await debitWallet(walletOwner, sendLogId, fullDescription);
 }
 
-/** Deducts one message's cost from the business's wallet and logs the debit, tied to the SendLog it paid for. */
-async function debitWallet(business: Business, sendLogId: string, description: string): Promise<void> {
+/** Deducts one message's cost from the wallet owner's ₹ balance and logs the debit, tied to the SendLog it paid for. */
+async function debitWallet(walletOwner: Business, sendLogId: string, description: string): Promise<void> {
   await prisma.$transaction([
     prisma.business.update({
-      where: { id: business.id },
-      data: { walletBalancePaise: { decrement: business.walletRatePaise } },
+      where: { id: walletOwner.id },
+      data: { walletBalancePaise: { decrement: walletOwner.walletRatePaise } },
     }),
     prisma.walletTransaction.create({
       data: {
-        businessId: business.id,
+        businessId: walletOwner.id,
         type: 'DEBIT',
-        amountPaise: business.walletRatePaise,
+        amountPaise: walletOwner.walletRatePaise,
         description,
         sendLogId,
       },

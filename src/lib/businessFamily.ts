@@ -35,3 +35,17 @@ export async function getFamilyBusinesses(business: Pick<Business, 'id' | 'owner
 export function rootIdOf(business: Pick<Business, 'id' | 'ownerBusinessId'>): string {
   return business.ownerBusinessId ?? business.id;
 }
+
+/**
+ * The ₹ wallet is shared across a whole family — one recharge funds every
+ * company created under a login, rather than needing to top up each one
+ * separately. This resolves whichever business "owns" that shared wallet:
+ * the root itself for a standalone business (unchanged, the common case),
+ * or the root's own fresh row for a member company. Trial coins are NOT
+ * shared — those stay a per-company balance (see TrialCoinTransaction).
+ */
+export async function getWalletOwner(business: Business): Promise<Business> {
+  if (!business.ownerBusinessId) return business;
+  const root = await prisma.business.findUnique({ where: { id: business.ownerBusinessId } });
+  return root ?? business;
+}

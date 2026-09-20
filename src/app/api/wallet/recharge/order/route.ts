@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireApiBusiness } from '@/lib/session';
+import { getWalletOwner } from '@/lib/businessFamily';
 import { createRazorpayOrder } from '@/lib/razorpay';
 import { MIN_RECHARGE_RUPEES, rateForRechargeAmount, rupeesToPaise } from '@/lib/pricing';
 
@@ -26,13 +27,18 @@ export async function POST(req: NextRequest) {
   const amountPaise = rupeesToPaise(amountRupees);
   const ratePaise = rateForRechargeAmount(amountRupees);
 
+  // The ₹ wallet is shared across every company under the same login — a
+  // recharge always funds the root account's wallet, whichever company it
+  // was started from (see src/lib/businessFamily.ts).
+  const walletOwner = await getWalletOwner(business);
+
   let razorpayOrder;
   try {
     razorpayOrder = await createRazorpayOrder({
       amountPaise,
       // Razorpay caps receipt at 40 chars — keep it short but traceable.
-      receipt: `wal_${business.id.slice(-12)}_${Date.now()}`,
-      notes: { businessId: business.id, businessName: business.name },
+      receipt: `wal_${walletOwner.id.slice(-12)}_${Date.now()}`,
+      notes: { businessId: walletOwner.id, businessName: walletOwner.name },
     });
   } catch (err) {
     return NextResponse.json(
@@ -43,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   await prisma.rechargeOrder.create({
     data: {
-      businessId: business.id,
+      businessId: walletOwner.id,
       amountPaise,
       ratePaise,
       razorpayOrderId: razorpayOrder.id,
@@ -55,6 +61,6 @@ export async function POST(req: NextRequest) {
     orderId: razorpayOrder.id,
     amountPaise,
     keyId: process.env.RAZORPAY_KEY_ID,
-    business: { name: business.name, email: business.email, phone: business.ownerWhatsapp },
+    business: { name: walletOwner.name, email: walletOwner.email, phone: walletOwner.ownerWhatsapp },
   });
 }

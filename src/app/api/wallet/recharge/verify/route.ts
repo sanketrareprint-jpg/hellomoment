@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireApiBusiness } from '@/lib/session';
+import { getWalletOwner } from '@/lib/businessFamily';
 import { verifyRazorpaySignature } from '@/lib/razorpay';
 
 const schema = z.object({
@@ -21,8 +22,12 @@ export async function POST(req: NextRequest) {
   }
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = parsed.data;
 
+  // The order was created against the wallet owner (see
+  // /api/wallet/recharge/order), which may be this business's root account
+  // rather than itself — check against that, not `business.id`.
+  const walletOwner = await getWalletOwner(business);
   const order = await prisma.rechargeOrder.findUnique({ where: { razorpayOrderId: razorpay_order_id } });
-  if (!order || order.businessId !== business.id) {
+  if (!order || order.businessId !== walletOwner.id) {
     return NextResponse.json({ error: 'Order not found' }, { status: 404 });
   }
 
@@ -54,7 +59,7 @@ export async function POST(req: NextRequest) {
       data: { status: 'PAID', paidAt: new Date() },
     }),
     prisma.business.update({
-      where: { id: business.id },
+      where: { id: walletOwner.id },
       data: {
         walletBalancePaise: { increment: order.amountPaise },
         walletRatePaise: order.ratePaise,
@@ -62,7 +67,7 @@ export async function POST(req: NextRequest) {
     }),
     prisma.walletTransaction.create({
       data: {
-        businessId: business.id,
+        businessId: walletOwner.id,
         type: 'RECHARGE',
         amountPaise: order.amountPaise,
         description: `Wallet recharge — ₹${(order.ratePaise / 100).toFixed(2)}/message rate`,
