@@ -29,6 +29,7 @@ const placeholderSchema = z.object({
 
 const previewSchema = z.object({
   overlayUrl: z.string().nullable().optional(),
+  overlayHue: z.number().int().min(0).max(360).optional(),
   canvasWidth: z.number().int().positive(),
   canvasHeight: z.number().int().positive(),
   logoPlaceholder: placeholderSchema.nullable().optional(),
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest) {
   // renderFlyer, which these mirror exactly.
   const frame = parsed.data as {
     overlayUrl?: string | null;
+    overlayHue?: number | null;
     canvasWidth: number;
     canvasHeight: number;
     logoPlaceholder?: LogoPlaceholder | null;
@@ -129,6 +131,7 @@ export async function POST(req: NextRequest) {
     canvasWidth: template.canvasWidth,
     canvasHeight: template.canvasHeight,
     overlayPath,
+    overlayHue: frame.overlayHue,
     namePlaceholder: template.namePlaceholder ? (JSON.parse(template.namePlaceholder) as TextPlaceholder) : null,
     name: SAMPLE_NAME,
     designationPlaceholder: designationPlaceholder as TextPlaceholder | null,

@@ -9,10 +9,11 @@ export interface BusinessFrameRow {
   id: string;
   name: string;
   overlayUrl: string | null;
+  overlayHue?: number | null;
   isDefault: boolean;
 }
 
-function FramePreview({ overlayUrl, name }: { overlayUrl: string | null; name: string }) {
+function FramePreview({ overlayUrl, overlayHue, name }: { overlayUrl: string | null; overlayHue?: number | null; name: string }) {
   return (
     <div
       className="w-full h-40 flex items-center justify-center"
@@ -27,7 +28,12 @@ function FramePreview({ overlayUrl, name }: { overlayUrl: string | null; name: s
     >
       {overlayUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={overlayUrl} alt={name} className="w-full h-full object-contain" />
+        <img
+          src={overlayUrl}
+          alt={name}
+          className="w-full h-full object-contain"
+          style={{ filter: overlayHue ? `hue-rotate(${overlayHue}deg)` : undefined }}
+        />
       ) : (
         <span className="text-xs text-gray-500">Positions only — no overlay graphic</span>
       )}
@@ -88,7 +94,7 @@ export default function FramesGrid({ frames }: { frames: BusinessFrameRow[] }) {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((f) => (
             <div key={f.id} className="card overflow-hidden">
-              <FramePreview overlayUrl={f.overlayUrl} name={f.name} />
+              <FramePreview overlayUrl={f.overlayUrl} overlayHue={f.overlayHue} name={f.name} />
               <div className="p-4">
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-gray-900">{f.name}</h3>

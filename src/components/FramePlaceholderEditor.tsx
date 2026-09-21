@@ -18,6 +18,7 @@ export const EMPTY_FRAME: FrameFormValues = {
   name: '',
   isDefault: false,
   overlayUrl: '',
+  overlayHue: 0,
   canvasWidth: 1080,
   canvasHeight: 1080,
   // Logo, firm name, email, website and address are the fields a business
@@ -37,6 +38,12 @@ export const EMPTY_FRAME: FrameFormValues = {
 
 const MAX_PREVIEW_WIDTH = 720;
 type DragTarget = FieldKey | null;
+
+// Quick-pick swatches for the overlay recolor control — evenly spread
+// hue-rotate degrees (0 = the overlay's original, uploaded color) rendered
+// as actual thumbnails of the overlay graphic so what's shown is exactly
+// what picking it will look like, not an abstract color chip.
+const OVERLAY_HUE_PRESETS = [0, 45, 90, 135, 180, 225, 270, 315];
 
 // Same fields/icons as BRAND_FIELDS in TemplatePlaceholderEditor.tsx —
 // duplicated rather than imported (that file has other client-only state
@@ -376,6 +383,7 @@ export default function FramePlaceholderEditor({
       setForm((f) => ({
         ...f,
         overlayUrl: data.url,
+        overlayHue: 0,
         canvasWidth: data.width,
         canvasHeight: data.height,
         ...frameDefaultsFor(data.width, data.height),
@@ -478,6 +486,7 @@ export default function FramePlaceholderEditor({
       const payload = {
         name: form.name,
         overlayUrl: form.overlayUrl || null,
+        overlayHue: form.overlayHue,
         canvasWidth: form.canvasWidth,
         canvasHeight: form.canvasHeight,
         ...(showPerBusinessOptions ? { isDefault: form.isDefault } : {}),
@@ -532,6 +541,7 @@ export default function FramePlaceholderEditor({
     try {
       const payload = {
         overlayUrl: form.overlayUrl || null,
+        overlayHue: form.overlayHue,
         canvasWidth: form.canvasWidth,
         canvasHeight: form.canvasHeight,
         logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
@@ -663,6 +673,56 @@ export default function FramePlaceholderEditor({
                   Remove overlay graphic
                 </button>
               )}
+            </div>
+          )}
+          {form.overlayUrl && (
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="label mb-0">Overlay color</label>
+                {form.overlayHue !== 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, overlayHue: 0 }))}
+                    className="text-xs text-gray-500 hover:text-gray-700"
+                  >
+                    Reset to original
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-0.5 mb-1.5">
+                Shifts the overlay graphic&rsquo;s existing colors — same gradient/design, different color combination.
+                No need to upload a separate image per color.
+              </p>
+              <div className="flex items-center gap-2 mb-1.5">
+                {OVERLAY_HUE_PRESETS.map((hue) => (
+                  <button
+                    key={hue}
+                    type="button"
+                    title={hue === 0 ? 'Original color' : `Shift ${hue}°`}
+                    onClick={() => setForm((f) => ({ ...f, overlayHue: hue }))}
+                    className={
+                      'w-7 h-7 rounded-full border-2 overflow-hidden flex-shrink-0 ' +
+                      (form.overlayHue === hue ? 'border-brand-500 ring-2 ring-brand-200' : 'border-gray-200')
+                    }
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={form.overlayUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                      style={{ filter: hue ? `hue-rotate(${hue}deg)` : undefined }}
+                    />
+                  </button>
+                ))}
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={359}
+                value={form.overlayHue}
+                onChange={(e) => setForm((f) => ({ ...f, overlayHue: Number(e.target.value) }))}
+                className="w-full"
+              />
             </div>
           )}
         </div>
@@ -879,7 +939,12 @@ export default function FramePlaceholderEditor({
         >
           {form.overlayUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={form.overlayUrl} alt="Frame overlay" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+            <img
+              src={form.overlayUrl}
+              alt="Frame overlay"
+              className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+              style={{ filter: form.overlayHue ? `hue-rotate(${form.overlayHue}deg)` : undefined }}
+            />
           )}
 
           {showGrid && (

@@ -47,6 +47,7 @@ export default async function FramesPage({ searchParams }: { searchParams: { fol
     id: f.id,
     name: f.name,
     overlayUrl: f.overlayUrl,
+    overlayHue: f.overlayHue,
     canvasWidth: f.canvasWidth,
     canvasHeight: f.canvasHeight,
     placeholders: {

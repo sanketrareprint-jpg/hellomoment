@@ -22,6 +22,7 @@ export default async function EditAdminFramePage({ params }: { params: { id: str
     name: frame.name,
     isDefault: false,
     overlayUrl: frame.overlayUrl ?? '',
+    overlayHue: frame.overlayHue,
     canvasWidth: frame.canvasWidth,
     canvasHeight: frame.canvasHeight,
     useLogo: Boolean(logoPlaceholder),

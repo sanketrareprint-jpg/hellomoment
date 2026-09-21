@@ -39,6 +39,7 @@ export default async function EditFramePage({ params }: { params: { id: string }
     name: frame.name,
     isDefault: frame.isDefault,
     overlayUrl: frame.overlayUrl ?? '',
+    overlayHue: frame.overlayHue,
     canvasWidth: frame.canvasWidth,
     canvasHeight: frame.canvasHeight,
     useLogo: Boolean(logoPlaceholder),

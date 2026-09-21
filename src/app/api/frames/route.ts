@@ -26,6 +26,7 @@ const placeholderSchema = z.object({
 const frameSchema = z.object({
   name: z.string().min(1),
   overlayUrl: z.string().nullable().optional(),
+  overlayHue: z.number().int().min(0).max(360).optional(),
   canvasWidth: z.number().int().positive(),
   canvasHeight: z.number().int().positive(),
   logoPlaceholder: placeholderSchema.nullable().optional(),
