@@ -19,7 +19,7 @@ export const EMPTY_FRAME: FrameFormValues = {
   isDefault: false,
   overlayUrl: '',
   canvasWidth: 1080,
-  canvasHeight: 1080,
+  canvasHeight: 5400,
   // Logo, firm name, email, website and address are the fields a business
   // most commonly wants on every flyer — on by default. Phone and products
   // are still available but start off, same reasoning as the per-template
@@ -32,7 +32,7 @@ export const EMPTY_FRAME: FrameFormValues = {
   useAddress: true,
   useWebsite: true,
   useProducts: false,
-  ...frameDefaultsFor(1080, 1080),
+  ...frameDefaultsFor(1080, 5400),
 };
 
 const MAX_PREVIEW_WIDTH = 720;
@@ -652,10 +652,11 @@ export default function FramePlaceholderEditor({
           {showOverlayUpload && (
             <div>
               <label className="label">Decorative overlay graphic (optional)</label>
-              <input type="file" accept="image/png,image/webp,image/jpeg" onChange={onOverlayChange} />
+              <input type="file" accept="image/webp" onChange={onOverlayChange} />
               <p className="text-xs text-gray-500 mt-1">
-                PNG with transparency works best — it&rsquo;s drawn on top of every flyer&rsquo;s own background, behind the
-                text/logo below. Leave this blank for a plain frame that just positions your branding text.
+                WebP in a 1:5 (width:height) ratio works best — it&rsquo;s drawn on top of every flyer&rsquo;s own
+                background, behind the text/logo below. Leave this blank for a plain frame that just positions your
+                branding text.
               </p>
               {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
               {form.overlayUrl && (
