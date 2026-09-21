@@ -554,6 +554,15 @@ export default function FramePlaceholderEditor({
   async function generateFinalPreview() {
     setFinalPreview({ loading: true, url: null, error: null });
     try {
+      // The selected field's brand text (address/phone/email/website/
+      // products) normally saves on blur, but that's a separate, unawaited
+      // PATCH — clicking here right after typing can otherwise race it,
+      // making the preview render the still-stale DB value. Awaiting it
+      // here guarantees whatever's currently in the box is persisted before
+      // the preview endpoint reads it back from the database.
+      if (selected && brandKeyFor(selected)) {
+        await saveBrandText(selected);
+      }
       const frameId = await saveFrame();
       const res = await fetch('/api/frames/preview', {
         method: 'POST',
