@@ -283,6 +283,10 @@ export default function TemplatePlaceholderEditor({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Shown briefly next to "Save changes" — saving no longer navigates away
+  // (see onSubmit below), so this is the only feedback that the click did
+  // something.
+  const [justSaved, setJustSaved] = useState(false);
   // Advanced options (currently just the AiSensy campaign override) are
   // hidden by default — almost no business ever needs this, so showing it
   // on every template just confuses people. Auto-open it if a template
@@ -877,8 +881,17 @@ export default function TemplatePlaceholderEditor({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
-      router.push(redirectPath);
+      // Stay on this page instead of bouncing back to the list — just swap
+      // a freshly-created template's URL over to its own edit page (so a
+      // second save PUTs instead of re-POSTing a duplicate) and flash a
+      // "Saved" confirmation.
+      if (!form.id) {
+        setForm((f) => ({ ...f, id: data.template.id }));
+        router.replace(`${redirectPath.split('?')[0]}/${data.template.id}/edit`);
+      }
       router.refresh();
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -1374,13 +1387,14 @@ export default function TemplatePlaceholderEditor({
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button type="submit" disabled={loading || uploading} className="btn-primary">
             {loading ? 'Saving…' : form.id ? 'Save changes' : 'Create template'}
           </button>
           <button type="button" className="btn-secondary" onClick={() => router.push(redirectPath)}>
             Cancel
           </button>
+          {justSaved && <span className="text-sm text-green-600 font-medium">Saved</span>}
         </div>
       </div>
 
