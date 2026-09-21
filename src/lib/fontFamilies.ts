@@ -86,6 +86,11 @@ export const FONT_FAMILIES: FontFamilyOption[] = [
   },
 ];
 
+/** CSS font-family value for a given font id, falling back to the default face. */
+export function resolveCssFontFamily(id?: string): string {
+  return (FONT_FAMILIES.find((f) => f.id === id) ?? FONT_FAMILIES.find((f) => f.id === 'default'))!.cssFamily;
+}
+
 /** The Google Fonts CSS2 URL that loads every non-default face for the browser preview. */
 export const GOOGLE_FONTS_HREF =
   'https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Oswald:wght@400;700&family=Arimo:wght@400;700&family=Tinos:wght@400;700&family=Carlito:wght@400;700&family=Gelasio:wght@400;700&display=swap';

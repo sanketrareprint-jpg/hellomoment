@@ -1126,9 +1126,14 @@ export default function TemplatePlaceholderEditor({
                   <div className="grid grid-cols-3 gap-1.5 mb-1.5">
                     <div>
                       <label className="label">Font</label>
-                      <select className="input" value={groupFontFamily} onChange={(e) => setGroupFontFamily(e.target.value as FontFamilyId)}>
+                      <select
+                        className="input"
+                        style={{ fontFamily: cssFontFamilyFor(groupFontFamily) }}
+                        value={groupFontFamily}
+                        onChange={(e) => setGroupFontFamily(e.target.value as FontFamilyId)}
+                      >
                         {FONT_FAMILIES.map((f) => (
-                          <option key={f.id} value={f.id}>
+                          <option key={f.id} value={f.id} style={{ fontFamily: f.cssFamily }}>
                             {f.label}
                           </option>
                         ))}
