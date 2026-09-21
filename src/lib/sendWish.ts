@@ -271,7 +271,7 @@ export async function sendWishForFestival(params: {
  * auto-transliteration from the English name isn't reliable enough to do
  * automatically).
  */
-function brandFirmNameText(business: Business): string | null {
+export function brandFirmNameText(business: Business): string | null {
   if (business.firmNameScript === 'MARATHI') {
     return business.firmNameMarathi || business.name || null;
   }

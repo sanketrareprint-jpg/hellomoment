@@ -111,6 +111,17 @@ export default function FramePlaceholderEditor({
   const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<FieldKey | null>(null);
   const [showGrid, setShowGrid] = useState(true);
+  // "Generate preview" below renders the *actual* flyer — same compositing
+  // pipeline a real send uses (see /api/frames/preview and sendWish.ts) —
+  // onto the business's default birthday template, as opposed to the
+  // HTML/CSS placeholder preview further down which only stands in for
+  // "whichever template the frame ends up on top of". Keeping both lets a
+  // mismatch between the two (a rendering bug) be caught here directly.
+  const [finalPreview, setFinalPreview] = useState<{ loading: boolean; url: string | null; error: string | null }>({
+    loading: false,
+    url: null,
+    error: null,
+  });
   const previewRef = useRef<HTMLDivElement>(null);
   const previewColumnRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
@@ -488,6 +499,34 @@ export default function FramePlaceholderEditor({
     }
   }
 
+  async function generateFinalPreview() {
+    setFinalPreview({ loading: true, url: null, error: null });
+    try {
+      const payload = {
+        overlayUrl: form.overlayUrl || null,
+        canvasWidth: form.canvasWidth,
+        canvasHeight: form.canvasHeight,
+        logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
+        firmNamePlaceholder: isFieldOn('firmName') ? form.firmNamePlaceholder : null,
+        phonePlaceholder: isFieldOn('phone') ? form.phonePlaceholder : null,
+        emailPlaceholder: isFieldOn('email') ? form.emailPlaceholder : null,
+        addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
+        websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
+        productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
+      };
+      const res = await fetch('/api/frames/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not generate preview');
+      setFinalPreview({ loading: false, url: data.url, error: null });
+    } catch (err) {
+      setFinalPreview({ loading: false, url: null, error: err instanceof Error ? err.message : 'Could not generate preview' });
+    }
+  }
+
   function selectAndEnable(key: FieldKey) {
     setSelected(key);
     if (!isFieldOn(key)) setFieldOn(key, true);
@@ -534,6 +573,31 @@ export default function FramePlaceholderEditor({
       label={selectedDef?.label}
       onNudge={nudgeSelected}
     />
+    {finalPreview.url && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+        onClick={() => setFinalPreview((s) => ({ ...s, url: null }))}
+      >
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-3" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-1.5">
+            <h3 className="text-sm font-semibold text-gray-900">Preview (default birthday template)</h3>
+            <button
+              type="button"
+              onClick={() => setFinalPreview((s) => ({ ...s, url: null }))}
+              className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mb-2">
+            This is the actual flyer a customer would receive with this frame — not the placeholder preview.
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={finalPreview.url} alt="Final flyer preview" className="w-full rounded-md border border-gray-200" />
+        </div>
+      </div>
+    )}
     <form onSubmit={onSubmit} className="compact-form grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="space-y-2">
         <div className="card p-2 space-y-1.5">
@@ -733,11 +797,24 @@ export default function FramePlaceholderEditor({
             Drag the labeled markers to position them. This preview stands in for whichever flyer template the frame
             ends up on top of.
           </p>
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap ml-2">
-            <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
-            Show grid
-          </label>
+          <div className="flex items-center gap-3 ml-2">
+            {business && (
+              <button
+                type="button"
+                onClick={generateFinalPreview}
+                disabled={finalPreview.loading}
+                className="text-xs font-medium text-brand-600 hover:underline whitespace-nowrap disabled:opacity-60"
+              >
+                {finalPreview.loading ? 'Generating…' : 'Generate preview'}
+              </button>
+            )}
+            <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap">
+              <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
+              Show grid
+            </label>
+          </div>
         </div>
+        {finalPreview.error && <p className="text-xs text-red-600 mb-2">{finalPreview.error}</p>}
         <div
           ref={previewRef}
           onPointerMove={onPointerMove}
