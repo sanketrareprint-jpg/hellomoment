@@ -111,6 +111,10 @@ export default function FramePlaceholderEditor({
   const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<FieldKey | null>(null);
   const [showGrid, setShowGrid] = useState(true);
+  // Admin-only: after saving, push this frame's field layout onto every
+  // other frame in the library (see /api/admin/frames/apply-layout) — lets
+  // admin position fields once instead of repeating it per uploaded overlay.
+  const [applyToAllFrames, setApplyToAllFrames] = useState(false);
   // "Generate preview" below renders the *actual* flyer — same compositing
   // pipeline a real send uses (see /api/frames/preview and sendWish.ts) —
   // onto the business's default birthday template, as opposed to the
@@ -490,6 +494,17 @@ export default function FramePlaceholderEditor({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Something went wrong');
+
+      if (!showPerBusinessOptions && applyToAllFrames && data.frame?.id) {
+        const applyRes = await fetch('/api/admin/frames/apply-layout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sourceFrameId: data.frame.id }),
+        });
+        const applyData = await applyRes.json().catch(() => null);
+        if (!applyRes.ok) throw new Error(applyData?.error || 'Saved this frame, but could not apply its layout to the others');
+      }
+
       router.push(redirectPath);
       router.refresh();
     } catch (err) {
@@ -778,6 +793,22 @@ export default function FramePlaceholderEditor({
             </div>
           )}
         </div>
+
+        {!showPerBusinessOptions && (
+          <label className="flex items-start gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              className="mt-0.5"
+              checked={applyToAllFrames}
+              onChange={(e) => setApplyToAllFrames(e.target.checked)}
+            />
+            <span>
+              Apply these field positions to every frame in the library — saves this frame, then copies its logo/firm
+              name/phone/email/address/website/products layout (scaled to fit) onto every other frame, so businesses
+              don&rsquo;t need it repositioned per design.
+            </span>
+          </label>
+        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
