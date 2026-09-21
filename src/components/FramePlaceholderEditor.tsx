@@ -466,57 +466,65 @@ export default function FramePlaceholderEditor({
     setTextPlaceholder(key, { ...p, x: p.x + dx, y: p.y + dy });
   }
 
+  // Persists the current form state (create or update, matching onSubmit's
+  // own POST/PUT choice) and returns the saved frame's id. Shared by
+  // onSubmit and generateFinalPreview so a preview can never be generated
+  // from an unsaved layout — see generateFinalPreview's own comment.
+  async function saveFrame(): Promise<string> {
+    if (!form.name.trim()) {
+      throw new Error('Please give this frame a name.');
+    }
+    const payload = {
+      name: form.name,
+      overlayUrl: form.overlayUrl || null,
+      canvasWidth: form.canvasWidth,
+      canvasHeight: form.canvasHeight,
+      ...(showPerBusinessOptions ? { isDefault: form.isDefault } : {}),
+      logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
+      firmNamePlaceholder: isFieldOn('firmName') ? form.firmNamePlaceholder : null,
+      phonePlaceholder: isFieldOn('phone') ? form.phonePlaceholder : null,
+      emailPlaceholder: isFieldOn('email') ? form.emailPlaceholder : null,
+      addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
+      websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
+      productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
+    };
+    const url = form.id ? `${apiBase}/${form.id}` : apiBase;
+    const method = form.id ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong');
+
+    // Stay on this page instead of bouncing back to the list — just swap
+    // a freshly-created frame's URL over to its own edit page (so a
+    // second save PUTs instead of re-POSTing a duplicate).
+    if (!form.id) {
+      setForm((f) => ({ ...f, id: data.frame.id }));
+      router.replace(`${redirectPath.split('?')[0]}/${data.frame.id}/edit`);
+    }
+    return form.id ?? data.frame.id;
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!form.name.trim()) {
-      setError('Please give this frame a name.');
-      return;
-    }
     setLoading(true);
     try {
-      const payload = {
-        name: form.name,
-        overlayUrl: form.overlayUrl || null,
-        canvasWidth: form.canvasWidth,
-        canvasHeight: form.canvasHeight,
-        ...(showPerBusinessOptions ? { isDefault: form.isDefault } : {}),
-        logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
-        firmNamePlaceholder: isFieldOn('firmName') ? form.firmNamePlaceholder : null,
-        phonePlaceholder: isFieldOn('phone') ? form.phonePlaceholder : null,
-        emailPlaceholder: isFieldOn('email') ? form.emailPlaceholder : null,
-        addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
-        websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
-        productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
-      };
-      const url = form.id ? `${apiBase}/${form.id}` : apiBase;
-      const method = form.id ? 'PUT' : 'POST';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Something went wrong');
+      const savedId = await saveFrame();
 
-      if (!showPerBusinessOptions && applyToAllFrames && data.frame?.id) {
+      if (!showPerBusinessOptions && applyToAllFrames) {
         const applyRes = await fetch('/api/admin/frames/apply-layout', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sourceFrameId: data.frame.id }),
+          body: JSON.stringify({ sourceFrameId: savedId }),
         });
         const applyData = await applyRes.json().catch(() => null);
         if (!applyRes.ok) throw new Error(applyData?.error || 'Saved this frame, but could not apply its layout to the others');
       }
 
-      // Stay on this page instead of bouncing back to the list — just swap
-      // a freshly-created frame's URL over to its own edit page (so a
-      // second save PUTs instead of re-POSTing a duplicate) and flash a
-      // "Saved" confirmation.
-      if (!form.id) {
-        setForm((f) => ({ ...f, id: data.frame.id }));
-        router.replace(`${redirectPath.split('?')[0]}/${data.frame.id}/edit`);
-      }
       router.refresh();
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2500);
@@ -527,29 +535,26 @@ export default function FramePlaceholderEditor({
     }
   }
 
+  // Renders the *actual* flyer — same compositing pipeline a real send uses
+  // (see /api/frames/preview and sendWish.ts) — onto the business's default
+  // birthday template. Saves the current form state first (via saveFrame)
+  // and asks the preview endpoint to render that saved frame by id, so this
+  // can never show a layout a real send wouldn't actually produce — a
+  // mismatch that used to happen whenever this was generated from unsaved
+  // edits while a real send kept reading the last-saved (different) layout.
   async function generateFinalPreview() {
     setFinalPreview({ loading: true, url: null, error: null });
     try {
-      const payload = {
-        overlayUrl: form.overlayUrl || null,
-        canvasWidth: form.canvasWidth,
-        canvasHeight: form.canvasHeight,
-        logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
-        firmNamePlaceholder: isFieldOn('firmName') ? form.firmNamePlaceholder : null,
-        phonePlaceholder: isFieldOn('phone') ? form.phonePlaceholder : null,
-        emailPlaceholder: isFieldOn('email') ? form.emailPlaceholder : null,
-        addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
-        websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
-        productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
-      };
+      const frameId = await saveFrame();
       const res = await fetch('/api/frames/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ frameId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Could not generate preview');
       setFinalPreview({ loading: false, url: data.url, error: null });
+      router.refresh();
     } catch (err) {
       setFinalPreview({ loading: false, url: null, error: err instanceof Error ? err.message : 'Could not generate preview' });
     }
@@ -619,7 +624,8 @@ export default function FramePlaceholderEditor({
             </button>
           </div>
           <p className="text-xs text-gray-500 mb-2">
-            This is the actual flyer a customer would receive with this frame — not the placeholder preview.
+            Generating this saved your current changes, then rendered this frame exactly as a customer would receive
+            it — not the placeholder preview below.
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={finalPreview.url} alt="Final flyer preview" className="w-full rounded-md border border-gray-200" />
@@ -848,9 +854,10 @@ export default function FramePlaceholderEditor({
                 type="button"
                 onClick={generateFinalPreview}
                 disabled={finalPreview.loading}
+                title="Saves your current changes, then renders the actual flyer with this frame"
                 className="text-xs font-medium text-brand-600 hover:underline whitespace-nowrap disabled:opacity-60"
               >
-                {finalPreview.loading ? 'Generating…' : 'Generate preview'}
+                {finalPreview.loading ? 'Saving & generating…' : 'Save & generate preview'}
               </button>
             )}
             <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap">

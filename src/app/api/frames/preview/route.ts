@@ -11,45 +11,25 @@ import type { TextPlaceholder, LogoPlaceholder } from '@/lib/flyerPlaceholders';
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import { brandFirmNameText } from '@/lib/sendWish';
 
-// Same shape as POST/PUT /api/frames — the editor sends whatever is
-// currently on screen (not necessarily saved yet), so "Generate preview"
-// reflects live edits without forcing a save first.
-const placeholderSchema = z.object({
-  x: z.number(),
-  y: z.number(),
-  fontSize: z.number().optional(),
-  color: z.string().optional(),
-  fontWeight: z.union([z.number(), z.string()]).optional(),
-  fontFamily: z.string().optional(),
-  align: z.enum(['left', 'center', 'right']).optional(),
-  size: z.number().optional(),
-  rotation: z.number().optional(),
-  locked: z.boolean().optional(),
-});
-
+// Takes only a saved frame's id — the editor saves the frame first, then
+// calls this with its id (see FramePlaceholderEditor.tsx's
+// generateFinalPreview). That guarantees this renders the exact same
+// persisted placeholders a real send reads (see sendWish.ts's renderFlyer),
+// so "Generate preview" can no longer show a layout that a customer would
+// never actually receive.
 const previewSchema = z.object({
-  overlayUrl: z.string().nullable().optional(),
-  canvasWidth: z.number().int().positive(),
-  canvasHeight: z.number().int().positive(),
-  logoPlaceholder: placeholderSchema.nullable().optional(),
-  firmNamePlaceholder: placeholderSchema.nullable().optional(),
-  phonePlaceholder: placeholderSchema.nullable().optional(),
-  emailPlaceholder: placeholderSchema.nullable().optional(),
-  addressPlaceholder: placeholderSchema.nullable().optional(),
-  websitePlaceholder: placeholderSchema.nullable().optional(),
-  productsPlaceholder: placeholderSchema.nullable().optional(),
+  frameId: z.string().min(1),
 });
 
 // A sample contact used only for this preview render — never saved anywhere.
 const SAMPLE_NAME = 'Priya Sharma';
 
 /**
- * Renders this frame (as currently being edited, not necessarily saved) onto
- * the business's default birthday template using the exact same compositing
- * pipeline as a real send (see sendWish.ts's renderFlyer) — so what this
- * returns is pixel-for-pixel what a customer would actually receive, not an
- * HTML/CSS approximation like the editor's live preview. Lets a business
- * (or us) catch any drift between the two.
+ * Renders a business's saved Frame onto their default birthday template
+ * using the exact same compositing pipeline as a real send (see
+ * sendWish.ts's renderFlyer) — so what this returns is pixel-for-pixel what
+ * a customer would actually receive, not an HTML/CSS approximation like the
+ * editor's live preview.
  */
 export async function POST(req: NextRequest) {
   const business = await requireApiBusiness(req);
@@ -60,21 +40,11 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' }, { status: 400 });
   }
-  // Cast the zod-validated shape to the stricter runtime types below — same
-  // trust boundary as JSON.parse(defaultFrame.xPlaceholder) in sendWish.ts's
-  // renderFlyer, which these mirror exactly.
-  const frame = parsed.data as {
-    overlayUrl?: string | null;
-    canvasWidth: number;
-    canvasHeight: number;
-    logoPlaceholder?: LogoPlaceholder | null;
-    firmNamePlaceholder?: TextPlaceholder | null;
-    phonePlaceholder?: TextPlaceholder | null;
-    emailPlaceholder?: TextPlaceholder | null;
-    addressPlaceholder?: TextPlaceholder | null;
-    websitePlaceholder?: TextPlaceholder | null;
-    productsPlaceholder?: TextPlaceholder | null;
-  };
+
+  const frame = await prisma.businessFrame.findUnique({ where: { id: parsed.data.frameId } });
+  if (!frame || frame.businessId !== business.id) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 
   const template = await prisma.flyerTemplate.findFirst({
     where: { businessId: business.id, occasion: 'BIRTHDAY', isDefault: true },
@@ -97,25 +67,25 @@ export async function POST(req: NextRequest) {
   );
 
   const logoPlaceholder: LogoPlaceholder | null = frame.logoPlaceholder
-    ? scaleLogoPlaceholder(frame.logoPlaceholder, frameScale, frameTopOffset)
+    ? scaleLogoPlaceholder(JSON.parse(frame.logoPlaceholder), frameScale, frameTopOffset)
     : null;
   const firmNamePlaceholder: TextPlaceholder | null = frame.firmNamePlaceholder
-    ? scaleTextPlaceholder(frame.firmNamePlaceholder, frameScale, frameTopOffset)
+    ? scaleTextPlaceholder(JSON.parse(frame.firmNamePlaceholder), frameScale, frameTopOffset)
     : null;
   const phonePlaceholder: TextPlaceholder | null = frame.phonePlaceholder
-    ? scaleTextPlaceholder(frame.phonePlaceholder, frameScale, frameTopOffset)
+    ? scaleTextPlaceholder(JSON.parse(frame.phonePlaceholder), frameScale, frameTopOffset)
     : null;
   const emailPlaceholder: TextPlaceholder | null = frame.emailPlaceholder
-    ? scaleTextPlaceholder(frame.emailPlaceholder, frameScale, frameTopOffset)
+    ? scaleTextPlaceholder(JSON.parse(frame.emailPlaceholder), frameScale, frameTopOffset)
     : null;
   const addressPlaceholder: TextPlaceholder | null = frame.addressPlaceholder
-    ? scaleTextPlaceholder(frame.addressPlaceholder, frameScale, frameTopOffset)
+    ? scaleTextPlaceholder(JSON.parse(frame.addressPlaceholder), frameScale, frameTopOffset)
     : null;
   const websitePlaceholder: TextPlaceholder | null = frame.websitePlaceholder
-    ? scaleTextPlaceholder(frame.websitePlaceholder, frameScale, frameTopOffset)
+    ? scaleTextPlaceholder(JSON.parse(frame.websitePlaceholder), frameScale, frameTopOffset)
     : null;
   const productsPlaceholder: TextPlaceholder | null = frame.productsPlaceholder
-    ? scaleTextPlaceholder(frame.productsPlaceholder, frameScale, frameTopOffset)
+    ? scaleTextPlaceholder(JSON.parse(frame.productsPlaceholder), frameScale, frameTopOffset)
     : null;
   const overlayPath = frame.overlayUrl ? servedUrlToAbsolutePath(frame.overlayUrl) : null;
 
