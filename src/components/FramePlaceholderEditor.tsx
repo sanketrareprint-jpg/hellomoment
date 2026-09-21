@@ -109,6 +109,10 @@ export default function FramePlaceholderEditor({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Shown briefly next to "Save changes" — saving no longer navigates away
+  // (see onSubmit below), so this is the only feedback that the click did
+  // something.
+  const [justSaved, setJustSaved] = useState(false);
   const [selected, setSelected] = useState<FieldKey | null>(null);
   const [showGrid, setShowGrid] = useState(true);
   // Admin-only: after saving, push this frame's field layout onto every
@@ -505,8 +509,17 @@ export default function FramePlaceholderEditor({
         if (!applyRes.ok) throw new Error(applyData?.error || 'Saved this frame, but could not apply its layout to the others');
       }
 
-      router.push(redirectPath);
+      // Stay on this page instead of bouncing back to the list — just swap
+      // a freshly-created frame's URL over to its own edit page (so a
+      // second save PUTs instead of re-POSTing a duplicate) and flash a
+      // "Saved" confirmation.
+      if (!form.id) {
+        setForm((f) => ({ ...f, id: data.frame.id }));
+        router.replace(`${redirectPath.split('?')[0]}/${data.frame.id}/edit`);
+      }
       router.refresh();
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
@@ -812,13 +825,14 @@ export default function FramePlaceholderEditor({
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex gap-3">
+        <div className="flex items-center gap-3">
           <button type="submit" disabled={loading || uploading} className="btn-primary">
             {loading ? 'Saving…' : form.id ? 'Save changes' : 'Create frame'}
           </button>
           <button type="button" className="btn-secondary" onClick={() => router.push(redirectPath)}>
             Cancel
           </button>
+          {justSaved && <span className="text-sm text-green-600 font-medium">Saved</span>}
         </div>
       </div>
 
