@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import Script from 'next/script';
 import './globals.css';
 import { GOOGLE_FONTS_HREF } from '@/lib/fontFamilies';
@@ -10,6 +10,19 @@ export const metadata: Metadata = {
   title: 'raregreet.com — never miss a birthday or anniversary again',
   description:
     'raregreet.com automatically sends personalized WhatsApp birthday, anniversary, and festival flyers to your customers.',
+  // Lets the site be installed as an app (Android "Add to Home screen", and
+  // the Android app itself, which just wraps this live site — see
+  // public/manifest.webmanifest and public/.well-known/assetlinks.json).
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'raregreet',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#db2777',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
