@@ -673,6 +673,11 @@ export default function FramePlaceholderEditor({
                 background, behind the text/logo below. Leave this blank for a plain frame that just positions your
                 branding text.
               </p>
+              <p className="text-xs text-gray-500 mt-1">
+                <span className="font-medium text-gray-600">File requirements:</span> .webp format only &middot; max
+                10MB (10,240KB) &middot; e.g. 1500&times;300px or any size in the same 5:1 ratio &mdash; a larger
+                upload just takes longer to save, it&rsquo;s scaled to fit automatically.
+              </p>
               {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
               {form.overlayUrl && (
                 <button type="button" onClick={clearOverlay} className="text-xs text-red-600 font-medium mt-1">
@@ -707,18 +712,24 @@ export default function FramePlaceholderEditor({
                     title={hue === 0 ? 'Original color' : `Shift ${hue}°`}
                     onClick={() => setForm((f) => ({ ...f, overlayHue: hue }))}
                     className={
-                      'w-7 h-7 rounded-full border-2 overflow-hidden flex-shrink-0 ' +
+                      'w-7 h-7 rounded-full border-2 flex-shrink-0 ' +
                       (form.overlayHue === hue ? 'border-brand-500 ring-2 ring-brand-200' : 'border-gray-200')
                     }
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={form.overlayUrl}
-                      alt=""
-                      className="w-full h-full object-cover"
-                      style={{ filter: hue ? `hue-rotate(${hue}deg)` : undefined }}
-                    />
-                  </button>
+                    style={{
+                      // hue 0 = "original" — a rainbow ring rather than a flat
+                      // color, since there's no single hue that means
+                      // "unchanged". Every other swatch is a solid, saturated
+                      // chip at that hue — deliberately NOT a crop of the
+                      // overlay image itself, which (being a short wide
+                      // banner) mostly shows near-white/gray art at its
+                      // center and made every swatch look blank regardless
+                      // of hue.
+                      background:
+                        hue === 0
+                          ? 'conic-gradient(from 0deg, red, yellow, lime, cyan, blue, magenta, red)'
+                          : `hsl(${hue}deg 75% 55%)`,
+                    }}
+                  />
                 ))}
               </div>
               <input
