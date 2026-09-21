@@ -31,7 +31,8 @@ export type FontFamilyId =
   | 'crimson-text'
   | 'space-mono'
   | 'ubuntu'
-  | 'patrick-hand';
+  | 'patrick-hand'
+  | 'orbitron';
 
 export interface FontFamilyOption {
   id: FontFamilyId;
@@ -217,6 +218,12 @@ export const FONT_FAMILIES: FontFamilyOption[] = [
     cssFamily: "'Patrick Hand', cursive",
     supportsDevanagari: false,
   },
+  {
+    id: 'orbitron',
+    label: 'Orbitron — futuristic sci-fi display (English only)',
+    cssFamily: "'Orbitron', sans-serif",
+    supportsDevanagari: false,
+  },
 ];
 
 /** CSS font-family value for a given font id, falling back to the default face. */
@@ -226,4 +233,4 @@ export function resolveCssFontFamily(id?: string): string {
 
 /** The Google Fonts CSS2 URL that loads every non-default face for the browser preview. */
 export const GOOGLE_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Oswald:wght@400;700&family=Arimo:wght@400;700&family=Tinos:wght@400;700&family=Carlito:wght@400;700&family=Gelasio:wght@400;700&family=Lobster&family=Great+Vibes&family=Pacifico&family=Bebas+Neue&family=Abril+Fatface&family=Anton&family=Archivo+Black&family=Righteous&family=Amatic+SC:wght@400;700&family=Kaushan+Script&family=Sacramento&family=Allura&family=Courgette&family=PT+Serif:wght@400;700&family=PT+Sans:wght@400;700&family=Crimson+Text:wght@400;700&family=Space+Mono:wght@400;700&family=Ubuntu:wght@400;700&family=Patrick+Hand&display=swap';
+  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Oswald:wght@400;700&family=Arimo:wght@400;700&family=Tinos:wght@400;700&family=Carlito:wght@400;700&family=Gelasio:wght@400;700&family=Lobster&family=Great+Vibes&family=Pacifico&family=Bebas+Neue&family=Abril+Fatface&family=Anton&family=Archivo+Black&family=Righteous&family=Amatic+SC:wght@400;700&family=Kaushan+Script&family=Sacramento&family=Allura&family=Courgette&family=PT+Serif:wght@400;700&family=PT+Sans:wght@400;700&family=Crimson+Text:wght@400;700&family=Space+Mono:wght@400;700&family=Ubuntu:wght@400;700&family=Patrick+Hand&family=Orbitron:wght@400;700&display=swap';

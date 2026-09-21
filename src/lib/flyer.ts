@@ -310,6 +310,14 @@ const NAMED_FONT_FILES: Record<string, { family: string; regular: string; bold: 
     regular: path.join(FONT_DIR, 'PatrickHand-Regular.ttf'),
     bold: path.join(FONT_DIR, 'PatrickHand-Regular.ttf'),
   },
+  // Orbitron only ships as a variable font upstream; these two files are
+  // static wght=400/700 instances (via fonttools varLib.instancer) so it
+  // loads the same reliable way as every other bundled face here.
+  orbitron: {
+    family: 'Orbitron',
+    regular: path.join(FONT_DIR, 'Orbitron-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Orbitron-Bold.ttf'),
+  },
 };
 
 // Real internal family name of the bundled default (FreeSans) files.
