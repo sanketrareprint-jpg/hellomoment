@@ -902,7 +902,7 @@ export default function FramePlaceholderEditor({
         </div>
       </div>
 
-      <div ref={previewColumnRef} className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+      <div ref={previewColumnRef} className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm text-gray-600">
             Drag the labeled markers to position them. This preview stands in for whichever flyer template the frame
