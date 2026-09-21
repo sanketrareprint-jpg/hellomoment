@@ -40,10 +40,20 @@ export interface SavedUpload {
   absolutePath: string; // filesystem path, for server-side processing (e.g. sharp)
 }
 
+// Flyer template backgrounds (both a business's own uploads and admin's
+// starter template library) must be portrait 3:4 — every flyer send/preview
+// lays contact fields out against that canvas, so a background of a
+// different shape would misplace them. TOLERANCE absorbs the sub-pixel
+// rounding a photo editor's own "3:4" export can leave (e.g. 1080x1439
+// instead of 1080x1440), without letting through anything actually off-ratio.
+const TEMPLATE_ASPECT_RATIO = 3 / 4;
+const TEMPLATE_ASPECT_RATIO_TOLERANCE = 0.01;
+
 /**
  * Saves an uploaded image File (from a multipart FormData) under
  * STORAGE_DIR/<subdir>/, returning both its servable URL and absolute
- * filesystem path. Rejects anything that isn't a recognized image type.
+ * filesystem path. Rejects anything that isn't a recognized image type, and
+ * — for template backgrounds — anything that isn't 3:4 (portrait).
  */
 export async function saveImageUpload(
   file: File,
@@ -60,12 +70,24 @@ export async function saveImageUpload(
     throw new Error('Image is too large (max 10MB).');
   }
 
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  if (subdir === 'templates') {
+    const { width, height } = await sharp(buffer).metadata();
+    if (!width || !height) {
+      throw new Error('Could not read image dimensions.');
+    }
+    const ratio = width / height;
+    if (Math.abs(ratio - TEMPLATE_ASPECT_RATIO) > TEMPLATE_ASPECT_RATIO * TEMPLATE_ASPECT_RATIO_TOLERANCE) {
+      throw new Error(`Flyer template images must be portrait 3:4 (e.g. 1080×1440) — this image is ${width}×${height}px.`);
+    }
+  }
+
   const filename = `${uuid()}.${ext}`;
   const dir = path.join(STORAGE_DIR, subdir);
   await fs.mkdir(dir, { recursive: true });
   const absolutePath = path.join(dir, filename);
 
-  const buffer = Buffer.from(await file.arrayBuffer());
   await fs.writeFile(absolutePath, buffer);
 
   return { url: `/api/files/${subdir}/${filename}`, absolutePath };

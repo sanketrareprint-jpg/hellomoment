@@ -98,6 +98,28 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
 const MAX_PREVIEW_WIDTH = 420;
 type DragTarget = FieldKey | 'photo-resize' | null;
 
+// Flyer template backgrounds must be portrait 3:4 (see the matching check in
+// src/lib/uploads.ts, which is the actual enforcement — this just gives
+// faster feedback than waiting on a round trip to the upload API).
+const TEMPLATE_ASPECT_RATIO = 3 / 4;
+const TEMPLATE_ASPECT_RATIO_TOLERANCE = 0.01;
+
+function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Could not read image dimensions.'));
+    };
+    img.src = url;
+  });
+}
+
 // One toolbar button per placeable element, icon-first like a Word/Photoshop
 // tool strip — grouped into "Contact details" (comes from each contact's own
 // record) and "Your business branding" (comes from Settings → Brand kit).
@@ -671,6 +693,11 @@ export default function TemplatePlaceholderEditor({
     setUploading(true);
     setError(null);
     try {
+      const { width, height } = await readImageDimensions(file);
+      const ratio = width / height;
+      if (Math.abs(ratio - TEMPLATE_ASPECT_RATIO) > TEMPLATE_ASPECT_RATIO * TEMPLATE_ASPECT_RATIO_TOLERANCE) {
+        throw new Error(`Flyer template images must be portrait 3:4 (e.g. 1080×1440) — this image is ${width}×${height}px.`);
+      }
       const fd = new FormData();
       fd.append('file', file);
       const res = await fetch(uploadUrl, { method: 'POST', body: fd });
@@ -967,7 +994,7 @@ export default function TemplatePlaceholderEditor({
           <div>
             <label className="label">Flyer background image</label>
             <input type="file" accept="image/webp" onChange={onBackgroundChange} className="text-xs" />
-            <p className="text-xs text-gray-500 mt-0.5">WebP only.</p>
+            <p className="text-xs text-gray-500 mt-0.5">WebP only, portrait 3:4 (e.g. 1080×1440px).</p>
             {uploading && <p className="text-xs text-gray-500 mt-0.5">Uploading…</p>}
             {form.backgroundUrl && (
               <p className="text-xs text-gray-500 mt-0.5">
