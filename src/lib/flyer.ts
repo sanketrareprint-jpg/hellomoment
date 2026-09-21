@@ -26,6 +26,13 @@ export interface TextPlaceholder {
   // here. There is no automatic width-based wrapping or truncation — the
   // business controls line breaks themselves and checks the live preview.
   rotation?: number; // degrees, clockwise, about the placeholder's own center
+  // MS Word-style character formatting, mirrored from TextPlaceholder in
+  // src/lib/flyerPlaceholders.ts — see that file for the full contract.
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  letterSpacing?: number;
+  opacity?: number;
 }
 
 export interface PhotoPlaceholder {
@@ -418,6 +425,29 @@ async function buildIconTextComposite(
  * `icon`, when set, prepends the matching outline icon (see ICON_PATHS)
  * before the text — used for phone/address, same as the editor preview.
  */
+/**
+ * Scales every pixel's alpha channel by `opacity` (0–1), leaving color
+ * untouched — used for the MS Word-style "Opacity" control on a text
+ * placeholder. Implemented as a `dest-in` composite against a flat mask
+ * whose own alpha is `opacity`, the same trick buildPhotoComposite above
+ * uses for its shape masks: dest-in multiplies the two alpha channels
+ * together, so a fully-opaque mask leaves the source untouched and a
+ * half-opaque mask halves it uniformly.
+ */
+async function applyOpacity(data: Buffer, width: number, height: number, opacity: number): Promise<Buffer> {
+  if (opacity >= 1) return data;
+  const alpha = Math.max(0, Math.min(255, Math.round(opacity * 255)));
+  const mask = await sharp({
+    create: { width, height, channels: 4, background: { r: 255, g: 255, b: 255, alpha } },
+  })
+    .png()
+    .toBuffer();
+  return sharp(data)
+    .composite([{ input: mask, blend: 'dest-in' }])
+    .png()
+    .toBuffer();
+}
+
 async function buildTextComposite(
   placeholder: TextPlaceholder,
   text: string,
@@ -438,9 +468,18 @@ async function buildTextComposite(
     placeholder.fontSize
   );
 
+  // Pango markup span attributes for the MS Word-style toggles — each is
+  // simply omitted when off, so untouched placeholders render byte-for-byte
+  // the same as before these existed.
+  const spanAttrs = [`foreground="${escapeXml(placeholder.color)}"`];
+  if (placeholder.italic) spanAttrs.push('style="italic"');
+  if (placeholder.underline) spanAttrs.push('underline="single"');
+  if (placeholder.strikethrough) spanAttrs.push('strikethrough="true"');
+  if (placeholder.letterSpacing) spanAttrs.push(`letter_spacing="${Math.round(placeholder.letterSpacing * 1024)}"`);
+
   const buffer = await sharp({
     text: {
-      text: `<span foreground="${escapeXml(placeholder.color)}">${markup}</span>`,
+      text: `<span ${spanAttrs.join(' ')}>${markup}</span>`,
       font: fontDescription,
       fontfile,
       rgba: true,
@@ -459,6 +498,10 @@ async function buildTextComposite(
     data = combined.data;
     w = combined.width;
     h = combined.height;
+  }
+
+  if (placeholder.opacity !== undefined) {
+    data = await applyOpacity(data, w, h, placeholder.opacity);
   }
 
   // Position (and rotation, next) is computed off the block's unrotated

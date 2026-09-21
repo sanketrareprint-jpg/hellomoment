@@ -21,6 +21,17 @@ export interface TextPlaceholder {
   // for backward compatibility with templates saved before rotation existed
   // — treated as 0 wherever it's missing.
   rotation?: number;
+  // MS Word-style character formatting — every one optional, absent/false
+  // meaning "off" so templates/frames saved before these existed keep
+  // rendering exactly as they did.
+  italic?: boolean;
+  underline?: boolean;
+  strikethrough?: boolean;
+  // Extra tracking between letters, in the same px units as fontSize.
+  // Negative values tighten, positive values loosen. 0/undefined = normal.
+  letterSpacing?: number;
+  // 0–1. undefined/1 = fully opaque.
+  opacity?: number;
   // Whether this element is locked against dragging in the editor. Purely
   // an editing convenience (ignored by flyer.ts when rendering the actual
   // sent flyer) — saved alongside the rest of the placeholder so it's still

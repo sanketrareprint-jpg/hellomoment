@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
 import { frameDefaultsFor, type FrameFormValues } from '@/lib/framePlaceholders';
 import PlaceholderControls from '@/components/PlaceholderControls';
+import PlaceholderToolbarButton from '@/components/PlaceholderToolbarButton';
 import FloatingNudgePad from '@/components/FloatingNudgePad';
 import type { BrandInfo } from '@/components/TemplatePlaceholderEditor';
 import type { TextPlaceholder } from '@/lib/flyerPlaceholders';
@@ -566,33 +567,14 @@ export default function FramePlaceholderEditor({
   }
 
   function ToolbarButton({ def }: { def: { key: FieldKey; label: string; icon: string } }) {
-    const on = isFieldOn(def.key);
-    const isSelected = selected === def.key;
     return (
-      <button
-        type="button"
+      <PlaceholderToolbarButton
+        def={def}
+        on={isFieldOn(def.key)}
+        selected={selected === def.key}
+        locked={isLocked(def.key)}
         onClick={() => selectAndEnable(def.key)}
-        title={def.label}
-        className={[
-          'relative flex flex-col items-center justify-center gap-0.5 rounded-lg border px-1.5 py-1.5 text-[10px] font-medium leading-tight transition-colors',
-          isSelected
-            ? 'border-brand-500 bg-brand-50 text-brand-700 ring-1 ring-brand-500'
-            : on
-              ? 'border-brand-200 bg-brand-50/60 text-brand-700 hover:border-brand-400'
-              : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50',
-        ].join(' ')}
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d={def.icon} />
-        </svg>
-        <span>{def.label}</span>
-        {on && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-brand-500" />}
-        {isLocked(def.key) && (
-          <svg className="absolute top-0.5 left-0.5 w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 1.5a4.5 4.5 0 00-4.5 4.5v3H6a1.5 1.5 0 00-1.5 1.5v9A1.5 1.5 0 006 21h12a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0018 9h-1.5V6A4.5 4.5 0 0012 1.5zm-3 7.5V6a3 3 0 116 0v3H9z" />
-          </svg>
-        )}
-      </button>
+      />
     );
   }
 
@@ -677,7 +659,7 @@ export default function FramePlaceholderEditor({
         <div className="card p-2 space-y-2">
           <div>
             <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Business branding</h3>
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-5 gap-1">
               {BRAND_FIELDS.map((def) => (
                 <ToolbarButton key={def.key} def={def} />
               ))}
@@ -978,6 +960,12 @@ export default function FramePlaceholderEditor({
                     fontFamily: cssFontFamilyFor(p.fontFamily),
                     whiteSpace: 'pre',
                     textAlign: p.align,
+                    fontStyle: p.italic ? 'italic' : undefined,
+                    textDecorationLine:
+                      [p.underline ? 'underline' : null, p.strikethrough ? 'line-through' : null].filter(Boolean).join(' ') ||
+                      undefined,
+                    letterSpacing: p.letterSpacing ? p.letterSpacing * scale : undefined,
+                    opacity: p.opacity ?? 1,
                   }}
                 >
                   {previewTextFor(key)}

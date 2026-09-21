@@ -23,6 +23,11 @@ const placeholderSchema = z.object({
   height: z.number().optional(),
   shape: z.enum(['circle', 'square', 'rounded', 'hexagon']).optional(),
   rotation: z.number().optional(),
+  italic: z.boolean().optional(),
+  underline: z.boolean().optional(),
+  strikethrough: z.boolean().optional(),
+  letterSpacing: z.number().optional(),
+  opacity: z.number().min(0).max(1).optional(),
   locked: z.boolean().optional(),
 });
 

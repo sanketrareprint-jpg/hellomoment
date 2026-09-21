@@ -60,7 +60,13 @@ export function frameLayoutFor(
  * `scale` and `topOffset` come from it.
  */
 export function scaleTextPlaceholder(p: TextPlaceholder, scale: number, topOffset: number): TextPlaceholder {
-  return { ...p, x: Math.round(p.x * scale), y: Math.round(p.y * scale + topOffset), fontSize: Math.round(p.fontSize * scale) };
+  return {
+    ...p,
+    x: Math.round(p.x * scale),
+    y: Math.round(p.y * scale + topOffset),
+    fontSize: Math.round(p.fontSize * scale),
+    ...(p.letterSpacing !== undefined ? { letterSpacing: Math.round(p.letterSpacing * scale) } : {}),
+  };
 }
 
 /** Same idea as scaleTextPlaceholder, for a logo box's position + size. */
