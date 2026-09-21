@@ -35,7 +35,7 @@ export const EMPTY_FRAME: FrameFormValues = {
   ...frameDefaultsFor(1080, 1080),
 };
 
-const MAX_PREVIEW_WIDTH = 420;
+const MAX_PREVIEW_WIDTH = 720;
 type DragTarget = FieldKey | null;
 
 // Same fields/icons as BRAND_FIELDS in TemplatePlaceholderEditor.tsx —
@@ -626,7 +626,7 @@ export default function FramePlaceholderEditor({
         </div>
       </div>
     )}
-    <form onSubmit={onSubmit} className="compact-form grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <form onSubmit={onSubmit} className="compact-form grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
       <div className="space-y-2">
         <div className="card p-2 space-y-1.5">
           <div>
