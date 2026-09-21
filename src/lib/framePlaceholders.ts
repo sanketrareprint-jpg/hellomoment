@@ -68,6 +68,42 @@ export function scaleLogoPlaceholder(p: LogoPlaceholder, scale: number, topOffse
   return { ...p, x: Math.round(p.x * scale), y: Math.round(p.y * scale + topOffset), size: Math.round(p.size * scale) };
 }
 
+export interface FramePlaceholderSet {
+  logoPlaceholder: LogoPlaceholder | null;
+  firmNamePlaceholder: TextPlaceholder | null;
+  phonePlaceholder: TextPlaceholder | null;
+  emailPlaceholder: TextPlaceholder | null;
+  addressPlaceholder: TextPlaceholder | null;
+  websitePlaceholder: TextPlaceholder | null;
+  productsPlaceholder: TextPlaceholder | null;
+}
+
+/**
+ * Scales one frame's whole field layout onto another frame's own canvas
+ * size, per frameLayoutFor above — used by the admin "apply this layout to
+ * every frame" action (see /api/admin/frames/apply-layout) so one frame's
+ * field positions can be pushed onto every other frame in the library even
+ * when their overlay graphics aren't the same pixel size.
+ */
+export function scaleFramePlaceholderSet(
+  set: FramePlaceholderSet,
+  fromWidth: number,
+  fromHeight: number,
+  toWidth: number,
+  toHeight: number
+): FramePlaceholderSet {
+  const { scale, topOffset } = frameLayoutFor(toWidth, toHeight, fromWidth, fromHeight);
+  return {
+    logoPlaceholder: set.logoPlaceholder ? scaleLogoPlaceholder(set.logoPlaceholder, scale, topOffset) : null,
+    firmNamePlaceholder: set.firmNamePlaceholder ? scaleTextPlaceholder(set.firmNamePlaceholder, scale, topOffset) : null,
+    phonePlaceholder: set.phonePlaceholder ? scaleTextPlaceholder(set.phonePlaceholder, scale, topOffset) : null,
+    emailPlaceholder: set.emailPlaceholder ? scaleTextPlaceholder(set.emailPlaceholder, scale, topOffset) : null,
+    addressPlaceholder: set.addressPlaceholder ? scaleTextPlaceholder(set.addressPlaceholder, scale, topOffset) : null,
+    websitePlaceholder: set.websitePlaceholder ? scaleTextPlaceholder(set.websitePlaceholder, scale, topOffset) : null,
+    productsPlaceholder: set.productsPlaceholder ? scaleTextPlaceholder(set.productsPlaceholder, scale, topOffset) : null,
+  };
+}
+
 /** The 7 branding placeholder defaults, scaled to (width, height) — reuses the same starting layout as a flyer template's own branding cluster. */
 export function frameDefaultsFor(width: number, height: number) {
   const d = defaultsFor(width, height);

@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
 import FramesGrid from '@/components/FramesGrid';
-import FrameGalleryGrid from '@/components/FrameGalleryGrid';
+import FrameGalleryWorkspace, { type GalleryFrameRow } from '@/components/FrameGalleryWorkspace';
+import type { BrandInfo } from '@/components/TemplatePlaceholderEditor';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +30,35 @@ export default async function FramesPage({ searchParams }: { searchParams: { fol
   ]);
 
   const folder = searchParams.folder === 'my' || searchParams.folder === 'gallery' ? searchParams.folder : null;
+
+  const brand: BrandInfo = {
+    logoUrl: business.logoUrl,
+    name: business.name,
+    phoneDisplay: business.phoneDisplay,
+    emailDisplay: business.emailDisplay,
+    addressText: business.addressText,
+    websiteUrl: business.websiteUrl,
+    productsText: business.productsText,
+    firmNameScript: business.firmNameScript as 'ENGLISH' | 'MARATHI',
+    firmNameMarathi: business.firmNameMarathi,
+  };
+
+  const galleryFrameRows: GalleryFrameRow[] = galleryFrames.map((f) => ({
+    id: f.id,
+    name: f.name,
+    overlayUrl: f.overlayUrl,
+    canvasWidth: f.canvasWidth,
+    canvasHeight: f.canvasHeight,
+    placeholders: {
+      logoPlaceholder: f.logoPlaceholder ? JSON.parse(f.logoPlaceholder) : null,
+      firmNamePlaceholder: f.firmNamePlaceholder ? JSON.parse(f.firmNamePlaceholder) : null,
+      phonePlaceholder: f.phonePlaceholder ? JSON.parse(f.phonePlaceholder) : null,
+      emailPlaceholder: f.emailPlaceholder ? JSON.parse(f.emailPlaceholder) : null,
+      addressPlaceholder: f.addressPlaceholder ? JSON.parse(f.addressPlaceholder) : null,
+      websitePlaceholder: f.websitePlaceholder ? JSON.parse(f.websitePlaceholder) : null,
+      productsPlaceholder: f.productsPlaceholder ? JSON.parse(f.productsPlaceholder) : null,
+    },
+  }));
 
   return (
     <div className="max-w-5xl">
@@ -109,7 +139,7 @@ export default async function FramesPage({ searchParams }: { searchParams: { fol
               <FramesGrid frames={myFrames} />
             )
           ) : (
-            <FrameGalleryGrid frames={galleryFrames} />
+            <FrameGalleryWorkspace frames={galleryFrameRows} business={brand} />
           )}
         </div>
       )}
