@@ -84,3 +84,6 @@ body {
 .compact-form .card {
   @apply shadow-none;
 }
+.compact-form .btn {
+  @apply px-3 py-1.5 text-xs;
+}

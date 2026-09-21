@@ -3,12 +3,10 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireApiAdmin } from '@/lib/session';
 
-// Admin-curated library of ready-made flyer designs — the source businesses
-// pull from via "Add / refresh starter flyer designs" on their own Templates
-// page (see src/app/api/templates/seed-starter/route.ts). Mirrors the
-// business-owned /api/templates route, but scoped to the admin session and
-// the global StarterTemplate table instead of a business's own FlyerTemplate
-// rows.
+// Admin-curated library of reusable branding frames — the source businesses
+// pull from via the Frame gallery on their own Frames page (see
+// src/app/api/frames/adopt/route.ts). Mirrors /api/admin/starter-templates,
+// but for the global Frame table instead of StarterTemplate.
 
 const placeholderSchema = z.object({
   x: z.number(),
@@ -19,23 +17,15 @@ const placeholderSchema = z.object({
   fontFamily: z.string().optional(),
   align: z.enum(['left', 'center', 'right']).optional(),
   size: z.number().optional(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  shape: z.enum(['circle', 'square', 'rounded', 'hexagon']).optional(),
   rotation: z.number().optional(),
   locked: z.boolean().optional(),
 });
 
-const templateSchema = z.object({
+const frameSchema = z.object({
   name: z.string().min(1),
-  occasion: z.enum(['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL']),
-  backgroundUrl: z.string().min(1),
+  overlayUrl: z.string().nullable().optional(),
   canvasWidth: z.number().int().positive(),
   canvasHeight: z.number().int().positive(),
-  namePlaceholder: placeholderSchema.nullable().optional(),
-  designationPlaceholder: placeholderSchema.nullable().optional(),
-  datePlaceholder: placeholderSchema.nullable().optional(),
-  photoPlaceholder: placeholderSchema.nullable().optional(),
   logoPlaceholder: placeholderSchema.nullable().optional(),
   firmNamePlaceholder: placeholderSchema.nullable().optional(),
   phonePlaceholder: placeholderSchema.nullable().optional(),
@@ -49,8 +39,8 @@ export async function GET(req: NextRequest) {
   const denied = requireApiAdmin(req);
   if (denied) return denied;
 
-  const templates = await prisma.starterTemplate.findMany({ orderBy: [{ order: 'asc' }, { createdAt: 'desc' }] });
-  return NextResponse.json({ templates });
+  const frames = await prisma.frame.findMany({ orderBy: [{ order: 'asc' }, { createdAt: 'desc' }] });
+  return NextResponse.json({ frames });
 }
 
 export async function POST(req: NextRequest) {
@@ -58,15 +48,11 @@ export async function POST(req: NextRequest) {
   if (denied) return denied;
 
   const json = await req.json().catch(() => null);
-  const parsed = templateSchema.safeParse(json);
+  const parsed = frameSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' }, { status: 400 });
   }
   const {
-    namePlaceholder,
-    designationPlaceholder,
-    datePlaceholder,
-    photoPlaceholder,
     logoPlaceholder,
     firmNamePlaceholder,
     phonePlaceholder,
@@ -77,16 +63,12 @@ export async function POST(req: NextRequest) {
     ...rest
   } = parsed.data;
 
-  const maxOrder = await prisma.starterTemplate.aggregate({ _max: { order: true } });
+  const maxOrder = await prisma.frame.aggregate({ _max: { order: true } });
 
-  const template = await prisma.starterTemplate.create({
+  const frame = await prisma.frame.create({
     data: {
       ...rest,
       order: (maxOrder._max.order ?? -1) + 1,
-      namePlaceholder: namePlaceholder ? JSON.stringify(namePlaceholder) : null,
-      designationPlaceholder: designationPlaceholder ? JSON.stringify(designationPlaceholder) : null,
-      datePlaceholder: datePlaceholder ? JSON.stringify(datePlaceholder) : null,
-      photoPlaceholder: photoPlaceholder ? JSON.stringify(photoPlaceholder) : null,
       logoPlaceholder: logoPlaceholder ? JSON.stringify(logoPlaceholder) : null,
       firmNamePlaceholder: firmNamePlaceholder ? JSON.stringify(firmNamePlaceholder) : null,
       phonePlaceholder: phonePlaceholder ? JSON.stringify(phonePlaceholder) : null,
@@ -96,5 +78,5 @@ export async function POST(req: NextRequest) {
       productsPlaceholder: productsPlaceholder ? JSON.stringify(productsPlaceholder) : null,
     },
   });
-  return NextResponse.json({ template }, { status: 201 });
+  return NextResponse.json({ frame }, { status: 201 });
 }

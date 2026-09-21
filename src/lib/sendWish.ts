@@ -2,12 +2,13 @@ import path from 'node:path';
 import { v4 as uuid } from 'uuid';
 import type { Business, Contact, Festival, FlyerTemplate } from '@prisma/client';
 import { prisma } from './db';
-import { generateFlyer, TextPlaceholder, PhotoPlaceholder } from './flyer';
+import { generateFlyer, TextPlaceholder, PhotoPlaceholder, LogoPlaceholder } from './flyer';
 import { sendAisensyCampaign } from './aisensy';
 import { servedUrlToAbsolutePath, STORAGE_DIR } from './uploads';
 import { formatDateForDisplay } from './dateUtils';
 import { COINS_PER_SEND } from './pricing';
 import { getWalletOwner } from './businessFamily';
+import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder } from './framePlaceholders';
 
 /**
  * The single place that turns "it's Priya's birthday" (or a festival) into
@@ -289,24 +290,96 @@ async function renderFlyer(
   const outputName = `${uuid()}.jpg`;
   const outputPath = path.join(STORAGE_DIR, 'generated', outputName);
 
-  const logoPlaceholder = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
   const designationPlaceholder = template.designationPlaceholder ? JSON.parse(template.designationPlaceholder) : null;
-  const firmNamePlaceholder = template.firmNamePlaceholder ? JSON.parse(template.firmNamePlaceholder) : null;
-  const phonePlaceholder = template.phonePlaceholder ? JSON.parse(template.phonePlaceholder) : null;
-  const emailPlaceholder = template.emailPlaceholder ? JSON.parse(template.emailPlaceholder) : null;
-  const addressPlaceholder = template.addressPlaceholder ? JSON.parse(template.addressPlaceholder) : null;
-  const websitePlaceholder = template.websitePlaceholder ? JSON.parse(template.websitePlaceholder) : null;
-  const productsPlaceholder = template.productsPlaceholder ? JSON.parse(template.productsPlaceholder) : null;
+
+  // A business's default Frame (see the Frame/BusinessFrame models and
+  // /dashboard/frames) — when set, its branding placement/styling and
+  // overlay graphic are used on *every* flyer this business sends, instead
+  // of the FlyerTemplate's own logo/firmName/phone/email/address/website/
+  // products placeholders below. This is what lets a business set up their
+  // branding once and have it apply across every template/occasion, rather
+  // than repeating the setup per template. Falls back to the template's own
+  // placeholders (unchanged behavior) when no default frame is set.
+  const defaultFrame = await prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } });
+
+  let logoPlaceholder: LogoPlaceholder | null = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
+  let firmNamePlaceholder: TextPlaceholder | null = template.firmNamePlaceholder
+    ? JSON.parse(template.firmNamePlaceholder)
+    : null;
+  let phonePlaceholder: TextPlaceholder | null = template.phonePlaceholder ? JSON.parse(template.phonePlaceholder) : null;
+  let emailPlaceholder: TextPlaceholder | null = template.emailPlaceholder ? JSON.parse(template.emailPlaceholder) : null;
+  let addressPlaceholder: TextPlaceholder | null = template.addressPlaceholder
+    ? JSON.parse(template.addressPlaceholder)
+    : null;
+  let websitePlaceholder: TextPlaceholder | null = template.websitePlaceholder
+    ? JSON.parse(template.websitePlaceholder)
+    : null;
+  let productsPlaceholder: TextPlaceholder | null = template.productsPlaceholder
+    ? JSON.parse(template.productsPlaceholder)
+    : null;
+  let overlayPath: string | null = null;
+
+  if (defaultFrame) {
+    // The frame's placeholders were positioned against its own canvas size
+    // (frame.canvasWidth/Height, the overlay graphic's own native pixel
+    // size) — scale uniformly by width (never stretching the banner's own
+    // aspect ratio) and anchor to this template's bottom edge, the same way
+    // its overlay graphic renders below. See frameLayoutFor's own comment.
+    const { scale: frameScale, topOffset: frameTopOffset } = frameLayoutFor(
+      template.canvasWidth,
+      template.canvasHeight,
+      defaultFrame.canvasWidth,
+      defaultFrame.canvasHeight
+    );
+
+    logoPlaceholder = defaultFrame.logoPlaceholder
+      ? scaleLogoPlaceholder(JSON.parse(defaultFrame.logoPlaceholder), frameScale, frameTopOffset)
+      : null;
+    firmNamePlaceholder = defaultFrame.firmNamePlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.firmNamePlaceholder), frameScale, frameTopOffset)
+      : null;
+    phonePlaceholder = defaultFrame.phonePlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.phonePlaceholder), frameScale, frameTopOffset)
+      : null;
+    emailPlaceholder = defaultFrame.emailPlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.emailPlaceholder), frameScale, frameTopOffset)
+      : null;
+    addressPlaceholder = defaultFrame.addressPlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.addressPlaceholder), frameScale, frameTopOffset)
+      : null;
+    websitePlaceholder = defaultFrame.websitePlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.websitePlaceholder), frameScale, frameTopOffset)
+      : null;
+    productsPlaceholder = defaultFrame.productsPlaceholder
+      ? scaleTextPlaceholder(JSON.parse(defaultFrame.productsPlaceholder), frameScale, frameTopOffset)
+      : null;
+    overlayPath = defaultFrame.overlayUrl ? servedUrlToAbsolutePath(defaultFrame.overlayUrl) : null;
+  }
 
   // A contact's Title (e.g. "Mr.", "Dr.") is shown as part of the name line
   // itself, not as a separately positioned placeholder — contacts without
   // one just show their plain name.
   const displayName = title ? `${title} ${name}` : name;
 
+  // This template's own phone/email/address/website/products text
+  // override, if it has one (see FlyerTemplate.phoneTextOverride etc. and
+  // TemplatePlaceholderEditor.tsx) — falls back to the shared Business
+  // field otherwise. Ignored while a default Frame is active: the Frame
+  // already overrides this template's own *placeholders* above regardless
+  // of what's configured here, so its *text* stays on the one shared
+  // source too, instead of silently picking up a per-template override it
+  // was never shown or asked about.
+  const phoneText = (!defaultFrame && template.phoneTextOverride) || business.phoneDisplay || null;
+  const emailText = (!defaultFrame && template.emailTextOverride) || business.emailDisplay || null;
+  const addressText = (!defaultFrame && template.addressTextOverride) || business.addressText || null;
+  const websiteText = (!defaultFrame && template.websiteTextOverride) || business.websiteUrl || null;
+  const productsText = (!defaultFrame && template.productsTextOverride) || business.productsText || null;
+
   await generateFlyer({
     backgroundPath: servedUrlToAbsolutePath(template.backgroundUrl),
     canvasWidth: template.canvasWidth,
     canvasHeight: template.canvasHeight,
+    overlayPath,
     namePlaceholder: template.namePlaceholder ? (JSON.parse(template.namePlaceholder) as TextPlaceholder) : null,
     name: displayName,
     designationPlaceholder: designationPlaceholder as TextPlaceholder | null,
@@ -320,15 +393,15 @@ async function renderFlyer(
     firmNamePlaceholder,
     firmNameText: brandFirmNameText(business),
     phonePlaceholder,
-    phoneText: business.phoneDisplay || null,
+    phoneText,
     emailPlaceholder,
-    emailText: business.emailDisplay || null,
+    emailText,
     addressPlaceholder,
-    addressText: business.addressText || null,
+    addressText,
     websitePlaceholder,
-    websiteText: business.websiteUrl || null,
+    websiteText,
     productsPlaceholder,
-    productsText: business.productsText || null,
+    productsText,
     outputPath,
   });
 

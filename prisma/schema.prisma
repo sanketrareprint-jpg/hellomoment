@@ -80,6 +80,7 @@ model Business {
 
   contacts            Contact[]
   templates           FlyerTemplate[]
+  frames              BusinessFrame[]
   festivals           Festival[]
   sendLogs            SendLog[]
   walletTransactions  WalletTransaction[]
@@ -249,6 +250,20 @@ model FlyerTemplate {
   websitePlaceholder   String? // JSON text placeholder — business website
   productsPlaceholder  String? // JSON text placeholder — products/services line
 
+  // Per-template overrides for the phone/email/address/website/products
+  // TEXT itself (as opposed to its placeholder position/style above). Null
+  // falls back to the shared Business.phoneDisplay/emailDisplay/addressText/
+  // websiteUrl/productsText (Settings -> Brand kit) at send time — same as
+  // before these existed. Deliberately separate from that shared field (and
+  // from a default Frame's own rendering, which always uses the shared
+  // field, never these — see sendWish.ts) so editing one template's text
+  // here can never change what another template or a Frame shows.
+  phoneTextOverride    String?
+  emailTextOverride    String?
+  addressTextOverride  String?
+  websiteTextOverride  String?
+  productsTextOverride String?
+
   isDefault          Boolean  @default(false) // used when a contact/festival doesn't specify a template
   aisensyCampaignName String? // overrides the business-level default campaign for this template, if set
 
@@ -319,6 +334,82 @@ model StarterTemplate {
   updatedAt DateTime @updatedAt
 
   @@index([occasion, isActive, order])
+}
+
+// A reusable branding "frame" — logo/firm-name/phone/email/address/website/
+// products placement + styling, and an optional decorative overlay graphic —
+// curated by admin (Vrushali) and offered to every business, same
+// admin-curates/business-copies pattern as StarterTemplate above. Unlike
+// StarterTemplate (a full flyer background for one occasion), a Frame
+// carries only the branding overlay and no background of its own: once a
+// business picks one as their default (see BusinessFrame.isDefault below),
+// it's composited onto *every* flyer they send — whichever occasion or
+// FlyerTemplate that turns out to be (src/lib/sendWish.ts) — instead of the
+// business repeating this branding placement setup on each template
+// individually the way FlyerTemplate's own logo/firmName/etc. placeholders
+// require.
+model Frame {
+  id         String  @id @default(cuid())
+  name       String
+  overlayUrl String? // /api/files/frames/<file> — optional decorative border/badge graphic composited between the flyer background and the branding text; omit for a plain "positions only" frame
+  canvasWidth  Int @default(1080)
+  canvasHeight Int @default(1080)
+
+  // Same JSON shape as the matching fields on FlyerTemplate.
+  logoPlaceholder     String?
+  firmNamePlaceholder String?
+  phonePlaceholder    String?
+  emailPlaceholder    String?
+  addressPlaceholder  String?
+  websitePlaceholder  String?
+  productsPlaceholder String?
+
+  isActive Boolean @default(true) // only active frames are offered to businesses
+  order    Int     @default(0) // lower shows first
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businessFrames BusinessFrame[]
+
+  @@index([isActive, order])
+}
+
+// A business's own copy of a Frame — copied in the moment they add it from
+// the admin gallery (mirrors how seedStarterTemplatesForBusiness copies a
+// StarterTemplate into a FlyerTemplate), or created from scratch as a fully
+// custom frame. Copying means a business can freely restyle their own copy
+// (font, size, color, alignment, rotation, position) without touching the
+// shared admin design or affecting any other business. Exactly one
+// BusinessFrame per business can be isDefault at a time — see
+// src/lib/sendWish.ts for how that one gets applied to every flyer sent.
+model BusinessFrame {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  frameId String? // which admin Frame this was copied from, if any — kept even if that Frame is later removed
+  frame   Frame?  @relation(fields: [frameId], references: [id], onDelete: SetNull)
+
+  name       String
+  overlayUrl String?
+  canvasWidth  Int @default(1080)
+  canvasHeight Int @default(1080)
+
+  logoPlaceholder     String?
+  firmNamePlaceholder String?
+  phonePlaceholder    String?
+  emailPlaceholder    String?
+  addressPlaceholder  String?
+  websitePlaceholder  String?
+  productsPlaceholder String?
+
+  isDefault Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([businessId])
 }
 
 model Festival {

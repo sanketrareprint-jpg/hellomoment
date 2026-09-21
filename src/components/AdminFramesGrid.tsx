@@ -4,43 +4,32 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-const OCCASION_LABEL: Record<string, string> = {
-  BIRTHDAY: 'Birthday',
-  ANNIVERSARY: 'Anniversary',
-  FESTIVAL: 'Festival',
-};
-
-export interface StarterTemplateRow {
+export interface FrameRow {
   id: string;
   name: string;
-  occasion: string;
-  backgroundUrl: string;
-  canvasWidth: number;
-  canvasHeight: number;
+  overlayUrl: string | null;
   isActive: boolean;
   order: number;
 }
 
-export default function AdminStarterTemplatesGrid({ templates }: { templates: StarterTemplateRow[] }) {
+export default function AdminFramesGrid({ frames }: { frames: FrameRow[] }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const sorted = useMemo(() => [...templates].sort((a, b) => a.order - b.order), [templates]);
+  const sorted = useMemo(() => [...frames].sort((a, b) => a.order - b.order), [frames]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return sorted;
-    return sorted.filter(
-      (t) => t.name.toLowerCase().includes(q) || (OCCASION_LABEL[t.occasion] ?? t.occasion).toLowerCase().includes(q)
-    );
+    return sorted.filter((f) => f.name.toLowerCase().includes(q));
   }, [sorted, query]);
 
   async function patch(id: string, data: Record<string, unknown>) {
     setBusyId(id);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/starter-templates/${id}`, {
+      const res = await fetch(`/api/admin/frames/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -55,11 +44,11 @@ export default function AdminStarterTemplatesGrid({ templates }: { templates: St
   }
 
   async function handleDelete(id: string, name: string) {
-    if (!confirm(`Delete template "${name}"? This can't be undone.`)) return;
+    if (!confirm(`Delete frame "${name}"? This can't be undone.`)) return;
     setBusyId(id);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/starter-templates/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/frames/${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Delete failed');
       router.refresh();
     } catch (err) {
@@ -83,7 +72,7 @@ export default function AdminStarterTemplatesGrid({ templates }: { templates: St
         <input
           className="input pl-9"
           type="search"
-          placeholder="Search templates by name or occasion…"
+          placeholder="Search frames by name…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -101,34 +90,44 @@ export default function AdminStarterTemplatesGrid({ templates }: { templates: St
 
       {filtered.length === 0 ? (
         <div className="card p-10 text-center text-gray-500">
-          {query ? `No templates match "${query}".` : 'No starter templates yet — add one above.'}
+          {query ? `No frames match "${query}".` : 'No frames yet — add one above.'}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map((t, i) => (
-            <div key={t.id} className={'card overflow-hidden' + (t.isActive ? '' : ' opacity-60')}>
+          {filtered.map((f, i) => (
+            <div key={f.id} className={'card overflow-hidden' + (f.isActive ? '' : ' opacity-60')}>
               <div
-                className="w-full bg-gray-100 flex items-center justify-center overflow-hidden"
-                style={{ aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}` }}
+                className="w-full h-40 flex items-center justify-center"
+                style={{
+                  backgroundColor: '#e5e7eb',
+                  backgroundImage: f.overlayUrl
+                    ? undefined
+                    : 'linear-gradient(45deg, #d1d5db 25%, transparent 25%), linear-gradient(-45deg, #d1d5db 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #d1d5db 75%), linear-gradient(-45deg, transparent 75%, #d1d5db 75%)',
+                  backgroundSize: '20px 20px',
+                  backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+                }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={t.backgroundUrl} alt={t.name} className="w-full h-full object-contain" />
+                {f.overlayUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={f.overlayUrl} alt={f.name} className="w-full h-40 object-cover" />
+                ) : (
+                  <span className="text-xs text-gray-500">No overlay graphic</span>
+                )}
               </div>
               <div className="p-4">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="font-semibold text-gray-900 truncate">{t.name}</h3>
-                  {!t.isActive && (
+                  <h3 className="font-semibold text-gray-900 truncate">{f.name}</h3>
+                  {!f.isActive && (
                     <span className="text-xs font-medium bg-gray-100 text-gray-500 rounded-full px-2 py-0.5 whitespace-nowrap">
                       Hidden
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-1">{OCCASION_LABEL[t.occasion] ?? t.occasion}</p>
 
                 <div className="flex items-center gap-2 mt-3">
                   <button
                     type="button"
-                    disabled={i === 0 || busyId === t.id}
+                    disabled={i === 0 || busyId === f.id}
                     onClick={() => move(i, -1)}
                     className="btn-secondary px-2 py-1 text-xs"
                     title="Move up"
@@ -137,7 +136,7 @@ export default function AdminStarterTemplatesGrid({ templates }: { templates: St
                   </button>
                   <button
                     type="button"
-                    disabled={i === filtered.length - 1 || busyId === t.id}
+                    disabled={i === filtered.length - 1 || busyId === f.id}
                     onClick={() => move(i, 1)}
                     className="btn-secondary px-2 py-1 text-xs"
                     title="Move down"
@@ -147,22 +146,22 @@ export default function AdminStarterTemplatesGrid({ templates }: { templates: St
                   <label className="flex items-center gap-1.5 text-xs text-gray-600 ml-1">
                     <input
                       type="checkbox"
-                      checked={t.isActive}
-                      disabled={busyId === t.id}
-                      onChange={(e) => patch(t.id, { isActive: e.target.checked })}
+                      checked={f.isActive}
+                      disabled={busyId === f.id}
+                      onChange={(e) => patch(f.id, { isActive: e.target.checked })}
                     />
                     Offered to businesses
                   </label>
                 </div>
 
                 <div className="flex gap-3 mt-3">
-                  <Link href={`/admin/templates/${t.id}/edit`} className="text-brand-600 font-medium text-sm">
+                  <Link href={`/admin/frames/${f.id}/edit`} className="text-brand-600 font-medium text-sm">
                     Edit
                   </Link>
                   <button
                     type="button"
-                    disabled={busyId === t.id}
-                    onClick={() => handleDelete(t.id, t.name)}
+                    disabled={busyId === f.id}
+                    onClick={() => handleDelete(f.id, f.name)}
                     className="text-red-600 font-medium text-sm disabled:opacity-50"
                   >
                     Delete

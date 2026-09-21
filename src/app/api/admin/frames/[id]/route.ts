@@ -3,13 +3,6 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireApiAdmin } from '@/lib/session';
 
-// Admin-curated library of ready-made flyer designs — the source businesses
-// pull from via "Add / refresh starter flyer designs" on their own Templates
-// page (see src/app/api/templates/seed-starter/route.ts). Mirrors the
-// business-owned /api/templates route, but scoped to the admin session and
-// the global StarterTemplate table instead of a business's own FlyerTemplate
-// rows.
-
 const placeholderSchema = z.object({
   x: z.number(),
   y: z.number(),
@@ -19,23 +12,15 @@ const placeholderSchema = z.object({
   fontFamily: z.string().optional(),
   align: z.enum(['left', 'center', 'right']).optional(),
   size: z.number().optional(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  shape: z.enum(['circle', 'square', 'rounded', 'hexagon']).optional(),
   rotation: z.number().optional(),
   locked: z.boolean().optional(),
 });
 
-const templateSchema = z.object({
+const frameSchema = z.object({
   name: z.string().min(1),
-  occasion: z.enum(['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL']),
-  backgroundUrl: z.string().min(1),
+  overlayUrl: z.string().nullable().optional(),
   canvasWidth: z.number().int().positive(),
   canvasHeight: z.number().int().positive(),
-  namePlaceholder: placeholderSchema.nullable().optional(),
-  designationPlaceholder: placeholderSchema.nullable().optional(),
-  datePlaceholder: placeholderSchema.nullable().optional(),
-  photoPlaceholder: placeholderSchema.nullable().optional(),
   logoPlaceholder: placeholderSchema.nullable().optional(),
   firmNamePlaceholder: placeholderSchema.nullable().optional(),
   phonePlaceholder: placeholderSchema.nullable().optional(),
@@ -45,28 +30,27 @@ const templateSchema = z.object({
   productsPlaceholder: placeholderSchema.nullable().optional(),
 });
 
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const denied = requireApiAdmin(req);
   if (denied) return denied;
-
-  const templates = await prisma.starterTemplate.findMany({ orderBy: [{ order: 'asc' }, { createdAt: 'desc' }] });
-  return NextResponse.json({ templates });
+  const frame = await prisma.frame.findUnique({ where: { id: params.id } });
+  if (!frame) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.json({ frame });
 }
 
-export async function POST(req: NextRequest) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const denied = requireApiAdmin(req);
   if (denied) return denied;
 
+  const existing = await prisma.frame.findUnique({ where: { id: params.id } });
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
   const json = await req.json().catch(() => null);
-  const parsed = templateSchema.safeParse(json);
+  const parsed = frameSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' }, { status: 400 });
   }
   const {
-    namePlaceholder,
-    designationPlaceholder,
-    datePlaceholder,
-    photoPlaceholder,
     logoPlaceholder,
     firmNamePlaceholder,
     phonePlaceholder,
@@ -77,16 +61,10 @@ export async function POST(req: NextRequest) {
     ...rest
   } = parsed.data;
 
-  const maxOrder = await prisma.starterTemplate.aggregate({ _max: { order: true } });
-
-  const template = await prisma.starterTemplate.create({
+  const frame = await prisma.frame.update({
+    where: { id: params.id },
     data: {
       ...rest,
-      order: (maxOrder._max.order ?? -1) + 1,
-      namePlaceholder: namePlaceholder ? JSON.stringify(namePlaceholder) : null,
-      designationPlaceholder: designationPlaceholder ? JSON.stringify(designationPlaceholder) : null,
-      datePlaceholder: datePlaceholder ? JSON.stringify(datePlaceholder) : null,
-      photoPlaceholder: photoPlaceholder ? JSON.stringify(photoPlaceholder) : null,
       logoPlaceholder: logoPlaceholder ? JSON.stringify(logoPlaceholder) : null,
       firmNamePlaceholder: firmNamePlaceholder ? JSON.stringify(firmNamePlaceholder) : null,
       phonePlaceholder: phonePlaceholder ? JSON.stringify(phonePlaceholder) : null,
@@ -96,5 +74,34 @@ export async function POST(req: NextRequest) {
       productsPlaceholder: productsPlaceholder ? JSON.stringify(productsPlaceholder) : null,
     },
   });
-  return NextResponse.json({ template }, { status: 201 });
+  return NextResponse.json({ frame });
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const denied = requireApiAdmin(req);
+  if (denied) return denied;
+
+  const body = await req.json().catch(() => ({}));
+  const data: { isActive?: boolean; order?: number } = {};
+  if (typeof body.isActive === 'boolean') data.isActive = body.isActive;
+  if (typeof body.order === 'number') data.order = body.order;
+
+  try {
+    const frame = await prisma.frame.update({ where: { id: params.id }, data });
+    return NextResponse.json({ frame });
+  } catch {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const denied = requireApiAdmin(req);
+  if (denied) return denied;
+
+  try {
+    await prisma.frame.delete({ where: { id: params.id } });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
 }

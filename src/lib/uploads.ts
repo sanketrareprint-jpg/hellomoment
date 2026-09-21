@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { v4 as uuid } from 'uuid';
+import sharp from 'sharp';
 
 /**
  * All user-generated files (uploaded photos/template backgrounds, and
@@ -44,7 +45,10 @@ export interface SavedUpload {
  * STORAGE_DIR/<subdir>/, returning both its servable URL and absolute
  * filesystem path. Rejects anything that isn't a recognized image type.
  */
-export async function saveImageUpload(file: File, subdir: 'photos' | 'templates' | 'logos' | 'banners'): Promise<SavedUpload> {
+export async function saveImageUpload(
+  file: File,
+  subdir: 'photos' | 'templates' | 'logos' | 'banners' | 'frames'
+): Promise<SavedUpload> {
   const allowed = subdir === 'templates' ? ALLOWED_TEMPLATE_IMAGE_TYPES : ALLOWED_IMAGE_TYPES;
   const ext = allowed[file.type];
   if (!ext) {
@@ -71,4 +75,36 @@ export async function saveImageUpload(file: File, subdir: 'photos' | 'templates'
 export function servedUrlToAbsolutePath(url: string): string {
   const clean = url.replace(/^\/api\/files\//, '');
   return path.join(STORAGE_DIR, clean);
+}
+
+export interface OverlayTrimResult {
+  width: number;
+  height: number;
+  // <= 0: how many pixels were cropped off the left/top edge, so a
+  // placeholder's saved x/y (authored against the pre-trim canvas) can be
+  // remapped onto the trimmed one via `x + offsetLeft`, `y + offsetTop`.
+  offsetLeft: number;
+  offsetTop: number;
+}
+
+/**
+ * Crops away transparent (or uniform-color) padding around a decorative
+ * frame overlay graphic, in place on disk, so the artwork itself — not just
+ * its file's own canvas — reaches the edges once it's scaled to a flyer's
+ * width and anchored to the bottom (see framePlaceholders.ts's
+ * frameLayoutFor and flyer.ts's overlay compositing, both of which already
+ * stretch/anchor the *file* edge-to-edge; padding baked into the file is
+ * what still leaves a visible gap). Returns the trimmed pixel size and the
+ * offset needed to remap any placeholder coordinates saved against the
+ * original canvas onto this smaller one.
+ */
+export async function trimOverlayPadding(absolutePath: string): Promise<OverlayTrimResult> {
+  const { data, info } = await sharp(absolutePath).trim().toBuffer({ resolveWithObject: true });
+  await fs.writeFile(absolutePath, data);
+  return {
+    width: info.width,
+    height: info.height,
+    offsetLeft: info.trimOffsetLeft ?? 0,
+    offsetTop: info.trimOffsetTop ?? 0,
+  };
 }

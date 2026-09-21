@@ -16,6 +16,7 @@ const placeholderSchema = z.object({
   height: z.number().optional(),
   shape: z.enum(['circle', 'square', 'rounded', 'hexagon']).optional(),
   rotation: z.number().optional(),
+  locked: z.boolean().optional(),
 });
 
 const templateSchema = z.object({
@@ -37,6 +38,11 @@ const templateSchema = z.object({
   productsPlaceholder: placeholderSchema.nullable().optional(),
   isDefault: z.boolean().optional(),
   aisensyCampaignName: z.string().optional().nullable(),
+  phoneTextOverride: z.string().optional().nullable(),
+  emailTextOverride: z.string().optional().nullable(),
+  addressTextOverride: z.string().optional().nullable(),
+  websiteTextOverride: z.string().optional().nullable(),
+  productsTextOverride: z.string().optional().nullable(),
 });
 
 export async function GET(req: NextRequest) {

@@ -21,6 +21,11 @@ export interface TextPlaceholder {
   // for backward compatibility with templates saved before rotation existed
   // — treated as 0 wherever it's missing.
   rotation?: number;
+  // Whether this element is locked against dragging in the editor. Purely
+  // an editing convenience (ignored by flyer.ts when rendering the actual
+  // sent flyer) — saved alongside the rest of the placeholder so it's still
+  // locked the next time this template/frame is reopened for editing.
+  locked?: boolean;
 }
 
 export interface PhotoPlaceholder {
@@ -30,6 +35,7 @@ export interface PhotoPlaceholder {
   height: number;
   shape: 'circle' | 'square' | 'rounded' | 'hexagon';
   rotation?: number;
+  locked?: boolean;
 }
 
 export interface LogoPlaceholder {
@@ -37,6 +43,7 @@ export interface LogoPlaceholder {
   y: number;
   size: number;
   rotation?: number;
+  locked?: boolean;
 }
 
 export interface TemplateFormValues {
@@ -70,6 +77,15 @@ export interface TemplateFormValues {
   websitePlaceholder: TextPlaceholder;
   useProducts: boolean;
   productsPlaceholder: TextPlaceholder;
+  // Per-template overrides for the phone/email/address/website/products
+  // TEXT itself — '' means "no override, fall back to Settings → Brand
+  // kit's shared text" (same as a default Frame always does). See the
+  // FlyerTemplate.phoneTextOverride etc. comment in schema.prisma.
+  phoneTextOverride: string;
+  emailTextOverride: string;
+  addressTextOverride: string;
+  websiteTextOverride: string;
+  productsTextOverride: string;
 }
 
 export function defaultsFor(width: number, height: number): Pick<

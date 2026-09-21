@@ -3,6 +3,7 @@ import { getCurrentBusiness } from '@/lib/session';
 import { getTodayInTimezone, daysUntilNextOccurrence, formatDateForDisplay } from '@/lib/dateUtils';
 import Link from 'next/link';
 import DashboardBannerSlider from '@/components/DashboardBannerSlider';
+import DashboardTemplatesByCategory from '@/components/DashboardTemplatesByCategory';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,9 +11,14 @@ export default async function DashboardOverview() {
   const business = await getCurrentBusiness();
   if (!business) return null;
 
-  const [contactCount, templateCount, festivalCount, recentLogs, contacts, banners] = await Promise.all([
+  const [contactCount, templateCount, templates, festivalCount, recentLogs, contacts, banners] = await Promise.all([
     prisma.contact.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.count({ where: { businessId: business.id } }),
+    prisma.flyerTemplate.findMany({
+      where: { businessId: business.id },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, name: true, occasion: true, backgroundUrl: true, canvasWidth: true, canvasHeight: true },
+    }),
     prisma.festival.count({ where: { businessId: business.id, active: true } }),
     prisma.sendLog.findMany({
       where: { businessId: business.id },
@@ -86,6 +92,8 @@ export default async function DashboardOverview() {
         <StatCard label="Flyer templates" value={templateCount} href="/dashboard/templates" />
         <StatCard label="Active festivals" value={festivalCount} href="/dashboard/festivals" />
       </div>
+
+      <DashboardTemplatesByCategory templates={templates} />
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="card p-4">

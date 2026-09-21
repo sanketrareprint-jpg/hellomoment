@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
-import { requireApiAdmin } from '@/lib/session';
+import { requireApiBusiness } from '@/lib/session';
 
-// Admin-curated library of ready-made flyer designs — the source businesses
-// pull from via "Add / refresh starter flyer designs" on their own Templates
-// page (see src/app/api/templates/seed-starter/route.ts). Mirrors the
-// business-owned /api/templates route, but scoped to the admin session and
-// the global StarterTemplate table instead of a business's own FlyerTemplate
-// rows.
+// A business's own branding frames — either adopted from the admin gallery
+// (see /api/frames/adopt) or built from scratch here. Unlike FlyerTemplate's
+// isDefault (one default *per occasion*), a BusinessFrame's isDefault is
+// global to the business: exactly one frame is composited onto every flyer
+// sent, whichever occasion or template that turns out to be (see
+// src/lib/sendWish.ts).
 
 const placeholderSchema = z.object({
   x: z.number(),
@@ -19,23 +19,15 @@ const placeholderSchema = z.object({
   fontFamily: z.string().optional(),
   align: z.enum(['left', 'center', 'right']).optional(),
   size: z.number().optional(),
-  width: z.number().optional(),
-  height: z.number().optional(),
-  shape: z.enum(['circle', 'square', 'rounded', 'hexagon']).optional(),
   rotation: z.number().optional(),
   locked: z.boolean().optional(),
 });
 
-const templateSchema = z.object({
+const frameSchema = z.object({
   name: z.string().min(1),
-  occasion: z.enum(['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL']),
-  backgroundUrl: z.string().min(1),
+  overlayUrl: z.string().nullable().optional(),
   canvasWidth: z.number().int().positive(),
   canvasHeight: z.number().int().positive(),
-  namePlaceholder: placeholderSchema.nullable().optional(),
-  designationPlaceholder: placeholderSchema.nullable().optional(),
-  datePlaceholder: placeholderSchema.nullable().optional(),
-  photoPlaceholder: placeholderSchema.nullable().optional(),
   logoPlaceholder: placeholderSchema.nullable().optional(),
   firmNamePlaceholder: placeholderSchema.nullable().optional(),
   phonePlaceholder: placeholderSchema.nullable().optional(),
@@ -43,30 +35,30 @@ const templateSchema = z.object({
   addressPlaceholder: placeholderSchema.nullable().optional(),
   websitePlaceholder: placeholderSchema.nullable().optional(),
   productsPlaceholder: placeholderSchema.nullable().optional(),
+  isDefault: z.boolean().optional(),
 });
 
 export async function GET(req: NextRequest) {
-  const denied = requireApiAdmin(req);
-  if (denied) return denied;
+  const business = await requireApiBusiness(req);
+  if (business instanceof NextResponse) return business;
 
-  const templates = await prisma.starterTemplate.findMany({ orderBy: [{ order: 'asc' }, { createdAt: 'desc' }] });
-  return NextResponse.json({ templates });
+  const frames = await prisma.businessFrame.findMany({
+    where: { businessId: business.id },
+    orderBy: { createdAt: 'desc' },
+  });
+  return NextResponse.json({ frames });
 }
 
 export async function POST(req: NextRequest) {
-  const denied = requireApiAdmin(req);
-  if (denied) return denied;
+  const business = await requireApiBusiness(req);
+  if (business instanceof NextResponse) return business;
 
   const json = await req.json().catch(() => null);
-  const parsed = templateSchema.safeParse(json);
+  const parsed = frameSchema.safeParse(json);
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' }, { status: 400 });
   }
   const {
-    namePlaceholder,
-    designationPlaceholder,
-    datePlaceholder,
-    photoPlaceholder,
     logoPlaceholder,
     firmNamePlaceholder,
     phonePlaceholder,
@@ -74,19 +66,28 @@ export async function POST(req: NextRequest) {
     addressPlaceholder,
     websitePlaceholder,
     productsPlaceholder,
+    isDefault,
     ...rest
   } = parsed.data;
 
-  const maxOrder = await prisma.starterTemplate.aggregate({ _max: { order: true } });
+  // A brand-new business has no frame at all yet — make their first one the
+  // default automatically, same reasoning as the first starter template
+  // auto-becoming a business's default flyer.
+  const hasAny = await prisma.businessFrame.findFirst({ where: { businessId: business.id } });
+  const makeDefault = Boolean(isDefault) || !hasAny;
 
-  const template = await prisma.starterTemplate.create({
+  if (makeDefault) {
+    await prisma.businessFrame.updateMany({
+      where: { businessId: business.id, isDefault: true },
+      data: { isDefault: false },
+    });
+  }
+
+  const frame = await prisma.businessFrame.create({
     data: {
       ...rest,
-      order: (maxOrder._max.order ?? -1) + 1,
-      namePlaceholder: namePlaceholder ? JSON.stringify(namePlaceholder) : null,
-      designationPlaceholder: designationPlaceholder ? JSON.stringify(designationPlaceholder) : null,
-      datePlaceholder: datePlaceholder ? JSON.stringify(datePlaceholder) : null,
-      photoPlaceholder: photoPlaceholder ? JSON.stringify(photoPlaceholder) : null,
+      businessId: business.id,
+      isDefault: makeDefault,
       logoPlaceholder: logoPlaceholder ? JSON.stringify(logoPlaceholder) : null,
       firmNamePlaceholder: firmNamePlaceholder ? JSON.stringify(firmNamePlaceholder) : null,
       phonePlaceholder: phonePlaceholder ? JSON.stringify(phonePlaceholder) : null,
@@ -96,5 +97,5 @@ export async function POST(req: NextRequest) {
       productsPlaceholder: productsPlaceholder ? JSON.stringify(productsPlaceholder) : null,
     },
   });
-  return NextResponse.json({ template }, { status: 201 });
+  return NextResponse.json({ frame }, { status: 201 });
 }

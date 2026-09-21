@@ -3,25 +3,39 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import DeleteTemplateButton from '@/components/DeleteTemplateButton';
+import DeleteFrameButton from '@/components/DeleteFrameButton';
 
-const OCCASION_LABEL: Record<string, string> = {
-  BIRTHDAY: 'Birthday',
-  ANNIVERSARY: 'Anniversary',
-  FESTIVAL: 'Festival',
-};
-
-export interface TemplateRow {
+export interface BusinessFrameRow {
   id: string;
   name: string;
-  occasion: string;
-  backgroundUrl: string;
-  canvasWidth: number;
-  canvasHeight: number;
+  overlayUrl: string | null;
   isDefault: boolean;
 }
 
-export default function TemplatesGrid({ templates }: { templates: TemplateRow[] }) {
+function FramePreview({ overlayUrl, name }: { overlayUrl: string | null; name: string }) {
+  return (
+    <div
+      className="w-full h-40 flex items-center justify-center"
+      style={{
+        backgroundColor: '#e5e7eb',
+        backgroundImage: overlayUrl
+          ? undefined
+          : 'linear-gradient(45deg, #d1d5db 25%, transparent 25%), linear-gradient(-45deg, #d1d5db 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #d1d5db 75%), linear-gradient(-45deg, transparent 75%, #d1d5db 75%)',
+        backgroundSize: '20px 20px',
+        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
+      }}
+    >
+      {overlayUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={overlayUrl} alt={name} className="w-full h-40 object-cover" />
+      ) : (
+        <span className="text-xs text-gray-500">Positions only — no overlay graphic</span>
+      )}
+    </div>
+  );
+}
+
+export default function FramesGrid({ frames }: { frames: BusinessFrameRow[] }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [settingDefault, setSettingDefault] = useState<string | null>(null);
@@ -29,7 +43,7 @@ export default function TemplatesGrid({ templates }: { templates: TemplateRow[] 
   async function setDefault(id: string) {
     setSettingDefault(id);
     try {
-      const res = await fetch(`/api/templates/${id}/set-default`, { method: 'POST' });
+      const res = await fetch(`/api/frames/${id}/set-default`, { method: 'POST' });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || 'Could not set as default');
@@ -44,11 +58,9 @@ export default function TemplatesGrid({ templates }: { templates: TemplateRow[] 
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return templates;
-    return templates.filter(
-      (t) => t.name.toLowerCase().includes(q) || (OCCASION_LABEL[t.occasion] ?? t.occasion).toLowerCase().includes(q)
-    );
-  }, [templates, query]);
+    if (!q) return frames;
+    return frames.filter((f) => f.name.toLowerCase().includes(q));
+  }, [frames, query]);
 
   return (
     <div>
@@ -56,7 +68,7 @@ export default function TemplatesGrid({ templates }: { templates: TemplateRow[] 
         <input
           className="input pl-9"
           type="search"
-          placeholder="Search templates by name or occasion…"
+          placeholder="Search frames by name…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -71,41 +83,34 @@ export default function TemplatesGrid({ templates }: { templates: TemplateRow[] 
       </div>
 
       {filtered.length === 0 ? (
-        <div className="card p-10 text-center text-gray-500">No templates match &ldquo;{query}&rdquo;.</div>
+        <div className="card p-10 text-center text-gray-500">No frames match &ldquo;{query}&rdquo;.</div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map((t) => (
-            <div key={t.id} className="card overflow-hidden">
-              <div
-                className="w-full bg-gray-100 flex items-center justify-center overflow-hidden"
-                style={{ aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}` }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={t.backgroundUrl} alt={t.name} className="w-full h-full object-contain" />
-              </div>
+          {filtered.map((f) => (
+            <div key={f.id} className="card overflow-hidden">
+              <FramePreview overlayUrl={f.overlayUrl} name={f.name} />
               <div className="p-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">{t.name}</h3>
-                  {t.isDefault && (
+                  <h3 className="font-semibold text-gray-900">{f.name}</h3>
+                  {f.isDefault && (
                     <span className="text-xs font-medium bg-brand-100 text-brand-700 rounded-full px-2 py-0.5">
                       Default
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-1">{OCCASION_LABEL[t.occasion] ?? t.occasion}</p>
                 <div className="flex gap-3 mt-3 items-center flex-wrap">
-                  <Link href={`/dashboard/templates/${t.id}/edit`} className="text-brand-600 font-medium text-sm">
+                  <Link href={`/dashboard/frames/${f.id}/edit`} className="text-brand-600 font-medium text-sm">
                     Edit
                   </Link>
-                  <DeleteTemplateButton id={t.id} name={t.name} />
-                  {!t.isDefault && (
+                  <DeleteFrameButton id={f.id} name={f.name} />
+                  {!f.isDefault && (
                     <button
                       type="button"
                       className="text-brand-600 font-medium text-sm disabled:opacity-50"
-                      disabled={settingDefault === t.id}
-                      onClick={() => setDefault(t.id)}
+                      disabled={settingDefault === f.id}
+                      onClick={() => setDefault(f.id)}
                     >
-                      {settingDefault === t.id ? 'Setting…' : 'Set as default'}
+                      {settingDefault === f.id ? 'Setting…' : 'Set as default'}
                     </button>
                   )}
                 </div>
