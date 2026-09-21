@@ -212,6 +212,112 @@ const NAMED_FONT_FILES: Record<string, { family: string; regular: string; bold: 
     regular: path.join(FONT_DIR, 'Gelasio-Regular.ttf'),
     bold: path.join(FONT_DIR, 'Gelasio-Bold.ttf'),
   },
+  // These four are single-weight display/script faces — Google Fonts ships
+  // no distinct bold cut, so both weights load the same regular file
+  // (matches how a browser falls back when a CSS font-family has no bold).
+  lobster: {
+    family: 'Lobster',
+    regular: path.join(FONT_DIR, 'Lobster-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Lobster-Regular.ttf'),
+  },
+  'great-vibes': {
+    family: 'Great Vibes',
+    regular: path.join(FONT_DIR, 'GreatVibes-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'GreatVibes-Regular.ttf'),
+  },
+  pacifico: {
+    family: 'Pacifico',
+    regular: path.join(FONT_DIR, 'Pacifico-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Pacifico-Regular.ttf'),
+  },
+  'bebas-neue': {
+    family: 'Bebas Neue',
+    regular: path.join(FONT_DIR, 'BebasNeue-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'BebasNeue-Regular.ttf'),
+  },
+  'abril-fatface': {
+    family: 'Abril Fatface',
+    regular: path.join(FONT_DIR, 'AbrilFatface-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'AbrilFatface-Regular.ttf'),
+  },
+  anton: {
+    family: 'Anton',
+    regular: path.join(FONT_DIR, 'Anton-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Anton-Regular.ttf'),
+  },
+  'archivo-black': {
+    family: 'Archivo Black',
+    regular: path.join(FONT_DIR, 'ArchivoBlack-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'ArchivoBlack-Regular.ttf'),
+  },
+  righteous: {
+    family: 'Righteous',
+    regular: path.join(FONT_DIR, 'Righteous-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Righteous-Regular.ttf'),
+  },
+  'amatic-sc': {
+    family: 'Amatic SC',
+    regular: path.join(FONT_DIR, 'AmaticSC-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'AmaticSC-Bold.ttf'),
+  },
+  'kaushan-script': {
+    family: 'Kaushan Script',
+    regular: path.join(FONT_DIR, 'KaushanScript-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'KaushanScript-Regular.ttf'),
+  },
+  sacramento: {
+    family: 'Sacramento',
+    regular: path.join(FONT_DIR, 'Sacramento-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Sacramento-Regular.ttf'),
+  },
+  allura: {
+    family: 'Allura',
+    regular: path.join(FONT_DIR, 'Allura-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Allura-Regular.ttf'),
+  },
+  courgette: {
+    family: 'Courgette',
+    regular: path.join(FONT_DIR, 'Courgette-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Courgette-Regular.ttf'),
+  },
+  'pt-serif': {
+    family: 'PT Serif',
+    regular: path.join(FONT_DIR, 'PTSerif-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'PTSerif-Bold.ttf'),
+  },
+  'pt-sans': {
+    family: 'PT Sans',
+    regular: path.join(FONT_DIR, 'PTSans-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'PTSans-Bold.ttf'),
+  },
+  'crimson-text': {
+    family: 'Crimson Text',
+    regular: path.join(FONT_DIR, 'CrimsonText-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'CrimsonText-Bold.ttf'),
+  },
+  'space-mono': {
+    family: 'Space Mono',
+    regular: path.join(FONT_DIR, 'SpaceMono-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'SpaceMono-Bold.ttf'),
+  },
+  ubuntu: {
+    family: 'Ubuntu',
+    regular: path.join(FONT_DIR, 'Ubuntu-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Ubuntu-Bold.ttf'),
+  },
+  'patrick-hand': {
+    family: 'Patrick Hand',
+    regular: path.join(FONT_DIR, 'PatrickHand-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'PatrickHand-Regular.ttf'),
+  },
+  // Orbitron only ships as a variable font upstream; these two files are
+  // static wght=400/700 instances (via fonttools varLib.instancer) so it
+  // loads the same reliable way as every other bundled face here.
+  orbitron: {
+    family: 'Orbitron',
+    regular: path.join(FONT_DIR, 'Orbitron-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Orbitron-Bold.ttf'),
+  },
 };
 
 // Real internal family name of the bundled default (FreeSans) files.
