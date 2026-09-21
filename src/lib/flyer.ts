@@ -212,6 +212,29 @@ const NAMED_FONT_FILES: Record<string, { family: string; regular: string; bold: 
     regular: path.join(FONT_DIR, 'Gelasio-Regular.ttf'),
     bold: path.join(FONT_DIR, 'Gelasio-Bold.ttf'),
   },
+  // These four are single-weight display/script faces — Google Fonts ships
+  // no distinct bold cut, so both weights load the same regular file
+  // (matches how a browser falls back when a CSS font-family has no bold).
+  lobster: {
+    family: 'Lobster',
+    regular: path.join(FONT_DIR, 'Lobster-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Lobster-Regular.ttf'),
+  },
+  'great-vibes': {
+    family: 'Great Vibes',
+    regular: path.join(FONT_DIR, 'GreatVibes-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'GreatVibes-Regular.ttf'),
+  },
+  pacifico: {
+    family: 'Pacifico',
+    regular: path.join(FONT_DIR, 'Pacifico-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'Pacifico-Regular.ttf'),
+  },
+  'bebas-neue': {
+    family: 'Bebas Neue',
+    regular: path.join(FONT_DIR, 'BebasNeue-Regular.ttf'),
+    bold: path.join(FONT_DIR, 'BebasNeue-Regular.ttf'),
+  },
 };
 
 // Real internal family name of the bundled default (FreeSans) files.

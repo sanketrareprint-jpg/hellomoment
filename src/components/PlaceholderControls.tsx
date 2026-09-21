@@ -1,6 +1,6 @@
 'use client';
 
-import { FONT_FAMILIES } from '@/lib/fontFamilies';
+import { FONT_FAMILIES, resolveCssFontFamily } from '@/lib/fontFamilies';
 import { type Align, type TextPlaceholder } from '@/lib/flyerPlaceholders';
 
 // Shared font/size/color/alignment/weight/rotation editor for one text
@@ -26,11 +26,12 @@ export default function PlaceholderControls({
           <label className="label">Font</label>
           <select
             className="input"
+            style={{ fontFamily: resolveCssFontFamily(placeholder.fontFamily) }}
             value={placeholder.fontFamily ?? 'default'}
             onChange={(e) => onChange({ ...placeholder, fontFamily: e.target.value as TextPlaceholder['fontFamily'] })}
           >
             {FONT_FAMILIES.map((f) => (
-              <option key={f.id} value={f.id}>
+              <option key={f.id} value={f.id} style={{ fontFamily: f.cssFamily }}>
                 {f.label}
               </option>
             ))}

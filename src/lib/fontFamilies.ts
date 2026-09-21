@@ -12,7 +12,11 @@ export type FontFamilyId =
   | 'arimo'
   | 'tinos'
   | 'carlito'
-  | 'gelasio';
+  | 'gelasio'
+  | 'lobster'
+  | 'great-vibes'
+  | 'pacifico'
+  | 'bebas-neue';
 
 export interface FontFamilyOption {
   id: FontFamilyId;
@@ -84,8 +88,37 @@ export const FONT_FAMILIES: FontFamilyOption[] = [
     cssFamily: "'Gelasio', Georgia, serif",
     supportsDevanagari: false,
   },
+  {
+    id: 'lobster',
+    label: 'Lobster — bold script (English only)',
+    cssFamily: "'Lobster', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'great-vibes',
+    label: 'Great Vibes — elegant calligraphy (English only)',
+    cssFamily: "'Great Vibes', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'pacifico',
+    label: 'Pacifico — fun casual script (English only)',
+    cssFamily: "'Pacifico', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'bebas-neue',
+    label: 'Bebas Neue — bold condensed headline (English only)',
+    cssFamily: "'Bebas Neue', sans-serif",
+    supportsDevanagari: false,
+  },
 ];
+
+/** CSS font-family value for a given font id, falling back to the default face. */
+export function resolveCssFontFamily(id?: string): string {
+  return (FONT_FAMILIES.find((f) => f.id === id) ?? FONT_FAMILIES.find((f) => f.id === 'default'))!.cssFamily;
+}
 
 /** The Google Fonts CSS2 URL that loads every non-default face for the browser preview. */
 export const GOOGLE_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Oswald:wght@400;700&family=Arimo:wght@400;700&family=Tinos:wght@400;700&family=Carlito:wght@400;700&family=Gelasio:wght@400;700&display=swap';
+  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Oswald:wght@400;700&family=Arimo:wght@400;700&family=Tinos:wght@400;700&family=Carlito:wght@400;700&family=Gelasio:wght@400;700&family=Lobster&family=Great+Vibes&family=Pacifico&family=Bebas+Neue&display=swap';
