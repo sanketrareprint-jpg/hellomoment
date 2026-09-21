@@ -27,7 +27,7 @@ function FramePreview({ overlayUrl, name }: { overlayUrl: string | null; name: s
     >
       {overlayUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={overlayUrl} alt={name} className="w-full h-40 object-cover" />
+        <img src={overlayUrl} alt={name} className="w-full h-full object-contain" />
       ) : (
         <span className="text-xs text-gray-500">Positions only — no overlay graphic</span>
       )}

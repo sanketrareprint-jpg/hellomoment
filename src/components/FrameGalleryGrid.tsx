@@ -58,7 +58,7 @@ export default function FrameGalleryGrid({ frames }: { frames: GalleryFrameRow[]
             >
               {f.overlayUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={f.overlayUrl} alt={f.name} className="w-full h-40 object-cover" />
+                <img src={f.overlayUrl} alt={f.name} className="w-full h-full object-contain" />
               ) : (
                 <span className="text-xs text-gray-500">Positions only — no overlay graphic</span>
               )}
