@@ -9,6 +9,7 @@ export interface GalleryFrameRow {
   id: string;
   name: string;
   overlayUrl: string | null;
+  overlayHue?: number | null;
   canvasWidth: number;
   canvasHeight: number;
   placeholders: FramePlaceholders;
@@ -130,6 +131,7 @@ export default function FrameGalleryWorkspace({ frames, business }: { frames: Ga
           {selected ? (
             <FramePreview
               overlayUrl={selected.overlayUrl}
+              overlayHue={selected.overlayHue}
               canvasWidth={selected.canvasWidth}
               canvasHeight={selected.canvasHeight}
               placeholders={selected.placeholders}
@@ -233,7 +235,12 @@ export default function FrameGalleryWorkspace({ frames, business }: { frames: Ga
                 >
                   {f.overlayUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={f.overlayUrl} alt={f.name} className="w-full h-full object-contain" />
+                    <img
+                      src={f.overlayUrl}
+                      alt={f.name}
+                      className="w-full h-full object-contain"
+                      style={{ filter: f.overlayHue ? `hue-rotate(${f.overlayHue}deg)` : undefined }}
+                    />
                   ) : (
                     <span className="text-xs text-gray-500">Positions only</span>
                   )}

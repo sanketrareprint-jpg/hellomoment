@@ -352,6 +352,7 @@ model Frame {
   id         String  @id @default(cuid())
   name       String
   overlayUrl String? // /api/files/frames/<file> — optional decorative border/badge graphic composited between the flyer background and the branding text; omit for a plain "positions only" frame
+  overlayHue Int     @default(0) // 0-360 degrees — recolors overlayUrl at render time (CSS/sharp hue-rotate) so one uploaded gradient graphic can be offered in several color combinations without re-uploading a separate image per color
   canvasWidth  Int @default(1080)
   canvasHeight Int @default(1080)
 
@@ -393,6 +394,7 @@ model BusinessFrame {
 
   name       String
   overlayUrl String?
+  overlayHue Int     @default(0) // 0-360 degrees — see Frame.overlayHue; a business can recolor their own copy independently of the admin original
   canvasWidth  Int @default(1080)
   canvasHeight Int @default(1080)
 

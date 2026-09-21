@@ -64,6 +64,11 @@ export interface GenerateFlyerOptions {
   // its compositing below for why, and framePlaceholders.ts's
   // frameLayoutFor for the matching logo/text placeholder scaling.
   overlayPath?: string | null;
+  // Degrees (0-360) to hue-rotate the overlay graphic by before compositing
+  // — lets one uploaded gradient/color-combination image be offered in
+  // several colors (see Frame.overlayHue) without a separate upload per
+  // color. 0/undefined leaves the overlay's original colors untouched.
+  overlayHue?: number | null;
   namePlaceholder?: TextPlaceholder | null;
   name?: string | null; // if the contact has a Title (e.g. "Mr."), callers prefix it into this string themselves — there's no separate title placeholder
   designationPlaceholder?: TextPlaceholder | null;
@@ -606,10 +611,11 @@ export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string>
       const overlayScale = naturalWidth ? opts.canvasWidth / naturalWidth : 1;
       const overlayHeight = Math.max(1, Math.round((naturalHeight ?? opts.canvasHeight) * overlayScale));
       const overlayTop = Math.max(0, opts.canvasHeight - overlayHeight);
-      const overlayBuffer = await sharp(opts.overlayPath)
-        .resize(opts.canvasWidth, overlayHeight, { fit: 'fill' })
-        .png()
-        .toBuffer();
+      let overlayImage = sharp(opts.overlayPath).resize(opts.canvasWidth, overlayHeight, { fit: 'fill' });
+      if (opts.overlayHue) {
+        overlayImage = overlayImage.modulate({ hue: opts.overlayHue });
+      }
+      const overlayBuffer = await overlayImage.png().toBuffer();
       composites.push({ input: overlayBuffer, left: 0, top: overlayTop });
     } catch {
       // Overlay file missing on disk — skip it rather than fail the whole send.

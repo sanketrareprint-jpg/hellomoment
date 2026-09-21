@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
     canvasWidth: template.canvasWidth,
     canvasHeight: template.canvasHeight,
     overlayPath,
+    overlayHue: frame.overlayHue,
     namePlaceholder: template.namePlaceholder ? (JSON.parse(template.namePlaceholder) as TextPlaceholder) : null,
     name: SAMPLE_NAME,
     designationPlaceholder: designationPlaceholder as TextPlaceholder | null,

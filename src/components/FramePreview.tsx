@@ -37,6 +37,7 @@ const FIELD_ICONS: Partial<Record<TextFieldKey, string>> = {
  */
 export default function FramePreview({
   overlayUrl,
+  overlayHue,
   canvasWidth,
   canvasHeight,
   placeholders,
@@ -44,6 +45,7 @@ export default function FramePreview({
   maxWidth = 320,
 }: {
   overlayUrl: string | null;
+  overlayHue?: number | null;
   canvasWidth: number;
   canvasHeight: number;
   placeholders: FramePlaceholders;
@@ -111,7 +113,12 @@ export default function FramePreview({
     >
       {overlayUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={overlayUrl} alt="Frame overlay" className="absolute inset-0 w-full h-full object-cover pointer-events-none" />
+        <img
+          src={overlayUrl}
+          alt="Frame overlay"
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          style={{ filter: overlayHue ? `hue-rotate(${overlayHue}deg)` : undefined }}
+        />
       )}
 
       {placeholders.logoPlaceholder && (

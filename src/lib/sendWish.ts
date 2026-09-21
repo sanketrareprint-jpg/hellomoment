@@ -318,6 +318,7 @@ async function renderFlyer(
     ? JSON.parse(template.productsPlaceholder)
     : null;
   let overlayPath: string | null = null;
+  let overlayHue = 0;
 
   if (defaultFrame) {
     // The frame's placeholders were positioned against its own canvas size
@@ -354,6 +355,7 @@ async function renderFlyer(
       ? scaleTextPlaceholder(JSON.parse(defaultFrame.productsPlaceholder), frameScale, frameTopOffset)
       : null;
     overlayPath = defaultFrame.overlayUrl ? servedUrlToAbsolutePath(defaultFrame.overlayUrl) : null;
+    overlayHue = defaultFrame.overlayHue;
   }
 
   // A contact's Title (e.g. "Mr.", "Dr.") is shown as part of the name line
@@ -380,6 +382,7 @@ async function renderFlyer(
     canvasWidth: template.canvasWidth,
     canvasHeight: template.canvasHeight,
     overlayPath,
+    overlayHue,
     namePlaceholder: template.namePlaceholder ? (JSON.parse(template.namePlaceholder) as TextPlaceholder) : null,
     name: displayName,
     designationPlaceholder: designationPlaceholder as TextPlaceholder | null,

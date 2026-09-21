@@ -12,6 +12,7 @@ export interface FrameFormValues {
   name: string;
   isDefault: boolean;
   overlayUrl: string;
+  overlayHue: number;
   canvasWidth: number;
   canvasHeight: number;
   useLogo: boolean;

@@ -35,6 +35,7 @@ export async function adoptFrameForBusiness(businessId: string, frameId: string)
       frameId: frame.id,
       name: frame.name,
       overlayUrl,
+      overlayHue: frame.overlayHue,
       canvasWidth: frame.canvasWidth,
       canvasHeight: frame.canvasHeight,
       isDefault: !hasAny,
