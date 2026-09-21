@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FONT_FAMILIES } from '@/lib/fontFamilies';
 import { frameDefaultsFor, type FrameFormValues } from '@/lib/framePlaceholders';
@@ -35,7 +35,7 @@ export const EMPTY_FRAME: FrameFormValues = {
   ...frameDefaultsFor(1080, 1080),
 };
 
-const PREVIEW_WIDTH = 420;
+const MAX_PREVIEW_WIDTH = 420;
 type DragTarget = FieldKey | null;
 
 // Same fields/icons as BRAND_FIELDS in TemplatePlaceholderEditor.tsx —
@@ -112,6 +112,7 @@ export default function FramePlaceholderEditor({
   const [selected, setSelected] = useState<FieldKey | null>(null);
   const [showGrid, setShowGrid] = useState(true);
   const previewRef = useRef<HTMLDivElement>(null);
+  const previewColumnRef = useRef<HTMLDivElement>(null);
   const dragTarget = useRef<DragTarget>(null);
   // The gap between the pointer's canvas position at pointerdown and the
   // value being dragged (an anchor x/y or a center) — captured once so every
@@ -152,7 +153,23 @@ export default function FramePlaceholderEditor({
 
   const effectiveBusiness: BrandInfo | undefined = business ? { ...business, ...brandOverride } : business;
 
-  const scale = PREVIEW_WIDTH / form.canvasWidth;
+  // Shrinks the preview canvas to fit its column on narrow screens (e.g. a
+  // phone, where the column is narrower than MAX_PREVIEW_WIDTH) instead of
+  // overflowing and forcing a horizontal scroll. `scale` derives from this,
+  // so drag math (onPointerMove, which reads the same rendered box via
+  // getBoundingClientRect) stays correct at any size.
+  const [previewWidth, setPreviewWidth] = useState(MAX_PREVIEW_WIDTH);
+  useEffect(() => {
+    const el = previewColumnRef.current;
+    if (!el) return;
+    const update = () => setPreviewWidth(Math.max(120, Math.min(MAX_PREVIEW_WIDTH, el.clientWidth)));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const scale = previewWidth / form.canvasWidth;
   const previewHeight = form.canvasHeight * scale;
 
   function cssFontFamilyFor(id?: string) {
@@ -517,7 +534,7 @@ export default function FramePlaceholderEditor({
       label={selectedDef?.label}
       onNudge={nudgeSelected}
     />
-    <form onSubmit={onSubmit} className="compact-form grid lg:grid-cols-2 gap-4">
+    <form onSubmit={onSubmit} className="compact-form grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="space-y-2">
         <div className="card p-2 space-y-1.5">
           <div>
@@ -710,7 +727,7 @@ export default function FramePlaceholderEditor({
         </div>
       </div>
 
-      <div className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+      <div ref={previewColumnRef} className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm text-gray-600">
             Drag the labeled markers to position them. This preview stands in for whichever flyer template the frame
@@ -728,8 +745,8 @@ export default function FramePlaceholderEditor({
           onPointerLeave={onPointerUp}
           className="relative rounded-lg overflow-hidden border border-gray-300 select-none touch-none"
           style={{
-            width: PREVIEW_WIDTH,
-            height: previewHeight || PREVIEW_WIDTH,
+            width: previewWidth,
+            height: previewHeight || previewWidth,
             backgroundColor: '#e5e7eb',
             backgroundImage: form.overlayUrl
               ? undefined
@@ -751,7 +768,7 @@ export default function FramePlaceholderEditor({
                   backgroundImage:
                     'linear-gradient(to right, rgba(0,0,0,0.15) 1px, transparent 1px), ' +
                     'linear-gradient(to bottom, rgba(0,0,0,0.15) 1px, transparent 1px)',
-                  backgroundSize: `${PREVIEW_WIDTH / 10}px ${(previewHeight || PREVIEW_WIDTH) / 10}px`,
+                  backgroundSize: `${previewWidth / 10}px ${(previewHeight || previewWidth) / 10}px`,
                 }}
               />
               <div className="absolute inset-y-0 left-1/2 w-px bg-red-500/60" />
