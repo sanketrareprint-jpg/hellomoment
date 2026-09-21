@@ -5,7 +5,7 @@
 // ones, since it's meant to be composited onto *every* flyer a business
 // sends regardless of occasion or which FlyerTemplate that is.
 
-import { defaultsFor, type LogoPlaceholder, type TextPlaceholder } from '@/lib/flyerPlaceholders';
+import type { LogoPlaceholder, TextPlaceholder } from '@/lib/flyerPlaceholders';
 
 export interface FrameFormValues {
   id?: string;
@@ -104,16 +104,91 @@ export function scaleFramePlaceholderSet(
   };
 }
 
-/** The 7 branding placeholder defaults, scaled to (width, height) — reuses the same starting layout as a flyer template's own branding cluster. */
+/**
+ * The 7 branding placeholder defaults, scaled to a Frame's own (width,
+ * height) — its own bespoke layout, NOT flyerPlaceholders.ts's defaultsFor.
+ * That function's percentages/font sizes are tuned for a tall *portrait*
+ * flyer canvas (e.g. 1080x1350) where the branding cluster only occupies
+ * the bottom ~24% of a canvas much taller than it is wide, so font sizes
+ * sized off *width* still leave plenty of vertical room. A Frame's own
+ * canvas is the opposite shape — a short, wide banner (recommended 5:1
+ * width:height, see FramePlaceholderEditor's overlay upload note) meant to
+ * be read as one horizontal strip, not a tall stack — so reusing those
+ * percentages badly overflowed past the banner's bottom edge (most visibly
+ * the logo, sized off *width*, coming out taller than the entire banner).
+ * Every size/position below is instead a fraction of HEIGHT (the banner's
+ * constrained dimension), laid out as two columns — logo+firm name/phone on
+ * the left, email/website on the right, address between them — so a fresh
+ * frame's fields land fully inside the canvas and can actually be seen and
+ * dragged, instead of bleeding off the bottom edge.
+ */
 export function frameDefaultsFor(width: number, height: number) {
-  const d = defaultsFor(width, height);
+  const dark = '#111111';
   return {
-    logoPlaceholder: d.logoPlaceholder,
-    firmNamePlaceholder: d.firmNamePlaceholder,
-    phonePlaceholder: d.phonePlaceholder,
-    emailPlaceholder: d.emailPlaceholder,
-    addressPlaceholder: d.addressPlaceholder,
-    websitePlaceholder: d.websitePlaceholder,
-    productsPlaceholder: d.productsPlaceholder,
+    // Vertically centered with a 12% margin top and bottom (0.12 + 0.76 +
+    // 0.12 = 1), so it never extends past the banner's own edges.
+    logoPlaceholder: {
+      x: Math.round(width * 0.015),
+      y: Math.round(height * 0.12),
+      size: Math.round(height * 0.76),
+      rotation: 0,
+    } as LogoPlaceholder,
+    firmNamePlaceholder: {
+      x: Math.round(width * 0.18),
+      y: Math.round(height * 0.28),
+      fontSize: Math.round(height * 0.26),
+      color: dark,
+      fontWeight: 800,
+      align: 'left',
+      rotation: 0,
+    } as TextPlaceholder,
+    phonePlaceholder: {
+      x: Math.round(width * 0.18),
+      y: Math.round(height * 0.55),
+      fontSize: Math.round(height * 0.16),
+      color: dark,
+      fontWeight: 400,
+      align: 'left',
+      rotation: 0,
+    } as TextPlaceholder,
+    // Address sits below firm name/phone, on the same (left) side.
+    addressPlaceholder: {
+      x: Math.round(width * 0.18),
+      y: Math.round(height * 0.74),
+      fontSize: Math.round(height * 0.14),
+      color: dark,
+      fontWeight: 400,
+      align: 'left',
+      rotation: 0,
+    } as TextPlaceholder,
+    // Email/website mirror phone's row on the opposite (right) side, so the
+    // two columns read as a clean left/right split within the banner.
+    emailPlaceholder: {
+      x: Math.round(width * 0.985),
+      y: Math.round(height * 0.3),
+      fontSize: Math.round(height * 0.16),
+      color: dark,
+      fontWeight: 400,
+      align: 'right',
+      rotation: 0,
+    } as TextPlaceholder,
+    websitePlaceholder: {
+      x: Math.round(width * 0.985),
+      y: Math.round(height * 0.55),
+      fontSize: Math.round(height * 0.16),
+      color: dark,
+      fontWeight: 400,
+      align: 'right',
+      rotation: 0,
+    } as TextPlaceholder,
+    productsPlaceholder: {
+      x: Math.round(width / 2),
+      y: Math.round(height * 0.86),
+      fontSize: Math.round(height * 0.12),
+      color: dark,
+      fontWeight: 600,
+      align: 'center',
+      rotation: 0,
+    } as TextPlaceholder,
   };
 }

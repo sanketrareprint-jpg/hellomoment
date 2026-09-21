@@ -664,6 +664,11 @@ export default function FramePlaceholderEditor({
                 background, behind the text/logo below. Leave this blank for a plain frame that just positions your
                 branding text.
               </p>
+              <p className="text-xs text-gray-500 mt-1">
+                <span className="font-medium text-gray-600">File requirements:</span> .webp format only &middot; max
+                10MB (10,240KB) &middot; e.g. 1500&times;300px or any size in the same 5:1 ratio &mdash; a larger
+                upload just takes longer to save, it&rsquo;s scaled to fit automatically.
+              </p>
               {uploading && <p className="text-xs text-gray-500 mt-1">Uploading…</p>}
               {form.overlayUrl && (
                 <button type="button" onClick={clearOverlay} className="text-xs text-red-600 font-medium mt-1">
