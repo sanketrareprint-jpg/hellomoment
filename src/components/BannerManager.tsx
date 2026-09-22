@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import DashboardBannerSlider from '@/components/DashboardBannerSlider';
 
 export interface BannerRow {
   id: string;
@@ -15,10 +16,12 @@ export default function BannerManager({
   banners,
   placement,
   device,
+  slideSeconds,
 }: {
   banners: BannerRow[];
   placement: 'DASHBOARD' | 'LANDING';
   device: 'DESKTOP' | 'MOBILE';
+  slideSeconds: number;
 }) {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
@@ -28,6 +31,33 @@ export default function BannerManager({
   const [rowBusyId, setRowBusyId] = useState<string | null>(null);
   const [previewBanner, setPreviewBanner] = useState<BannerRow | null>(null);
   const inputId = `banner-file-input-${placement}-${device}`;
+  const [seconds, setSeconds] = useState(String(slideSeconds));
+  const [timingBusy, setTimingBusy] = useState(false);
+  const activeBanners = banners.filter((b) => b.isActive);
+  const aspectClass = device === 'DESKTOP' ? 'aspect-[3/1]' : 'aspect-[2/1]';
+
+  async function saveTiming() {
+    setError(null);
+    const n = Number(seconds);
+    if (!Number.isFinite(n) || n < 1 || n > 60) {
+      setError('Slide time must be between 1 and 60 seconds.');
+      return;
+    }
+    setTimingBusy(true);
+    try {
+      const res = await fetch('/api/admin/banners/timing', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ placement, device, seconds: n }),
+      });
+      if (!res.ok) throw new Error('Could not save slide time');
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setTimingBusy(false);
+    }
+  }
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -91,9 +121,8 @@ export default function BannerManager({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="card p-5">
-        <h2 className="font-semibold text-gray-900 mb-3">Add a banner</h2>
+    <div className="space-y-4">
+      <div>
         <form onSubmit={handleUpload} className="space-y-3">
           <div>
             <label className="label">Banner image</label>
@@ -129,15 +158,47 @@ export default function BannerManager({
         </form>
       </div>
 
+      {activeBanners.length > 1 && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-gray-600">Live slider ({activeBanners.length} banners)</p>
+          <DashboardBannerSlider
+            banners={activeBanners}
+            aspectClass={aspectClass}
+            intervalSeconds={slideSeconds}
+          />
+          <div className="flex items-center gap-2 text-sm text-gray-700">
+            <label htmlFor={`${inputId}-seconds`}>Slide every</label>
+            <input
+              id={`${inputId}-seconds`}
+              type="number"
+              min={1}
+              max={60}
+              value={seconds}
+              onChange={(e) => setSeconds(e.target.value)}
+              className="input w-20 py-1"
+            />
+            <span>seconds</span>
+            <button
+              type="button"
+              disabled={timingBusy || Number(seconds) === slideSeconds}
+              onClick={saveTiming}
+              className="btn-secondary px-3 py-1 text-xs"
+            >
+              {timingBusy ? 'Saving…' : 'Save'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {banners.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {banners.map((b) => (
             <div key={b.id} className="relative rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={b.imageUrl}
                 alt="Banner"
-                className={`w-full object-cover ${device === 'DESKTOP' ? 'aspect-[3/1]' : 'aspect-[2/1]'}`}
+                className={`w-full object-cover ${aspectClass}`}
               />
               {!b.isActive && (
                 <button

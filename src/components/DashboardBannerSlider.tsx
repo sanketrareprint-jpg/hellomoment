@@ -14,9 +14,11 @@ export interface SliderBanner {
 export default function DashboardBannerSlider({
   banners,
   aspectClass = 'aspect-[3/1]',
+  intervalSeconds = 5,
 }: {
   banners: SliderBanner[];
   aspectClass?: string;
+  intervalSeconds?: number;
 }) {
   const [index, setIndex] = useState(0);
 
@@ -29,13 +31,13 @@ export default function DashboardBannerSlider({
 
   useEffect(() => {
     if (banners.length <= 1) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % banners.length), 5000);
+    const id = setInterval(() => setIndex((i) => (i + 1) % banners.length), intervalSeconds * 1000);
     return () => clearInterval(id);
-  }, [banners.length]);
+  }, [banners.length, intervalSeconds]);
 
   if (banners.length === 0) return null;
 
-  const current = banners[index];
+  const current = banners[index] ?? banners[0];
 
   const Image = (
     // eslint-disable-next-line @next/next/no-img-element

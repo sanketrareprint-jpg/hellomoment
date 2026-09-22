@@ -3,6 +3,7 @@ import { getCurrentBusiness } from '@/lib/session';
 import { getTodayInTimezone, daysUntilNextOccurrence, formatDateForDisplay } from '@/lib/dateUtils';
 import Link from 'next/link';
 import DashboardBannerSlider from '@/components/DashboardBannerSlider';
+import { getAllBannerSlideSeconds } from '@/lib/bannerTiming';
 import DashboardTemplatesByCategory, { type DashboardTemplateRow } from '@/components/DashboardTemplatesByCategory';
 import type { BrandInfo, FrameOption } from '@/components/TemplatePlaceholderEditor';
 import WhatsAppMessagePreview from '@/components/WhatsAppMessagePreview';
@@ -59,6 +60,7 @@ export default async function DashboardOverview() {
   const desktopBanners = banners.filter((b) => b.device !== 'MOBILE');
   const hasMobileBanners = banners.some((b) => b.device === 'MOBILE');
   const mobileBanners = hasMobileBanners ? banners.filter((b) => b.device === 'MOBILE') : desktopBanners;
+  const slideSeconds = banners.length > 1 ? await getAllBannerSlideSeconds() : null;
   const customMessageCount = (status: string) =>
     customMessageCounts.find((c) => c.status === status)?._count._all ?? 0;
 
@@ -194,12 +196,16 @@ export default async function DashboardOverview() {
 
       {desktopBanners.length > 0 && (
         <div className="hidden sm:block">
-          <DashboardBannerSlider banners={desktopBanners} />
+          <DashboardBannerSlider banners={desktopBanners} intervalSeconds={slideSeconds?.['DASHBOARD.DESKTOP']} />
         </div>
       )}
       {mobileBanners.length > 0 && (
         <div className="sm:hidden">
-          <DashboardBannerSlider banners={mobileBanners} aspectClass={hasMobileBanners ? 'aspect-[2/1]' : undefined} />
+          <DashboardBannerSlider
+            banners={mobileBanners}
+            aspectClass={hasMobileBanners ? 'aspect-[2/1]' : undefined}
+            intervalSeconds={slideSeconds?.[hasMobileBanners ? 'DASHBOARD.MOBILE' : 'DASHBOARD.DESKTOP']}
+          />
         </div>
       )}
 

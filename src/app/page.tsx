@@ -3,6 +3,7 @@ import { getCurrentBusiness } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import HeroSlider from '@/components/HeroSlider';
 import DashboardBannerSlider from '@/components/DashboardBannerSlider';
+import { getAllBannerSlideSeconds } from '@/lib/bannerTiming';
 import { prisma } from '@/lib/db';
 import { RECHARGE_TIERS } from '@/lib/pricing';
 import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
@@ -88,6 +89,7 @@ export default async function LandingPage() {
   });
   const desktopBanners = banners.filter((b) => b.device !== 'MOBILE');
   const mobileBanners = banners.filter((b) => b.device === 'MOBILE');
+  const slideSeconds = banners.length > 1 ? await getAllBannerSlideSeconds() : null;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-white overflow-hidden">
@@ -118,12 +120,16 @@ export default async function LandingPage() {
       <div className="flex flex-col">
         {desktopBanners.length > 0 && (
           <section className="hidden sm:block max-w-5xl mx-auto px-4 sm:px-6 pt-6">
-            <DashboardBannerSlider banners={desktopBanners} />
+            <DashboardBannerSlider banners={desktopBanners} intervalSeconds={slideSeconds?.['LANDING.DESKTOP']} />
           </section>
         )}
         {mobileBanners.length > 0 && (
           <section className="sm:hidden w-full px-4 pt-2">
-            <DashboardBannerSlider banners={mobileBanners} aspectClass="aspect-[2/1]" />
+            <DashboardBannerSlider
+              banners={mobileBanners}
+              aspectClass="aspect-[2/1]"
+              intervalSeconds={slideSeconds?.['LANDING.MOBILE']}
+            />
           </section>
         )}
 
