@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import DashboardFlyerPreview, { type DashboardFlyerTemplate } from '@/components/DashboardFlyerPreview';
+import FestivalFlyerCard from '@/components/FestivalFlyerCard';
 import type { BrandInfo, FrameOption } from '@/components/TemplatePlaceholderEditor';
 
 const OCCASION_LABEL: Record<string, string> = {
@@ -58,16 +59,20 @@ export default function DashboardTemplatesByCategory({
             </Link>
           </div>
           <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
-            {groups.get(occasion)!.map((t) => (
-              <Link
-                key={t.id}
-                href={`/dashboard/templates/${t.id}/edit`}
-                className="card overflow-hidden shrink-0 w-44 sm:w-52 snap-start hover:shadow-md hover:-translate-y-0.5 transition-all"
-              >
-                <DashboardFlyerPreview template={t} defaultFrame={defaultFrame} business={business} />
-                <p className="text-xs font-medium text-gray-700 truncate px-2 py-1.5">{t.name}</p>
-              </Link>
-            ))}
+            {groups.get(occasion)!.map((t) =>
+              occasion === 'FESTIVAL' ? (
+                <FestivalFlyerCard key={t.id} template={t} defaultFrame={defaultFrame} business={business} />
+              ) : (
+                <Link
+                  key={t.id}
+                  href={`/dashboard/templates/${t.id}/edit`}
+                  className="card overflow-hidden shrink-0 w-44 sm:w-52 snap-start hover:shadow-md hover:-translate-y-0.5 transition-all"
+                >
+                  <DashboardFlyerPreview template={t} defaultFrame={defaultFrame} business={business} />
+                  <p className="text-xs font-medium text-gray-700 truncate px-2 py-1.5">{t.name}</p>
+                </Link>
+              )
+            )}
           </div>
         </div>
       ))}
