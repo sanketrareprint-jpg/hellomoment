@@ -9,9 +9,9 @@ export const dynamic = 'force-dynamic';
 
 function StatCard({ label, value, caption }: { label: string; value: string | number; caption?: string }) {
   return (
-    <div className="card p-3">
+    <div className="card p-2.5">
       <div className="text-xs text-gray-500">{label}</div>
-      <div className="text-xl font-bold text-gray-900 mt-0.5">{value}</div>
+      <div className="text-lg font-bold text-gray-900 mt-0.5">{value}</div>
       {caption && <div className="text-[11px] text-gray-400 mt-0.5 truncate">{caption}</div>}
     </div>
   );
@@ -59,69 +59,76 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-gray-900">Signed-up businesses</h1>
-      <p className="text-gray-600 text-sm mb-3">Every business that has registered on raregreet.com.</p>
+    <div className="h-full min-h-0 flex flex-col">
+      <div className="shrink-0">
+        <h1 className="text-xl font-bold text-gray-900">Signed-up businesses</h1>
+        <p className="text-gray-600 text-sm mb-2">Every business that has registered on raregreet.com.</p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-        <StatCard label="Total businesses" value={totalBusinesses} />
-        <StatCard label="New in last 7 days" value={newThisWeek} />
-        <StatCard label="Total contacts added" value={totalContacts} />
-        <StatCard label="Flyers sent (success)" value={totalSends} />
-        <StatCard
-          label="Flyer templates"
-          value={stats.totalStarterTemplates}
-          caption={`${stats.totalFlyerTemplateCopies} copies in use`}
-        />
-        <StatCard
-          label="Frame designs"
-          value={stats.totalFrames}
-          caption={`${stats.totalBusinessFrameCopies} adopted by businesses`}
-        />
-        <StatCard
-          label="Today's coin recharge"
-          value={rupees(stats.todayRechargePaise)}
-          caption={`${rupees(stats.todayWalletSpendPaise)} wallet spend today`}
-        />
-        <StatCard label="Today's coins spent" value={stats.todayCoinsSpent.toLocaleString('en-IN')} caption="trial coins" />
+        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-2 mb-2">
+          <StatCard label="Total businesses" value={totalBusinesses} />
+          <StatCard label="New in last 7 days" value={newThisWeek} />
+          <StatCard label="Total contacts added" value={totalContacts} />
+          <StatCard label="Flyers sent (success)" value={totalSends} />
+          <StatCard
+            label="Flyer templates"
+            value={stats.totalStarterTemplates}
+            caption={`${stats.totalFlyerTemplateCopies} copies in use`}
+          />
+          <StatCard
+            label="Frame designs"
+            value={stats.totalFrames}
+            caption={`${stats.totalBusinessFrameCopies} adopted by businesses`}
+          />
+          <StatCard
+            label="Today's coin recharge"
+            value={rupees(stats.todayRechargePaise)}
+            caption={`${rupees(stats.todayWalletSpendPaise)} wallet spend today`}
+          />
+          <StatCard label="Today's coins spent" value={stats.todayCoinsSpent.toLocaleString('en-IN')} caption="trial coins" />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 mb-2">
+          <div className="card p-2.5 min-w-0">
+            <h2 className="text-xs font-bold text-gray-900">Business sign-ups — month on month</h2>
+            <p className="text-[11px] text-gray-400 mb-1">New businesses registered, last 6 months</p>
+            <AdminBarChart data={stats.monthlySignups} color="#db2777" height={90} />
+          </div>
+          <div className="card p-2.5 min-w-0">
+            <h2 className="text-xs font-bold text-gray-900">Wallet recharge revenue</h2>
+            <p className="text-[11px] text-gray-400 mb-1">Paid recharges, last 7 days</p>
+            <AdminBarChart
+              data={stats.dailyRechargePaise}
+              color="#db2777"
+              formatValue={(v) => `₹${v.toLocaleString('en-IN')}`}
+              height={90}
+            />
+          </div>
+          <div className="card p-2.5 min-w-0">
+            <h2 className="text-xs font-bold text-gray-900">Flyers sent by occasion</h2>
+            <p className="text-[11px] text-gray-400 mb-1">All-time send attempts</p>
+            <AdminDonutChart data={stats.sendsByOccasion} centerLabel={String(stats.totalSendAttempts)} size={96} />
+          </div>
+          <div className="card p-2.5 min-w-0">
+            <h2 className="text-xs font-bold text-gray-900">Send outcome</h2>
+            <p className="text-[11px] text-gray-400 mb-1">All-time success vs. failure rate</p>
+            <AdminDonutChart data={stats.sendsByStatus} centerLabel={String(stats.totalSendAttempts)} size={96} />
+          </div>
+        </div>
+
+        <form className="mb-2" method="GET">
+          <input
+            type="text"
+            name="q"
+            defaultValue={q}
+            placeholder="Search by business name, email, or WhatsApp number…"
+            className="input max-w-md text-sm"
+          />
+        </form>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-        <div className="card p-4 min-w-0">
-          <h2 className="text-sm font-bold text-gray-900 mb-1">Business sign-ups — month on month</h2>
-          <p className="text-xs text-gray-400 mb-2">New businesses registered, last 6 months</p>
-          <AdminBarChart data={stats.monthlySignups} color="#db2777" />
-        </div>
-        <div className="card p-4 min-w-0">
-          <h2 className="text-sm font-bold text-gray-900 mb-1">Wallet recharge revenue</h2>
-          <p className="text-xs text-gray-400 mb-2">Paid recharges, last 7 days</p>
-          <AdminBarChart data={stats.dailyRechargePaise} color="#db2777" formatValue={(v) => `₹${v.toLocaleString('en-IN')}`} />
-        </div>
-        <div className="card p-4 min-w-0">
-          <h2 className="text-sm font-bold text-gray-900 mb-1">Flyers sent by occasion</h2>
-          <p className="text-xs text-gray-400 mb-2">All-time send attempts</p>
-          <AdminDonutChart data={stats.sendsByOccasion} centerLabel={String(stats.totalSendAttempts)} />
-        </div>
-        <div className="card p-4 min-w-0">
-          <h2 className="text-sm font-bold text-gray-900 mb-1">Send outcome</h2>
-          <p className="text-xs text-gray-400 mb-2">All-time success vs. failure rate</p>
-          <AdminDonutChart data={stats.sendsByStatus} centerLabel={String(stats.totalSendAttempts)} />
-        </div>
-      </div>
-
-      <form className="mb-3" method="GET">
-        <input
-          type="text"
-          name="q"
-          defaultValue={q}
-          placeholder="Search by business name, email, or WhatsApp number…"
-          className="input max-w-md text-sm"
-        />
-      </form>
-
-      <div className="card overflow-hidden overflow-x-auto">
+      <div className="card overflow-auto flex-1 min-h-0">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-500 text-left">
+          <thead className="bg-gray-50 text-gray-500 text-left sticky top-0 z-10">
             <tr>
               <th className="px-4 py-2 font-medium whitespace-nowrap">Business</th>
               <th className="px-4 py-2 font-medium whitespace-nowrap">Email</th>
@@ -197,7 +204,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
       </div>
 
       {totalPages > 1 && (
-        <div className="flex gap-2 mt-3">
+        <div className="shrink-0 flex gap-2 mt-2">
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <a
               key={p}

@@ -10,9 +10,9 @@ export default function AdminProtectedLayout({ children }: { children: React.Rea
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
+    <div className="h-screen flex bg-gray-50 overflow-hidden">
       <AdminSidebar />
-      <main className="flex-1 min-w-0 px-6 py-5">{children}</main>
+      <main className="flex-1 min-w-0 overflow-y-auto px-6 py-5">{children}</main>
     </div>
   );
 }
