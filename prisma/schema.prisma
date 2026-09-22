@@ -87,6 +87,8 @@ model Business {
   trialCoinTransactions TrialCoinTransaction[]
   rechargeOrders      RechargeOrder[]
   passwordResetTokens PasswordResetToken[]
+  messageTemplates    MessageTemplate[]
+  messageTemplateSelections MessageTemplateSelection[]
 
   @@index([ownerBusinessId])
 }
@@ -490,4 +492,89 @@ model SendLog {
   sentAt DateTime @default(now())
 
   @@index([businessId, sentAt])
+}
+
+// A WhatsApp text message template sent alongside the flyer (the flyer is
+// the approved AiSensy template's image header; this is its body text).
+// Three categories:
+//  - "GENERAL": added by admin, every variable is filled automatically
+//    (contact name, occasion, business name, date) — a business just picks it.
+//  - "SPECIAL": added by admin, with at least one "INPUT" variable a
+//    business fills in themselves when picking it (e.g. the offer/discount
+//    or coupon code) — values differ business to business.
+//  - "CUSTOM": written by a business (businessId set), paid for at
+//    customMessageTemplatePrice (see AppSetting / src/lib/messageTemplates.ts),
+//    then reviewed by admin — usable only once status is "APPROVED".
+// `variables` is a JSON array describing each {{n}} in `body`, in order —
+// see MessageVariable in src/lib/messageTemplates.ts.
+// category: "GENERAL" | "SPECIAL" | "CUSTOM"
+// occasion: "ANY" | "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+// status: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" (admin-made ones are always "APPROVED")
+model MessageTemplate {
+  id         String    @id @default(cuid())
+  businessId String? // null for admin-made GENERAL/SPECIAL templates; the owning business for CUSTOM ones
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  category  String
+  name      String
+  occasion  String  @default("ANY")
+  body      String
+  variables String  @default("[]")
+
+  // The approved AiSensy campaign that sends this exact text — set by admin
+  // (on create for GENERAL/SPECIAL, on approval for CUSTOM).
+  aisensyCampaignName String?
+
+  status          String    @default("APPROVED")
+  rejectionReason String?
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+
+  // Payment for CUSTOM templates — paid once; a rejected template can be
+  // edited and resubmitted without paying again.
+  pricePaise      Int       @default(0)
+  paymentMethod   String? // "RAZORPAY" | "WALLET" | "FREE"
+  razorpayOrderId String?   @unique
+  paidAt          DateTime?
+
+  isActive Boolean @default(true) // admin-made templates only: hide from businesses without deleting
+  order    Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  selections MessageTemplateSelection[]
+
+  @@index([businessId, status])
+  @@index([category, isActive, order])
+}
+
+// Which MessageTemplate a business sends with its flyers for each occasion,
+// plus the values it typed for that template's "INPUT" variables (JSON
+// object keyed by variable index, e.g. {"2":"20% OFF"}). No row means the
+// occasion keeps using the original default campaign/text.
+// occasion: "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+model MessageTemplateSelection {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  occasion          String
+  messageTemplateId String
+  messageTemplate   MessageTemplate @relation(fields: [messageTemplateId], references: [id], onDelete: Cascade)
+  variableValues    String          @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, occasion])
+  @@index([messageTemplateId])
+}
+
+// Global admin-editable settings (key/value), e.g. the custom message
+// template price. See src/lib/messageTemplates.ts for the keys in use.
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }

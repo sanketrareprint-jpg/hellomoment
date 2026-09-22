@@ -41,6 +41,17 @@ const NAV_ITEMS = [
     ),
   },
   {
+    href: '/admin/message-templates',
+    label: 'Message templates',
+    match: (path: string) => path.startsWith('/admin/message-templates'),
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 5h16v11H8l-4 4V5z" />
+        <path d="M8 9h8M8 12h5" />
+      </svg>
+    ),
+  },
+  {
     href: '/admin/banners',
     label: 'Banners',
     match: (path: string) => path.startsWith('/admin/banners'),

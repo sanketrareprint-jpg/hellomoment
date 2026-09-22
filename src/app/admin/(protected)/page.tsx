@@ -38,7 +38,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const [businesses, total, totalBusinesses, newThisWeek, totalContacts, totalSends, lastSends, stats] = await Promise.all([
+  const [businesses, total, totalBusinesses, newThisWeek, totalContacts, totalSends, lastSends, stats, customMessageCounts] = await Promise.all([
     prisma.business.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -53,7 +53,10 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
     prisma.sendLog.count({ where: { status: 'SUCCESS' } }),
     prisma.sendLog.groupBy({ by: ['businessId'], _max: { sentAt: true } }),
     getAdminDashboardStats(),
+    prisma.messageTemplate.groupBy({ by: ['status'], where: { category: 'CUSTOM' }, _count: { _all: true } }),
   ]);
+  const customMessageCount = (status: string) =>
+    customMessageCounts.find((c) => c.status === status)?._count._all ?? 0;
 
   const lastSendByBusiness = new Map(lastSends.map((row) => [row.businessId, row._max.sentAt]));
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -64,7 +67,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
         <h1 className="text-xl font-bold text-gray-900">Signed-up businesses</h1>
         <p className="text-gray-600 text-sm mb-2">Every business that has registered on raregreet.com.</p>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-2 mb-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 xl:grid-cols-9 gap-2 mb-2">
           <StatCard label="Total businesses" value={totalBusinesses} />
           <StatCard label="New in last 7 days" value={newThisWeek} />
           <StatCard label="Total contacts added" value={totalContacts} />
@@ -85,6 +88,13 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
             caption={`${rupees(stats.todayWalletSpendPaise)} wallet spend today`}
           />
           <StatCard label="Today's coins spent" value={stats.todayCoinsSpent.toLocaleString('en-IN')} caption="trial coins" />
+          <Link href="/admin/message-templates" className="block">
+            <StatCard
+              label="Custom msg templates"
+              value={`${customMessageCount('APPROVED')} approved`}
+              caption={`${customMessageCount('PENDING')} pending approval`}
+            />
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 mb-2">

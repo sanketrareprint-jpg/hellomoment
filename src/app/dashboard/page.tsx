@@ -11,7 +11,7 @@ export default async function DashboardOverview() {
   const business = await getCurrentBusiness();
   if (!business) return null;
 
-  const [contactCount, templateCount, templates, festivalCount, recentLogs, contacts, banners] = await Promise.all([
+  const [contactCount, templateCount, templates, festivalCount, recentLogs, contacts, banners, customMessageCounts] = await Promise.all([
     prisma.contact.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.findMany({
@@ -32,7 +32,14 @@ export default async function DashboardOverview() {
       orderBy: { order: 'asc' },
       select: { id: true, imageUrl: true, linkUrl: true },
     }),
+    prisma.messageTemplate.groupBy({
+      by: ['status'],
+      where: { businessId: business.id, category: 'CUSTOM' },
+      _count: { _all: true },
+    }),
   ]);
+  const customMessageCount = (status: string) =>
+    customMessageCounts.find((c) => c.status === status)?._count._all ?? 0;
 
   const today = getTodayInTimezone(business.timezone);
   type Upcoming = { id: string; name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY'; days: number; date: Date };
@@ -92,6 +99,32 @@ export default async function DashboardOverview() {
         <StatCard label="Flyer templates" value={templateCount} href="/dashboard/templates" />
         <StatCard label="Active festivals" value={festivalCount} href="/dashboard/festivals" />
       </div>
+
+      <Link
+        href="/dashboard/message-templates"
+        className="card p-4 flex flex-wrap items-center justify-between gap-3 hover:border-brand-300 transition-colors"
+      >
+        <div>
+          <h2 className="font-semibold text-gray-900 text-sm">Custom message templates</h2>
+          <p className="text-xs text-gray-500">Your own WhatsApp messages sent with the flyer</p>
+        </div>
+        <div className="flex gap-4 text-sm">
+          <span>
+            <span className="text-xl font-bold text-green-700">{customMessageCount('APPROVED')}</span>{' '}
+            <span className="text-gray-500">approved</span>
+          </span>
+          <span>
+            <span className="text-xl font-bold text-amber-600">{customMessageCount('PENDING')}</span>{' '}
+            <span className="text-gray-500">pending</span>
+          </span>
+          {customMessageCount('REJECTED') > 0 && (
+            <span>
+              <span className="text-xl font-bold text-red-600">{customMessageCount('REJECTED')}</span>{' '}
+              <span className="text-gray-500">rejected</span>
+            </span>
+          )}
+        </div>
+      </Link>
 
       <DashboardTemplatesByCategory templates={templates} />
 
