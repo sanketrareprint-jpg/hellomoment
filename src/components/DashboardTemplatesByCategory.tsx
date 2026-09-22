@@ -29,10 +29,12 @@ export default function DashboardTemplatesByCategory({
   templates,
   defaultFrame,
   business,
+  showViewAll = true,
 }: {
   templates: DashboardTemplateRow[];
   defaultFrame: FrameOption | null;
   business: BrandInfo;
+  showViewAll?: boolean;
 }) {
   if (templates.length === 0) return null;
 
@@ -55,9 +57,11 @@ export default function DashboardTemplatesByCategory({
         <div key={occasion}>
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-semibold text-gray-900 text-sm">{OCCASION_LABEL[occasion] ?? occasion} templates</h2>
-            <Link href="/dashboard/templates" className="text-xs text-brand-600 font-medium">
-              View all →
-            </Link>
+            {showViewAll && (
+              <Link href="/dashboard/templates" className="text-xs text-brand-600 font-medium">
+                View all →
+              </Link>
+            )}
           </div>
           <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
             {groups.get(occasion)!.map((t) =>
