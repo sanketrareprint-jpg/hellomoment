@@ -11,7 +11,13 @@ export interface SliderBanner {
 // Auto-rotating promotional banner slider, like a website hero carousel —
 // added/managed only from the admin panel (see /admin/banners), never by a
 // business itself. Shown at the top of the dashboard overview.
-export default function DashboardBannerSlider({ banners }: { banners: SliderBanner[] }) {
+export default function DashboardBannerSlider({
+  banners,
+  aspectClass = 'aspect-[3/1]',
+}: {
+  banners: SliderBanner[];
+  aspectClass?: string;
+}) {
   const [index, setIndex] = useState(0);
 
   const goTo = useCallback(
@@ -38,7 +44,7 @@ export default function DashboardBannerSlider({ banners }: { banners: SliderBann
 
   return (
     <div className="relative rounded-2xl overflow-hidden shadow-sm border border-gray-200/80 group">
-      <div className="w-full aspect-[3/1] bg-gray-100">
+      <div className={`w-full ${aspectClass} bg-gray-100`}>
         {current.linkUrl ? (
           <a href={current.linkUrl} target="_blank" rel="noopener noreferrer">
             {Image}
