@@ -93,9 +93,9 @@ export default async function TemplatesPage({
 
   return (
     <div className="max-w-5xl">
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Flyer templates</h1>
-        <p className="text-gray-600 mt-1">Upload a background once; name, date and photo are filled in automatically.</p>
+        <p className="text-gray-600 mt-1 text-sm">Upload a background once; name, date and photo are filled in automatically.</p>
       </div>
 
       {!folder ? (
@@ -133,15 +133,15 @@ export default async function TemplatesPage({
           </Link>
         </div>
       ) : (
-        <div className="card p-5">
+        <div className="card p-4">
           <Link
             href="/dashboard/templates"
-            className="text-sm text-brand-600 font-medium inline-flex items-center gap-1 mb-4 hover:gap-2 transition-all"
+            className="text-sm text-brand-600 font-medium inline-flex items-center gap-1 mb-3 hover:gap-2 transition-all"
           >
             ← All folders
           </Link>
 
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-3">
             <h2 className="font-semibold text-gray-900">{folder === 'my' ? 'My templates' : 'Starter templates'}</h2>
             {folder === 'my' ? (
               <Link href="/dashboard/templates/new" className="btn-primary">
