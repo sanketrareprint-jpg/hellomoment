@@ -868,58 +868,66 @@ export default function TemplatePlaceholderEditor({
     setTextPlaceholder(key, { ...p, x: p.x + dx, y: p.y + dy });
   }
 
+  // Persists the current form state (create or update, matching onSubmit's
+  // own POST/PUT choice) and returns the saved template's id — shared by
+  // onSubmit and generateFinalPreview so a preview can never be generated
+  // from an unsaved layout (see generateFinalPreview's own comment).
+  async function saveTemplate(): Promise<string> {
+    if (!form.backgroundUrl) {
+      throw new Error('Please upload a flyer background image first.');
+    }
+    const payload = {
+      name: form.name,
+      occasion: form.occasion,
+      backgroundUrl: form.backgroundUrl,
+      canvasWidth: form.canvasWidth,
+      canvasHeight: form.canvasHeight,
+      ...(showPerBusinessOptions
+        ? { isDefault: form.isDefault, aisensyCampaignName: form.aisensyCampaignName || null }
+        : {}),
+      namePlaceholder: form.useName ? form.namePlaceholder : null,
+      designationPlaceholder: form.useDesignation ? form.designationPlaceholder : null,
+      datePlaceholder: form.useDate ? form.datePlaceholder : null,
+      photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
+      logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
+      firmNamePlaceholder: isFieldOn('firmName') ? form.firmNamePlaceholder : null,
+      phonePlaceholder: isFieldOn('phone') ? form.phonePlaceholder : null,
+      emailPlaceholder: isFieldOn('email') ? form.emailPlaceholder : null,
+      addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
+      websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
+      productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
+      phoneTextOverride: form.phoneTextOverride || null,
+      emailTextOverride: form.emailTextOverride || null,
+      addressTextOverride: form.addressTextOverride || null,
+      websiteTextOverride: form.websiteTextOverride || null,
+      productsTextOverride: form.productsTextOverride || null,
+    };
+    const url = form.id ? `${apiBase}/${form.id}` : apiBase;
+    const method = form.id ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong');
+
+    // Stay on this page instead of bouncing back to the list — just swap
+    // a freshly-created template's URL over to its own edit page (so a
+    // second save PUTs instead of re-POSTing a duplicate).
+    if (!form.id) {
+      setForm((f) => ({ ...f, id: data.template.id }));
+      router.replace(`${redirectPath.split('?')[0]}/${data.template.id}/edit`);
+    }
+    return form.id ?? data.template.id;
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!form.backgroundUrl) {
-      setError('Please upload a flyer background image first.');
-      return;
-    }
     setLoading(true);
     try {
-      const payload = {
-        name: form.name,
-        occasion: form.occasion,
-        backgroundUrl: form.backgroundUrl,
-        canvasWidth: form.canvasWidth,
-        canvasHeight: form.canvasHeight,
-        ...(showPerBusinessOptions
-          ? { isDefault: form.isDefault, aisensyCampaignName: form.aisensyCampaignName || null }
-          : {}),
-        namePlaceholder: form.useName ? form.namePlaceholder : null,
-        designationPlaceholder: form.useDesignation ? form.designationPlaceholder : null,
-        datePlaceholder: form.useDate ? form.datePlaceholder : null,
-        photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
-        logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
-        firmNamePlaceholder: isFieldOn('firmName') ? form.firmNamePlaceholder : null,
-        phonePlaceholder: isFieldOn('phone') ? form.phonePlaceholder : null,
-        emailPlaceholder: isFieldOn('email') ? form.emailPlaceholder : null,
-        addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
-        websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
-        productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
-        phoneTextOverride: form.phoneTextOverride || null,
-        emailTextOverride: form.emailTextOverride || null,
-        addressTextOverride: form.addressTextOverride || null,
-        websiteTextOverride: form.websiteTextOverride || null,
-        productsTextOverride: form.productsTextOverride || null,
-      };
-      const url = form.id ? `${apiBase}/${form.id}` : apiBase;
-      const method = form.id ? 'PUT' : 'POST';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Something went wrong');
-      // Stay on this page instead of bouncing back to the list — just swap
-      // a freshly-created template's URL over to its own edit page (so a
-      // second save PUTs instead of re-POSTing a duplicate) and flash a
-      // "Saved" confirmation.
-      if (!form.id) {
-        setForm((f) => ({ ...f, id: data.template.id }));
-        router.replace(`${redirectPath.split('?')[0]}/${data.template.id}/edit`);
-      }
+      await saveTemplate();
       router.refresh();
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2500);
@@ -927,6 +935,36 @@ export default function TemplatePlaceholderEditor({
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Renders the *actual* flyer with a sample contact — same compositing
+  // pipeline a real send uses (see /api/templates/preview and
+  // sendWish.ts's renderFlyer, including its default-Frame-overrides-a-
+  // STARTER-template's-own-branding rule) — as opposed to the HTML/CSS
+  // placeholder preview below, which only approximates it. Saves the
+  // current form state first (via saveTemplate) so this can never show a
+  // layout a real send wouldn't actually produce.
+  const [finalPreview, setFinalPreview] = useState<{ loading: boolean; url: string | null; error: string | null }>({
+    loading: false,
+    url: null,
+    error: null,
+  });
+  async function generateFinalPreview() {
+    setFinalPreview({ loading: true, url: null, error: null });
+    try {
+      const templateId = await saveTemplate();
+      const res = await fetch('/api/templates/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not generate preview');
+      setFinalPreview({ loading: false, url: data.url, error: null });
+      router.refresh();
+    } catch (err) {
+      setFinalPreview({ loading: false, url: null, error: err instanceof Error ? err.message : 'Could not generate preview' });
     }
   }
 
@@ -976,6 +1014,32 @@ export default function TemplatePlaceholderEditor({
       label={selectedDef?.label}
       onNudge={nudgeSelected}
     />
+    {finalPreview.url && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+        onClick={() => setFinalPreview((s) => ({ ...s, url: null }))}
+      >
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-3" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-1.5">
+            <h3 className="text-sm font-semibold text-gray-900">Preview (sample contact)</h3>
+            <button
+              type="button"
+              onClick={() => setFinalPreview((s) => ({ ...s, url: null }))}
+              className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mb-2">
+            Generating this saved your current changes, then rendered this template exactly as a customer would
+            receive it — not the placeholder preview below.
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={finalPreview.url} alt="Final flyer preview" className="w-full rounded-md border border-gray-200" />
+        </div>
+      </div>
+    )}
     <form onSubmit={onSubmit} className="compact-form grid grid-cols-1 lg:grid-cols-2 gap-3">
       <div className="space-y-1.5">
         <div className="card p-1.5 space-y-1">
@@ -1450,11 +1514,25 @@ export default function TemplatePlaceholderEditor({
           <p className="text-xs text-gray-600">
             Drag the labeled markers on the flyer to position them. Numbers below give exact control.
           </p>
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap ml-2">
-            <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
-            Show grid
-          </label>
+          <div className="flex items-center gap-3 ml-2">
+            {business && (
+              <button
+                type="button"
+                onClick={generateFinalPreview}
+                disabled={finalPreview.loading}
+                title="Saves your current changes, then renders the actual flyer a customer would receive"
+                className="text-xs font-medium text-brand-600 hover:underline whitespace-nowrap disabled:opacity-60"
+              >
+                {finalPreview.loading ? 'Saving & generating…' : 'Save & generate preview'}
+              </button>
+            )}
+            <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap">
+              <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
+              Show grid
+            </label>
+          </div>
         </div>
+        {finalPreview.error && <p className="text-xs text-red-600 mb-2">{finalPreview.error}</p>}
         <div
           ref={previewRef}
           onPointerMove={onPointerMove}
