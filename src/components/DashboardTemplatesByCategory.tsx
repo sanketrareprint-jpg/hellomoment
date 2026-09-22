@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import DashboardFlyerPreview, { type DashboardFlyerTemplate } from '@/components/DashboardFlyerPreview';
 import FestivalFlyerCard from '@/components/FestivalFlyerCard';
+import TemplateCardActions from '@/components/TemplateCardActions';
 import type { BrandInfo, FrameOption } from '@/components/TemplatePlaceholderEditor';
 
 const OCCASION_LABEL: Record<string, string> = {
@@ -16,6 +17,7 @@ export interface DashboardTemplateRow extends DashboardFlyerTemplate {
   id: string;
   name: string;
   occasion: string;
+  isDefault?: boolean;
 }
 
 // Groups the business's flyer templates by occasion and shows each group as
@@ -30,11 +32,15 @@ export default function DashboardTemplatesByCategory({
   defaultFrame,
   business,
   showViewAll = true,
+  manage = false,
 }: {
   templates: DashboardTemplateRow[];
   defaultFrame: FrameOption | null;
   business: BrandInfo;
   showViewAll?: boolean;
+  // Flyer templates page: each card gets Edit / Delete / Set default links.
+  // Otherwise (dashboard) every card opens the watermarked preview + Download.
+  manage?: boolean;
 }) {
   if (templates.length === 0) return null;
 
@@ -65,17 +71,25 @@ export default function DashboardTemplatesByCategory({
           </div>
           <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
             {groups.get(occasion)!.map((t) =>
-              occasion === 'FESTIVAL' || occasion === 'OTHER' ? (
-                <FestivalFlyerCard key={t.id} template={t} defaultFrame={defaultFrame} business={business} />
+              manage ? (
+                <div key={t.id} className="card overflow-hidden shrink-0 w-44 sm:w-52 snap-start flex flex-col">
+                  <Link href={`/dashboard/templates/${t.id}/edit`}>
+                    <DashboardFlyerPreview template={t} defaultFrame={defaultFrame} business={business} />
+                  </Link>
+                  <div className="px-2 py-1.5">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-xs font-medium text-gray-700 truncate">{t.name}</p>
+                      {t.isDefault && (
+                        <span className="shrink-0 text-[10px] font-medium bg-brand-100 text-brand-700 rounded-full px-1.5 py-0.5">
+                          Default
+                        </span>
+                      )}
+                    </div>
+                    <TemplateCardActions id={t.id} name={t.name} isDefault={!!t.isDefault} />
+                  </div>
+                </div>
               ) : (
-                <Link
-                  key={t.id}
-                  href={`/dashboard/templates/${t.id}/edit`}
-                  className="card overflow-hidden shrink-0 w-44 sm:w-52 snap-start hover:shadow-md hover:-translate-y-0.5 transition-all"
-                >
-                  <DashboardFlyerPreview template={t} defaultFrame={defaultFrame} business={business} />
-                  <p className="text-xs font-medium text-gray-700 truncate px-2 py-1.5">{t.name}</p>
-                </Link>
+                <FestivalFlyerCard key={t.id} template={t} defaultFrame={defaultFrame} business={business} />
               )
             )}
           </div>

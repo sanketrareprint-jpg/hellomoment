@@ -48,6 +48,7 @@ export default async function TemplatesPage({
       name: t.name,
       occasion: t.occasion,
       source: t.source,
+      isDefault: t.isDefault,
       backgroundUrl: t.backgroundUrl,
       canvasWidth: t.canvasWidth,
       canvasHeight: t.canvasHeight,
@@ -171,6 +172,7 @@ export default async function TemplatesPage({
               defaultFrame={defaultFrame}
               business={brand}
               showViewAll={false}
+              manage
             />
           )}
         </div>

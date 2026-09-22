@@ -17,7 +17,7 @@ import { COINS_PER_SEND } from '@/lib/pricing';
 const DOWNLOAD_PRICE_PAISE = 500;
 
 /**
- * Paid download of a FESTIVAL template as a clean, ready-to-share flyer —
+ * Paid download of a flyer template (any occasion) as a clean, ready-to-share flyer —
  * the dashboard shows a watermarked preview (see FestivalFlyerCard.tsx) and
  * only this route produces the unwatermarked image, after charging for it.
  * Rendered like the dashboard preview: background + the business's default
@@ -32,9 +32,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const template = await prisma.flyerTemplate.findUnique({ where: { id: params.id } });
   if (!template || template.businessId !== business.id) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
-  if (template.occasion !== 'FESTIVAL' && template.occasion !== 'OTHER') {
-    return NextResponse.json({ error: 'Only festival and other flyers can be downloaded.' }, { status: 400 });
   }
 
   const defaultFrame = await prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } });
