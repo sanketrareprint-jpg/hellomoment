@@ -5,6 +5,19 @@ import Link from 'next/link';
 import DashboardBannerSlider from '@/components/DashboardBannerSlider';
 import DashboardTemplatesByCategory, { type DashboardTemplateRow } from '@/components/DashboardTemplatesByCategory';
 import type { BrandInfo, FrameOption } from '@/components/TemplatePlaceholderEditor';
+import WhatsAppMessagePreview from '@/components/WhatsAppMessagePreview';
+import { isTemplateUsableBy } from '@/lib/messageTemplates';
+import {
+  DEFAULT_WISH_BODY,
+  DEFAULT_WISH_VARIABLES,
+  OCCASION_LABELS,
+  SEND_OCCASIONS,
+  parseVariableValues,
+  parseVariables,
+  renderPreview,
+  templateFitsOccasion,
+} from '@/lib/messageTemplateVars';
+import { brandFirmNameText } from '@/lib/sendWish';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,7 +25,7 @@ export default async function DashboardOverview() {
   const business = await getCurrentBusiness();
   if (!business) return null;
 
-  const [contactCount, templateCount, rawTemplates, festivalCount, recentLogs, contacts, banners, rawDefaultFrame, customMessageCounts] = await Promise.all([
+  const [contactCount, templateCount, rawTemplates, festivalCount, recentLogs, contacts, banners, rawDefaultFrame, customMessageCounts, messageSelections] = await Promise.all([
     prisma.contact.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.findMany({
@@ -38,9 +51,44 @@ export default async function DashboardOverview() {
       where: { businessId: business.id, category: 'CUSTOM' },
       _count: { _all: true },
     }),
+    prisma.messageTemplateSelection.findMany({ where: { businessId: business.id }, include: { messageTemplate: true } }),
   ]);
   const customMessageCount = (status: string) =>
     customMessageCounts.find((c) => c.status === status)?._count._all ?? 0;
+
+  // The WhatsApp text each occasion's flyer goes out with — the business's
+  // selected message template (Message templates page), or the default wish
+  // when none is picked or it's no longer usable (same rule as sendWish.ts).
+  // Filled-in parts are shown in [brackets], like AiSensy's own preview.
+  const bracketFromName = `[${brandFirmNameText(business) || business.name}]`;
+  const messagePreviews = SEND_OCCASIONS.map((occasion) => {
+    const sel = messageSelections.find((s) => s.occasion === occasion);
+    const t = sel?.messageTemplate;
+    const usable = !!t && isTemplateUsableBy(t, business.id) && templateFitsOccasion(t.occasion, occasion);
+    const ctx = {
+      contactName: '[Customer name]',
+      occasionWord: occasion === 'FESTIVAL' ? '[Festival name]' : `[${OCCASION_LABELS[occasion]}]`,
+      businessName: bracketFromName,
+      dateText: '[Date]',
+    };
+    if (!t || !usable) {
+      return {
+        occasion,
+        name: 'Default wish message',
+        isDefault: true,
+        text: renderPreview(DEFAULT_WISH_BODY, DEFAULT_WISH_VARIABLES, {}, ctx),
+      };
+    }
+    const bracketed = Object.fromEntries(
+      Object.entries(parseVariableValues(sel!.variableValues)).map(([k, v]) => [k, `[${v}]`])
+    );
+    return {
+      occasion,
+      name: t.name,
+      isDefault: false,
+      text: renderPreview(t.body, parseVariables(t.variables), bracketed, ctx),
+    };
+  });
 
   // Placeholders are JSON strings in the DB — parsed here so the dashboard
   // cards can draw each template with its sample name/date/photo and the
@@ -194,6 +242,26 @@ export default async function DashboardOverview() {
           )}
         </div>
       </Link>
+
+      <div>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold text-gray-900 text-sm">WhatsApp message sent with your flyers</h2>
+          <Link href="/dashboard/message-templates" className="text-sm text-brand-600 font-medium">
+            Change →
+          </Link>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3">
+          {messagePreviews.map((p) => (
+            <WhatsAppMessagePreview
+              key={p.occasion}
+              occasionLabel={OCCASION_LABELS[p.occasion]}
+              templateName={p.name}
+              text={p.text}
+              isDefault={p.isDefault}
+            />
+          ))}
+        </div>
+      </div>
 
       <DashboardTemplatesByCategory templates={templates} defaultFrame={defaultFrame} business={brand} />
 
