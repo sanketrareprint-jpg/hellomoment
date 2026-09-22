@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
 import SiteFooter from '@/components/SiteFooter';
-import { getAllBlogPosts, getBlogPostBySlug } from '@/lib/blogPosts';
+import { getBlogPostBySlug } from '@/lib/blogPosts';
 
 function SiteHeader() {
   return (
@@ -52,12 +52,10 @@ function groupBlocks(lines: string[]): ContentBlock[] {
   return blocks;
 }
 
-export function generateStaticParams() {
-  return getAllBlogPosts().map((post) => ({ slug: post.slug }));
-}
+export const dynamic = 'force-dynamic';
 
-export function generateMetadata({ params }: { params: { slug: string } }) {
-  const post = getBlogPostBySlug(params.slug);
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const post = await getBlogPostBySlug(params.slug);
   if (!post) return {};
   return {
     title: `${post.title} — raregreet.com Blog`,
@@ -65,8 +63,8 @@ export function generateMetadata({ params }: { params: { slug: string } }) {
   };
 }
 
-export default function BlogPostPage({ params }: { params: { slug: string } }) {
-  const post = getBlogPostBySlug(params.slug);
+export default async function BlogPostPage({ params }: { params: { slug: string } }) {
+  const post = await getBlogPostBySlug(params.slug);
   if (!post) notFound();
 
   return (

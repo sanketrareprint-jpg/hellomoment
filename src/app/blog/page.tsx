@@ -35,8 +35,10 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-export default function BlogIndexPage() {
-  const posts = getAllBlogPosts();
+export const dynamic = 'force-dynamic';
+
+export default async function BlogIndexPage() {
+  const posts = await getAllBlogPosts();
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-50 to-white">

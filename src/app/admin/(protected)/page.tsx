@@ -63,6 +63,9 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           <Link href="/admin/banners" className="btn-secondary whitespace-nowrap">
             Manage banners
           </Link>
+          <Link href="/admin/blog" className="btn-secondary whitespace-nowrap">
+            Manage blog
+          </Link>
         </div>
       </div>
       <p className="text-gray-600 text-sm mb-3">Every business that has registered on raregreet.com.</p>

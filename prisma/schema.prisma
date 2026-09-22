@@ -300,6 +300,30 @@ model DashboardBanner {
   @@index([placement, isActive, order])
 }
 
+// A blog post shown at /blog and /blog/<slug> — added, edited and deleted
+// only from the admin panel (Vrushali's own dashboard), same pattern as
+// DashboardBanner above: global, not per-business. `content` stores one
+// block per line — a line starting with "## " renders as a subheading, one
+// starting with "- " as a bullet list item (consecutive bullet lines group
+// into a single list on the page), and any other line as a paragraph. See
+// src/lib/blogPosts.ts for the reader/writer helpers around that format.
+model BlogPost {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  content     String
+  category    String   @default("Marketing")
+  readTime    String   @default("3 min read")
+  isPublished Boolean  @default(true)
+  publishedAt DateTime @default(now()) // shown as the post's date, and controls sort order — editable so a post can be backdated/scheduled
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isPublished, publishedAt])
+}
+
 // A ready-made flyer design admin (Vrushali) curates from the /admin panel —
 // the source of truth for "Add / refresh starter flyer designs" on every
 // business's Templates page (src/app/api/templates/seed-starter/route.ts

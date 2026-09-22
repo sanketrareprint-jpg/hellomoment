@@ -6,10 +6,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
-    "start": "prisma db push --skip-generate --accept-data-loss && next start",
+    "start": "prisma db push --skip-generate --accept-data-loss && tsx scripts/seed-blog-posts.ts && next start",
     "lint": "next lint",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
+    "db:seed-blog": "tsx scripts/seed-blog-posts.ts",
     "cron:daily": "tsx scripts/run-daily.ts"
   },
   "dependencies": {
