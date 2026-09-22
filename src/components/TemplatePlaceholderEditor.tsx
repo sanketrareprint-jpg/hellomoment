@@ -1519,8 +1519,25 @@ export default function TemplatePlaceholderEditor({
           <button type="button" className="btn-secondary" onClick={() => router.push(redirectPath)}>
             Cancel
           </button>
+          {/* Once saved, this editor keeps editing the same template (see
+              saveTemplate), so picking a new image here replaces this
+              template's image — this is the way to add a separate design. */}
+          {form.id && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => router.push(`${redirectPath.split('?')[0]}/new`)}
+            >
+              + Create another template
+            </button>
+          )}
           {justSaved && <span className="text-sm text-green-600 font-medium">Saved</span>}
         </div>
+        {form.id && (
+          <p className="text-xs text-gray-500">
+            Saving updates this template. To add a different design, use &quot;Create another template&quot;.
+          </p>
+        )}
       </div>
 
       {/* top-0, not top-4: this column is a CSS Grid item with
