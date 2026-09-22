@@ -94,6 +94,11 @@ export interface GenerateFlyerOptions {
   websiteText?: string | null;
   productsPlaceholder?: TextPlaceholder | null;
   productsText?: string | null;
+  // Free-form text boxes beyond the fixed fields above (see
+  // CustomTextPlaceholder in flyerPlaceholders.ts) — each carries its own
+  // placeholder (position/style) and its own text, unlike the paired
+  // placeholder/text props above which share one Business-level string.
+  customTexts?: { placeholder: TextPlaceholder; text: string }[];
 
   outputPath: string; // absolute filesystem path to write the composited JPEG
 }
@@ -680,6 +685,9 @@ export async function generateFlyer(opts: GenerateFlyerOptions): Promise<string>
   }
   if (opts.productsPlaceholder && opts.productsText) {
     textEntries.push({ placeholder: opts.productsPlaceholder, text: opts.productsText });
+  }
+  for (const custom of opts.customTexts ?? []) {
+    textEntries.push({ placeholder: custom.placeholder, text: custom.text });
   }
   for (const { placeholder, text, icon } of textEntries) {
     if (!text.trim()) continue;

@@ -4,8 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FONT_FAMILIES, type FontFamilyId } from '@/lib/fontFamilies';
-import { defaultsFor, type TemplateFormValues, type TextPlaceholder, type LogoPlaceholder, type Align } from '@/lib/flyerPlaceholders';
-import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder } from '@/lib/framePlaceholders';
+import {
+  defaultsFor,
+  type TemplateFormValues,
+  type TextPlaceholder,
+  type LogoPlaceholder,
+  type Align,
+  type CustomTextPlaceholder,
+} from '@/lib/flyerPlaceholders';
+import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder, scaleCustomTextPlaceholder } from '@/lib/framePlaceholders';
 import PlaceholderControls from '@/components/PlaceholderControls';
 import FloatingNudgePad from '@/components/FloatingNudgePad';
 
@@ -34,6 +41,7 @@ export interface FrameOption {
   addressPlaceholder: TextPlaceholder | null;
   websitePlaceholder: TextPlaceholder | null;
   productsPlaceholder: TextPlaceholder | null;
+  customTextPlaceholders: CustomTextPlaceholder[] | null;
 }
 
 // The business's saved Brand kit (Settings → Brand kit for flyers), passed
@@ -373,6 +381,14 @@ export default function TemplatePlaceholderEditor({
 
   const frameLogoPlaceholder: LogoPlaceholder | null =
     defaultFrame?.logoPlaceholder ? scaleLogoPlaceholder(defaultFrame.logoPlaceholder, frameScale, frameTopOffset) : null;
+
+  // The default Frame's own free-form text boxes (see
+  // BusinessFrame.customTextPlaceholders and FramePlaceholderEditor.tsx's
+  // "Custom text" section), scaled onto this template's canvas the same way
+  // as every other frame-driven field above — rendered read-only below so
+  // this preview matches exactly what sendWish.ts actually composites.
+  const frameCustomTexts: CustomTextPlaceholder[] =
+    defaultFrame?.customTextPlaceholders?.map((p) => scaleCustomTextPlaceholder(p, frameScale, frameTopOffset)) ?? [];
 
   // Only for the brand fields a Frame can carry (name/designation/date live
   // on the template itself, never on a Frame).
@@ -1661,6 +1677,40 @@ export default function TemplatePlaceholderEditor({
               </div>
             );
           })}
+
+          {frameActive &&
+            frameCustomTexts.map((c) => {
+              const fontPx = Math.max(1, c.fontSize * scale);
+              return (
+                <div
+                  key={c.id}
+                  className="absolute px-1 pointer-events-none"
+                  style={{
+                    left: c.x * scale,
+                    top: c.y * scale,
+                    transform: [
+                      c.align === 'center' ? 'translate(-50%, -50%)' : c.align === 'right' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
+                      c.rotation ? `rotate(${c.rotation}deg)` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' '),
+                    color: c.color,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: fontPx,
+                      fontWeight: c.fontWeight,
+                      fontFamily: cssFontFamilyFor(c.fontFamily),
+                      whiteSpace: 'pre',
+                      textAlign: c.align,
+                    }}
+                  >
+                    {c.text}
+                  </span>
+                </div>
+              );
+            })}
         </div>
       </div>
     </form>

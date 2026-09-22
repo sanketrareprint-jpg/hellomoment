@@ -5,7 +5,7 @@
 // ones, since it's meant to be composited onto *every* flyer a business
 // sends regardless of occasion or which FlyerTemplate that is.
 
-import type { LogoPlaceholder, TextPlaceholder } from '@/lib/flyerPlaceholders';
+import type { CustomTextPlaceholder, LogoPlaceholder, TextPlaceholder } from '@/lib/flyerPlaceholders';
 
 export interface FrameFormValues {
   id?: string;
@@ -29,6 +29,11 @@ export interface FrameFormValues {
   websitePlaceholder: TextPlaceholder;
   useProducts: boolean;
   productsPlaceholder: TextPlaceholder;
+  // Free-form text boxes beyond the fixed fields above — see
+  // CustomTextPlaceholder's own comment. Always an array (no separate
+  // use*/on-off flag): a box exists once added, and is removed instead of
+  // switched off.
+  customTexts: CustomTextPlaceholder[];
 }
 
 /**
@@ -69,6 +74,11 @@ export function scaleLogoPlaceholder(p: LogoPlaceholder, scale: number, topOffse
   return { ...p, x: Math.round(p.x * scale), y: Math.round(p.y * scale + topOffset), size: Math.round(p.size * scale) };
 }
 
+/** Same idea as scaleTextPlaceholder, keeping a custom text box's own id/text. */
+export function scaleCustomTextPlaceholder(p: CustomTextPlaceholder, scale: number, topOffset: number): CustomTextPlaceholder {
+  return { ...p, x: Math.round(p.x * scale), y: Math.round(p.y * scale + topOffset), fontSize: Math.round(p.fontSize * scale) };
+}
+
 export interface FramePlaceholderSet {
   logoPlaceholder: LogoPlaceholder | null;
   firmNamePlaceholder: TextPlaceholder | null;
@@ -77,6 +87,7 @@ export interface FramePlaceholderSet {
   addressPlaceholder: TextPlaceholder | null;
   websitePlaceholder: TextPlaceholder | null;
   productsPlaceholder: TextPlaceholder | null;
+  customTextPlaceholders: CustomTextPlaceholder[];
 }
 
 /**
@@ -102,6 +113,7 @@ export function scaleFramePlaceholderSet(
     addressPlaceholder: set.addressPlaceholder ? scaleTextPlaceholder(set.addressPlaceholder, scale, topOffset) : null,
     websitePlaceholder: set.websitePlaceholder ? scaleTextPlaceholder(set.websitePlaceholder, scale, topOffset) : null,
     productsPlaceholder: set.productsPlaceholder ? scaleTextPlaceholder(set.productsPlaceholder, scale, topOffset) : null,
+    customTextPlaceholders: set.customTextPlaceholders.map((p) => scaleCustomTextPlaceholder(p, scale, topOffset)),
   };
 }
 

@@ -16,6 +16,7 @@ export default async function EditAdminFramePage({ params }: { params: { id: str
   const addressPlaceholder = frame.addressPlaceholder ? JSON.parse(frame.addressPlaceholder) : null;
   const websitePlaceholder = frame.websitePlaceholder ? JSON.parse(frame.websitePlaceholder) : null;
   const productsPlaceholder = frame.productsPlaceholder ? JSON.parse(frame.productsPlaceholder) : null;
+  const customTexts = frame.customTextPlaceholders ? JSON.parse(frame.customTextPlaceholders) : [];
 
   const initial: FrameFormValues = {
     id: frame.id,
@@ -39,6 +40,7 @@ export default async function EditAdminFramePage({ params }: { params: { id: str
     websitePlaceholder: { ...defaults.websitePlaceholder, ...(websitePlaceholder ?? {}) },
     useProducts: Boolean(productsPlaceholder),
     productsPlaceholder: { ...defaults.productsPlaceholder, ...(productsPlaceholder ?? {}) },
+    customTexts,
   };
 
   return (
