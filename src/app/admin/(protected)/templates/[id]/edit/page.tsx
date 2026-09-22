@@ -7,6 +7,15 @@ export default async function EditAdminTemplatePage({ params }: { params: { id: 
   const template = await prisma.starterTemplate.findUnique({ where: { id: params.id } });
   if (!template) notFound();
 
+  // Offered as a "preview with a business's saved details" picker below —
+  // a StarterTemplate has no business of its own (it's the shared design
+  // every business copies), so this just lets the admin see it filled in
+  // with one real business's Brand kit instead of always-generic text.
+  const businesses = await prisma.business.findMany({
+    orderBy: { name: 'asc' },
+    select: { id: true, name: true },
+  });
+
   // Scaled to *this* template's own canvas size — not a fixed 1080×1080
   // guess — so a field being switched on for the first time lands in a
   // sensible spot relative to the actual background image.
@@ -40,6 +49,7 @@ export default async function EditAdminTemplatePage({ params }: { params: { id: 
       <TemplatePlaceholderEditor
         showBranding
         showPerBusinessOptions={false}
+        businesses={businesses}
         apiBase="/api/admin/starter-templates"
         uploadUrl="/api/admin/uploads/template"
         redirectPath="/admin/templates"
