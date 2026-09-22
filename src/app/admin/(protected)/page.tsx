@@ -51,20 +51,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4 mb-0.5">
-        <h1 className="text-xl font-bold text-gray-900">Signed-up businesses</h1>
-        <div className="flex gap-2">
-          <Link href="/admin/templates" className="btn-secondary whitespace-nowrap">
-            Manage flyer templates
-          </Link>
-          <Link href="/admin/frames" className="btn-secondary whitespace-nowrap">
-            Manage frames
-          </Link>
-          <Link href="/admin/banners" className="btn-secondary whitespace-nowrap">
-            Manage banners
-          </Link>
-        </div>
-      </div>
+      <h1 className="text-xl font-bold text-gray-900">Signed-up businesses</h1>
       <p className="text-gray-600 text-sm mb-3">Every business that has registered on raregreet.com.</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
