@@ -142,22 +142,48 @@ export default async function DashboardOverview() {
   };
 
   const today = getTodayInTimezone(business.timezone);
-  type Upcoming = { id: string; name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY'; days: number; date: Date };
-  const upcoming: Upcoming[] = [];
+  // Every birthday/anniversary for the "This month" and "Upcoming" windows:
+  // `days` is how far off its next occurrence is (0 = today).
+  type Occurrence = {
+    id: string;
+    name: string;
+    occasion: 'BIRTHDAY' | 'ANNIVERSARY';
+    month: number;
+    day: number;
+    days: number;
+    date: Date;
+  };
+  const occurrences: Occurrence[] = [];
   for (const c of contacts) {
-    if (c.dob) {
-      const days = daysUntilNextOccurrence({ month: c.dob.getUTCMonth() + 1, day: c.dob.getUTCDate() }, today);
-      if (days <= 7) upcoming.push({ id: c.id, name: c.name, occasion: 'BIRTHDAY', days, date: c.dob });
-    }
-    if (c.anniversary) {
-      const days = daysUntilNextOccurrence(
-        { month: c.anniversary.getUTCMonth() + 1, day: c.anniversary.getUTCDate() },
-        today
-      );
-      if (days <= 7) upcoming.push({ id: c.id, name: c.name, occasion: 'ANNIVERSARY', days, date: c.anniversary });
+    for (const [occasion, date] of [
+      ['BIRTHDAY', c.dob],
+      ['ANNIVERSARY', c.anniversary],
+    ] as const) {
+      if (!date) continue;
+      const month = date.getUTCMonth() + 1;
+      const day = date.getUTCDate();
+      const days = daysUntilNextOccurrence({ month, day }, today);
+      occurrences.push({ id: c.id, name: c.name, occasion, month, day, days, date });
     }
   }
-  upcoming.sort((a, b) => a.days - b.days);
+  const thisMonth = occurrences.filter((o) => o.month === today.month).sort((a, b) => a.day - b.day);
+  const upcoming = occurrences.filter((o) => o.days <= 30).sort((a, b) => a.days - b.days);
+
+  // Wishes sent since the 1st of this month, in the business's timezone.
+  const now = new Date();
+  const tzOffsetMs =
+    new Date(now.toLocaleString('en-US', { timeZone: business.timezone })).getTime() -
+    new Date(now.toLocaleString('en-US', { timeZone: 'UTC' })).getTime();
+  const monthStart = new Date(Date.UTC(today.year, today.month - 1, 1) - tzOffsetMs);
+  const monthSendCounts = await prisma.sendLog.groupBy({
+    by: ['status'],
+    where: { businessId: business.id, sentAt: { gte: monthStart } },
+    _count: { _all: true },
+  });
+  const monthSends = (status: string) => monthSendCounts.find((c) => c.status === status)?._count._all ?? 0;
+  const monthName = new Intl.DateTimeFormat('en-GB', { month: 'long', timeZone: 'UTC' }).format(
+    new Date(Date.UTC(today.year, today.month - 1, 1))
+  );
 
   // WhatsApp sending itself is always ready (shared platform key) — the only
   // thing worth nudging a new business about is uploading a flyer template.
@@ -204,13 +230,66 @@ export default async function DashboardOverview() {
         </div>
       )}
 
-      {/* "Upcoming (7 days)" used to be a 4th tile here too — removed since
-          the "Upcoming this week" card below already shows the same thing,
-          with actual names attached instead of just a count. */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {/* "Upcoming (7 days)" used to be a tile here — the "This month" and
+          "Upcoming" windows below show the same thing with names attached. */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label="Contacts" value={contactCount} href="/dashboard/contacts" />
         <StatCard label="Flyer templates" value={templateCount} href="/dashboard/templates" />
         <StatCard label="Active festivals" value={festivalCount} href="/dashboard/festivals" />
+        <StatCard
+          label={`Wishes sent in ${monthName}`}
+          value={monthSends('SUCCESS')}
+          href="/dashboard/logs"
+          sub={monthSends('FAILED') > 0 ? `${monthSends('FAILED')} failed` : undefined}
+        />
+      </div>
+
+      <div className="grid sm:grid-cols-3 gap-4">
+        <OccasionWindow
+          title={`This month · ${monthName}`}
+          items={thisMonth}
+          empty="No birthdays or anniversaries this month."
+          todayDay={today.day}
+        />
+        <OccasionWindow title="Upcoming · next 30 days" items={upcoming} empty="Nothing coming up in the next 30 days." />
+
+        <div className="card p-4 flex flex-col">
+          <h2 className="font-semibold text-gray-900 text-sm mb-2">Recent sends</h2>
+          {recentLogs.length === 0 ? (
+            <p className="text-sm text-gray-500">No wishes sent yet.</p>
+          ) : (
+            <ul className="divide-y divide-gray-100 max-h-56 overflow-y-auto -mx-1 px-1">
+              {recentLogs.map((log) => (
+                <li key={log.id} className="py-2 flex items-center justify-between gap-2 text-sm">
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-900 truncate">{log.contact?.name ?? log.festival?.name ?? '—'}</div>
+                    <div className="text-xs text-gray-500">
+                      {log.occasion.charAt(0) + log.occasion.slice(1).toLowerCase()} &middot;{' '}
+                      {new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: business.timezone }).format(
+                        log.sentAt
+                      )}
+                    </div>
+                  </div>
+                  <span
+                    className={
+                      'shrink-0 text-xs font-medium rounded-full px-2 py-0.5 ' +
+                      (log.status === 'SUCCESS'
+                        ? 'bg-green-100 text-green-700'
+                        : log.status === 'FAILED'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-gray-100 text-gray-600')
+                    }
+                  >
+                    {log.status}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/dashboard/logs" className="text-sm text-brand-600 font-medium mt-auto pt-3 inline-block">
+            View all logs →
+          </Link>
+        </div>
       </div>
 
       <DashboardTemplatesByCategory templates={templates} defaultFrame={defaultFrame} business={brand} />
@@ -262,72 +341,73 @@ export default async function DashboardOverview() {
           ))}
         </div>
       </div>
-
-      <div className="grid sm:grid-cols-2 gap-4">
-        <div className="card p-4">
-          <h2 className="font-semibold text-gray-900 text-sm mb-2">Upcoming this week</h2>
-          {upcoming.length === 0 ? (
-            <p className="text-sm text-gray-500">Nothing coming up in the next 7 days.</p>
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {upcoming.map((u) => (
-                <li key={`${u.id}-${u.occasion}`} className="py-2 flex items-center justify-between text-sm">
-                  <div>
-                    <span className="font-medium text-gray-900">{u.name}</span>{' '}
-                    <span className="text-gray-500">
-                      &mdash; {u.occasion === 'BIRTHDAY' ? 'Birthday' : 'Anniversary'} &middot;{' '}
-                      {formatDateForDisplay(u.date)}
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-500">{u.days === 0 ? 'Today' : `in ${u.days}d`}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="card p-4">
-          <h2 className="font-semibold text-gray-900 text-sm mb-2">Recent sends</h2>
-          {recentLogs.length === 0 ? (
-            <p className="text-sm text-gray-500">No wishes sent yet.</p>
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {recentLogs.map((log) => (
-                <li key={log.id} className="py-2 flex items-center justify-between text-sm">
-                  <div>
-                    <span className="font-medium text-gray-900">{log.contact?.name ?? log.festival?.name ?? '—'}</span>{' '}
-                    <span className="text-gray-500">&middot; {log.occasion.toLowerCase()}</span>
-                  </div>
-                  <span
-                    className={
-                      'text-xs font-medium rounded-full px-2 py-0.5 ' +
-                      (log.status === 'SUCCESS'
-                        ? 'bg-green-100 text-green-700'
-                        : log.status === 'FAILED'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-gray-100 text-gray-600')
-                    }
-                  >
-                    {log.status}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <Link href="/dashboard/logs" className="text-sm text-brand-600 font-medium mt-3 inline-block">
-            View all logs →
-          </Link>
-        </div>
-      </div>
     </div>
   );
 }
 
-function StatCard({ label, value, href }: { label: string; value: number; href: string }) {
+function StatCard({ label, value, href, sub }: { label: string; value: number; href: string; sub?: string }) {
   return (
     <Link href={href} className="card p-3 hover:border-brand-300 transition-colors">
       <div className="text-xl font-bold text-gray-900">{value}</div>
       <div className="text-xs text-gray-500">{label}</div>
+      {sub && <div className="text-xs text-red-600">{sub}</div>}
     </Link>
+  );
+}
+
+// A small scrollable list of birthdays/anniversaries: name, occasion, date
+// and how far off it is. With `todayDay` (the "This month" window), dates
+// earlier this month are shown greyed out as "Passed".
+function OccasionWindow({
+  title,
+  items,
+  empty,
+  todayDay,
+}: {
+  title: string;
+  items: { id: string; name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY'; day: number; days: number; date: Date }[];
+  empty: string;
+  todayDay?: number;
+}) {
+  return (
+    <div className="card p-4 flex flex-col">
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="font-semibold text-gray-900 text-sm">{title}</h2>
+        <span className="text-xs text-gray-400">{items.length}</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-sm text-gray-500">{empty}</p>
+      ) : (
+        <ul className="divide-y divide-gray-100 max-h-56 overflow-y-auto -mx-1 px-1">
+          {items.map((o) => {
+            const passed = todayDay !== undefined && o.day < todayDay;
+            return (
+              <li
+                key={`${o.id}-${o.occasion}`}
+                className={'py-2 flex items-center justify-between gap-2 text-sm ' + (passed ? 'opacity-50' : '')}
+              >
+                <div className="min-w-0">
+                  <div className="font-medium text-gray-900 truncate">{o.name}</div>
+                  <div className="text-xs text-gray-500">
+                    <span className={o.occasion === 'BIRTHDAY' ? 'text-pink-600' : 'text-purple-600'}>
+                      {o.occasion === 'BIRTHDAY' ? '🎂 Birthday' : '💍 Anniversary'}
+                    </span>{' '}
+                    &middot; {formatDateForDisplay(o.date)}
+                  </div>
+                </div>
+                <span
+                  className={
+                    'shrink-0 text-xs font-medium rounded-full px-2 py-0.5 ' +
+                    (passed ? 'bg-gray-100 text-gray-500' : o.days === 0 ? 'bg-green-100 text-green-700' : 'bg-brand-50 text-brand-700')
+                  }
+                >
+                  {passed ? 'Passed' : o.days === 0 ? 'Today' : `in ${o.days}d`}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
