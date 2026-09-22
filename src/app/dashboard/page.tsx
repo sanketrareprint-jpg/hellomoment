@@ -244,7 +244,7 @@ export default async function DashboardOverview() {
         />
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid sm:grid-cols-3 gap-3 items-start">
         <OccasionWindow
           title={`This month · ${monthName}`}
           items={thisMonth}
@@ -253,17 +253,22 @@ export default async function DashboardOverview() {
         />
         <OccasionWindow title="Upcoming · next 30 days" items={upcoming} empty="Nothing coming up in the next 30 days." />
 
-        <div className="card p-4 flex flex-col">
-          <h2 className="font-semibold text-gray-900 text-sm mb-2">Recent sends</h2>
+        <div className="card p-3 flex flex-col">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-semibold text-gray-900 text-sm">Recent sends</h2>
+            <Link href="/dashboard/logs" className="text-xs text-brand-600 font-medium">
+              View all →
+            </Link>
+          </div>
           {recentLogs.length === 0 ? (
-            <p className="text-sm text-gray-500">No wishes sent yet.</p>
+            <p className="text-xs text-gray-500 py-1">No wishes sent yet.</p>
           ) : (
-            <ul className="divide-y divide-gray-100 max-h-56 overflow-y-auto -mx-1 px-1">
+            <ul className="divide-y divide-gray-100 max-h-40 overflow-y-auto -mx-1 px-1">
               {recentLogs.map((log) => (
-                <li key={log.id} className="py-2 flex items-center justify-between gap-2 text-sm">
+                <li key={log.id} className="py-1.5 flex items-center justify-between gap-2 text-xs">
                   <div className="min-w-0">
-                    <div className="font-medium text-gray-900 truncate">{log.contact?.name ?? log.festival?.name ?? '—'}</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="font-medium text-gray-900 truncate text-sm">{log.contact?.name ?? log.festival?.name ?? '—'}</div>
+                    <div className="text-[11px] text-gray-500">
                       {log.occasion.charAt(0) + log.occasion.slice(1).toLowerCase()} &middot;{' '}
                       {new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: business.timezone }).format(
                         log.sentAt
@@ -272,7 +277,7 @@ export default async function DashboardOverview() {
                   </div>
                   <span
                     className={
-                      'shrink-0 text-xs font-medium rounded-full px-2 py-0.5 ' +
+                      'shrink-0 text-[10px] font-medium rounded-full px-1.5 py-0.5 ' +
                       (log.status === 'SUCCESS'
                         ? 'bg-green-100 text-green-700'
                         : log.status === 'FAILED'
@@ -286,9 +291,6 @@ export default async function DashboardOverview() {
               ))}
             </ul>
           )}
-          <Link href="/dashboard/logs" className="text-sm text-brand-600 font-medium mt-auto pt-3 inline-block">
-            View all logs →
-          </Link>
         </div>
       </div>
 
@@ -370,25 +372,25 @@ function OccasionWindow({
   todayDay?: number;
 }) {
   return (
-    <div className="card p-4 flex flex-col">
-      <div className="flex items-center justify-between mb-2">
+    <div className="card p-3 flex flex-col">
+      <div className="flex items-center justify-between mb-1">
         <h2 className="font-semibold text-gray-900 text-sm">{title}</h2>
         <span className="text-xs text-gray-400">{items.length}</span>
       </div>
       {items.length === 0 ? (
-        <p className="text-sm text-gray-500">{empty}</p>
+        <p className="text-xs text-gray-500 py-1">{empty}</p>
       ) : (
-        <ul className="divide-y divide-gray-100 max-h-56 overflow-y-auto -mx-1 px-1">
+        <ul className="divide-y divide-gray-100 max-h-40 overflow-y-auto -mx-1 px-1">
           {items.map((o) => {
             const passed = todayDay !== undefined && o.day < todayDay;
             return (
               <li
                 key={`${o.id}-${o.occasion}`}
-                className={'py-2 flex items-center justify-between gap-2 text-sm ' + (passed ? 'opacity-50' : '')}
+                className={'py-1.5 flex items-center justify-between gap-2 text-xs ' + (passed ? 'opacity-50' : '')}
               >
                 <div className="min-w-0">
-                  <div className="font-medium text-gray-900 truncate">{o.name}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="font-medium text-gray-900 truncate text-sm">{o.name}</div>
+                  <div className="text-[11px] text-gray-500">
                     <span className={o.occasion === 'BIRTHDAY' ? 'text-pink-600' : 'text-purple-600'}>
                       {o.occasion === 'BIRTHDAY' ? '🎂 Birthday' : '💍 Anniversary'}
                     </span>{' '}
@@ -397,7 +399,7 @@ function OccasionWindow({
                 </div>
                 <span
                   className={
-                    'shrink-0 text-xs font-medium rounded-full px-2 py-0.5 ' +
+                    'shrink-0 text-[10px] font-medium rounded-full px-1.5 py-0.5 ' +
                     (passed ? 'bg-gray-100 text-gray-500' : o.days === 0 ? 'bg-green-100 text-green-700' : 'bg-brand-50 text-brand-700')
                   }
                 >
