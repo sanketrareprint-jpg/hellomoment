@@ -218,14 +218,14 @@ model Contact {
 // A reusable flyer background + where the variable name/date/photo go on it.
 // The business uploads the designed background image once; everything else
 // (name, date, photo) is overlaid automatically at send time.
-// occasion: "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+// occasion: "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL" | "OTHER" ("OTHER" = general flyers, never sent automatically)
 model FlyerTemplate {
   id         String   @id @default(cuid())
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   name          String
-  occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+  occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL" | "OTHER"
   source        String   @default("CUSTOM") // "STARTER" (bundled ready-made design) | "CUSTOM" (business-made) — splits the Templates page into two folders
   backgroundUrl String // /uploads/templates/<file>
   canvasWidth   Int      @default(1080)
@@ -325,7 +325,7 @@ model DashboardBanner {
 model StarterTemplate {
   id            String   @id @default(cuid())
   name          String
-  occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+  occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL" | "OTHER"
   backgroundUrl String // /api/files/templates/<file>
   canvasWidth   Int      @default(1080)
   canvasHeight  Int      @default(1080)

@@ -65,6 +65,8 @@ export async function seedStarterTemplatesForBusiness(businessId: string) {
     FESTIVAL: Boolean(
       await prisma.flyerTemplate.findFirst({ where: { businessId, occasion: 'FESTIVAL', isDefault: true } })
     ),
+    // "Others" flyers are never sent automatically, so none is ever made default.
+    OTHER: true,
   };
 
   const destDir = path.join(STORAGE_DIR, 'templates');

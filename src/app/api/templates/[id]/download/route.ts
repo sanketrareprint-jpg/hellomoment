@@ -33,8 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!template || template.businessId !== business.id) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
-  if (template.occasion !== 'FESTIVAL') {
-    return NextResponse.json({ error: 'Only festival flyers can be downloaded.' }, { status: 400 });
+  if (template.occasion !== 'FESTIVAL' && template.occasion !== 'OTHER') {
+    return NextResponse.json({ error: 'Only festival and other flyers can be downloaded.' }, { status: 400 });
   }
 
   const defaultFrame = await prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } });

@@ -1089,6 +1089,7 @@ export default function TemplatePlaceholderEditor({
                 <option value="BIRTHDAY">Birthday</option>
                 <option value="ANNIVERSARY">Anniversary</option>
                 <option value="FESTIVAL">Festival</option>
+                <option value="OTHER">Others</option>
               </select>
             </div>
             {showPerBusinessOptions && (

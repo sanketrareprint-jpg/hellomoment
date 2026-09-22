@@ -7,9 +7,10 @@ const OCCASION_LABEL: Record<string, string> = {
   BIRTHDAY: 'Birthday',
   ANNIVERSARY: 'Anniversary',
   FESTIVAL: 'Festival',
+  OTHER: 'Others',
 };
 
-const OCCASION_ORDER = ['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL'];
+const OCCASION_ORDER = ['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL', 'OTHER'];
 
 export interface DashboardTemplateRow extends DashboardFlyerTemplate {
   id: string;
@@ -60,7 +61,7 @@ export default function DashboardTemplatesByCategory({
           </div>
           <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
             {groups.get(occasion)!.map((t) =>
-              occasion === 'FESTIVAL' ? (
+              occasion === 'FESTIVAL' || occasion === 'OTHER' ? (
                 <FestivalFlyerCard key={t.id} template={t} defaultFrame={defaultFrame} business={business} />
               ) : (
                 <Link

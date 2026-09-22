@@ -61,7 +61,7 @@ export interface CustomTextPlaceholder extends TextPlaceholder {
 export interface TemplateFormValues {
   id?: string;
   name: string;
-  occasion: 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL';
+  occasion: 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL' | 'OTHER';
   isDefault: boolean;
   aisensyCampaignName: string;
   backgroundUrl: string;
