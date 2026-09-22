@@ -165,3 +165,19 @@ export function renderPreview(
 export function templateFitsOccasion(templateOccasion: string, occasion: SendOccasion): boolean {
   return templateOccasion === 'ANY' || templateOccasion === occasion;
 }
+
+/**
+ * The text of the original approved "hellomomentwishes" AiSensy template —
+ * what goes out when a business hasn't picked a message template for an
+ * occasion (see sendWish.ts: {{1}} contact name, {{2}} occasion word,
+ * {{3}} business name). Used only for previews; if that approved template's
+ * text changes in AiSensy, update this to match.
+ */
+export const DEFAULT_WISH_BODY =
+  '🎉 Warm Wishes, {{1}}! 🎉\n\nWishing you a very Happy {{2}}! 💐\n\nMay this special occasion bring you happiness, success, good health and wonderful memories. ✨\n\nWarm wishes from {{3}} ❤️';
+
+export const DEFAULT_WISH_VARIABLES: MessageVariable[] = [
+  { index: 1, label: 'Contact name', source: 'CONTACT_NAME' },
+  { index: 2, label: 'Occasion', source: 'OCCASION' },
+  { index: 3, label: 'Business name', source: 'BUSINESS_NAME' },
+];
