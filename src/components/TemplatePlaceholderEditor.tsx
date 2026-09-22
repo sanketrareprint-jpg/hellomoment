@@ -23,6 +23,7 @@ export interface FrameOption {
   id: string;
   name: string;
   overlayUrl: string | null;
+  overlayHue: number;
   isDefault: boolean;
   canvasWidth: number;
   canvasHeight: number;
@@ -315,6 +316,15 @@ export default function TemplatePlaceholderEditor({
   // collapsed behind an "advanced" toggle by default rather than looking
   // like positioning these fields here still matters.
   const defaultFrame = frames.find((f) => f.isDefault) ?? null;
+  // Recolored through the same Sharp modulate() call the real render uses
+  // (see /api/frames/overlay-hue) instead of showing the overlay's raw
+  // uploaded color — this frame's own editor lets a business shift that
+  // color, and this preview used to always show the original regardless,
+  // going out of sync with whatever color was actually saved.
+  const defaultFrameOverlaySrc =
+    defaultFrame?.overlayUrl && defaultFrame.overlayHue
+      ? `/api/frames/overlay-hue?url=${encodeURIComponent(defaultFrame.overlayUrl)}&hue=${defaultFrame.overlayHue}`
+      : defaultFrame?.overlayUrl ?? null;
   const [manualBrandingOpen, setManualBrandingOpen] = useState(false);
   const brandFieldKeySet = new Set(BRAND_FIELDS.map((d) => d.key));
 
@@ -1036,9 +1046,9 @@ export default function TemplatePlaceholderEditor({
                 <div className="rounded-lg border border-brand-200 bg-brand-50/60 p-1.5 mb-1.5">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-md overflow-hidden bg-white border border-brand-200 flex-shrink-0 flex items-center justify-center">
-                      {defaultFrame.overlayUrl ? (
+                      {defaultFrameOverlaySrc ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={defaultFrame.overlayUrl} alt={defaultFrame.name} className="w-full h-full object-cover" />
+                        <img src={defaultFrameOverlaySrc} alt={defaultFrame.name} className="w-full h-full object-cover" />
                       ) : (
                         <svg className="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
@@ -1509,7 +1519,7 @@ export default function TemplatePlaceholderEditor({
             // the flyer.
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={defaultFrame.overlayUrl}
+              src={defaultFrameOverlaySrc ?? defaultFrame.overlayUrl}
               alt={`${defaultFrame.name} frame`}
               className="absolute bottom-0 left-0 block w-full pointer-events-none"
             />
