@@ -84,8 +84,10 @@ export default async function LandingPage() {
   const banners = await prisma.dashboardBanner.findMany({
     where: { isActive: true, placement: 'LANDING' },
     orderBy: { order: 'asc' },
-    select: { id: true, imageUrl: true, linkUrl: true },
+    select: { id: true, imageUrl: true, linkUrl: true, device: true },
   });
+  const desktopBanners = banners.filter((b) => b.device !== 'MOBILE');
+  const mobileBanners = banners.filter((b) => b.device === 'MOBILE');
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-white overflow-hidden">
@@ -114,9 +116,14 @@ export default async function LandingPage() {
       </header>
 
       <div className="flex flex-col">
-        {banners.length > 0 && (
+        {desktopBanners.length > 0 && (
           <section className="hidden sm:block max-w-5xl mx-auto px-4 sm:px-6 pt-6">
-            <DashboardBannerSlider banners={banners} />
+            <DashboardBannerSlider banners={desktopBanners} />
+          </section>
+        )}
+        {mobileBanners.length > 0 && (
+          <section className="sm:hidden w-full px-4 pt-2">
+            <DashboardBannerSlider banners={mobileBanners} aspectClass="aspect-[2/1]" />
           </section>
         )}
 
