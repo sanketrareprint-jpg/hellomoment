@@ -20,7 +20,7 @@ export default async function NewFramePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">New frame</h1>
+      <h1 className="text-lg font-bold text-gray-900 mb-3">New frame</h1>
       <FramePlaceholderEditor business={brand} redirectPath="/dashboard/frames?folder=my" />
     </div>
   );
