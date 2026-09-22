@@ -3,7 +3,9 @@ import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
 import { seedStarterTemplatesForBusiness } from '@/lib/seedStarterTemplates';
 import AddStarterTemplatesButton from '@/components/AddStarterTemplatesButton';
-import TemplatesGrid from '@/components/TemplatesGrid';
+import TemplatesGrid, { type TemplateRow } from '@/components/TemplatesGrid';
+import type { BrandInfo } from '@/components/TemplatePlaceholderEditor';
+import type { FlyerTemplate } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,8 +47,47 @@ export default async function TemplatesPage({
     orderBy: { createdAt: 'desc' },
   });
 
-  const starterTemplates = templates.filter((t) => t.source === 'STARTER');
-  const myTemplates = templates.filter((t) => t.source !== 'STARTER');
+  // So the grid below can overlay this business's own Brand kit onto each
+  // template's own mapped branding placeholders (see FlyerPreviewThumbnail)
+  // instead of showing just the flat background artwork.
+  const brand: BrandInfo = {
+    logoUrl: business.logoUrl,
+    name: business.name,
+    phoneDisplay: business.phoneDisplay,
+    emailDisplay: business.emailDisplay,
+    addressText: business.addressText,
+    websiteUrl: business.websiteUrl,
+    productsText: business.productsText,
+    firmNameScript: business.firmNameScript as 'ENGLISH' | 'MARATHI',
+    firmNameMarathi: business.firmNameMarathi,
+  };
+
+  function toTemplateRow(t: FlyerTemplate): TemplateRow {
+    return {
+      id: t.id,
+      name: t.name,
+      occasion: t.occasion,
+      backgroundUrl: t.backgroundUrl,
+      canvasWidth: t.canvasWidth,
+      canvasHeight: t.canvasHeight,
+      isDefault: t.isDefault,
+      logoPlaceholder: t.logoPlaceholder ? JSON.parse(t.logoPlaceholder) : null,
+      firmNamePlaceholder: t.firmNamePlaceholder ? JSON.parse(t.firmNamePlaceholder) : null,
+      phonePlaceholder: t.phonePlaceholder ? JSON.parse(t.phonePlaceholder) : null,
+      emailPlaceholder: t.emailPlaceholder ? JSON.parse(t.emailPlaceholder) : null,
+      addressPlaceholder: t.addressPlaceholder ? JSON.parse(t.addressPlaceholder) : null,
+      websitePlaceholder: t.websitePlaceholder ? JSON.parse(t.websitePlaceholder) : null,
+      productsPlaceholder: t.productsPlaceholder ? JSON.parse(t.productsPlaceholder) : null,
+      phoneTextOverride: t.phoneTextOverride,
+      emailTextOverride: t.emailTextOverride,
+      addressTextOverride: t.addressTextOverride,
+      websiteTextOverride: t.websiteTextOverride,
+      productsTextOverride: t.productsTextOverride,
+    };
+  }
+
+  const starterTemplates = templates.filter((t) => t.source === 'STARTER').map(toTemplateRow);
+  const myTemplates = templates.filter((t) => t.source !== 'STARTER').map(toTemplateRow);
 
   const folder = searchParams.folder === 'my' || searchParams.folder === 'starter' ? searchParams.folder : null;
 
@@ -121,7 +162,7 @@ export default async function TemplatesPage({
                 by uploading your own flyer background.
               </p>
             ) : (
-              <TemplatesGrid templates={myTemplates} />
+              <TemplatesGrid templates={myTemplates} business={brand} />
             )
           ) : starterTemplates.length === 0 ? (
             <p className="text-gray-500 text-sm">
@@ -129,7 +170,7 @@ export default async function TemplatesPage({
               anniversary flyers — no designing or uploading needed.
             </p>
           ) : (
-            <TemplatesGrid templates={starterTemplates} />
+            <TemplatesGrid templates={starterTemplates} business={brand} />
           )}
         </div>
       )}

@@ -4,6 +4,9 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DeleteTemplateButton from '@/components/DeleteTemplateButton';
+import FlyerPreviewThumbnail from '@/components/FlyerPreviewThumbnail';
+import type { BrandInfo } from '@/components/TemplatePlaceholderEditor';
+import type { LogoPlaceholder, TextPlaceholder } from '@/lib/flyerPlaceholders';
 
 const OCCASION_LABEL: Record<string, string> = {
   BIRTHDAY: 'Birthday',
@@ -19,9 +22,24 @@ export interface TemplateRow {
   canvasWidth: number;
   canvasHeight: number;
   isDefault: boolean;
+  // This template's own branding placeholders — already "mapped" per
+  // template in the DB — used to overlay the logged-in business's real
+  // Brand kit onto the thumbnail below instead of just the flat artwork.
+  logoPlaceholder: LogoPlaceholder | null;
+  firmNamePlaceholder: TextPlaceholder | null;
+  phonePlaceholder: TextPlaceholder | null;
+  emailPlaceholder: TextPlaceholder | null;
+  addressPlaceholder: TextPlaceholder | null;
+  websitePlaceholder: TextPlaceholder | null;
+  productsPlaceholder: TextPlaceholder | null;
+  phoneTextOverride: string | null;
+  emailTextOverride: string | null;
+  addressTextOverride: string | null;
+  websiteTextOverride: string | null;
+  productsTextOverride: string | null;
 }
 
-export default function TemplatesGrid({ templates }: { templates: TemplateRow[] }) {
+export default function TemplatesGrid({ templates, business }: { templates: TemplateRow[]; business: BrandInfo }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [settingDefault, setSettingDefault] = useState<string | null>(null);
@@ -76,12 +94,25 @@ export default function TemplatesGrid({ templates }: { templates: TemplateRow[] 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {filtered.map((t) => (
             <div key={t.id} className="card overflow-hidden">
-              <div
-                className="w-full bg-gray-100 flex items-center justify-center overflow-hidden"
-                style={{ aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}` }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={t.backgroundUrl} alt={t.name} className="w-full h-full object-contain" />
+              <div className="w-full bg-gray-100 overflow-hidden">
+                <FlyerPreviewThumbnail
+                  backgroundUrl={t.backgroundUrl}
+                  canvasWidth={t.canvasWidth}
+                  canvasHeight={t.canvasHeight}
+                  business={business}
+                  logoPlaceholder={t.logoPlaceholder}
+                  firmNamePlaceholder={t.firmNamePlaceholder}
+                  phonePlaceholder={t.phonePlaceholder}
+                  emailPlaceholder={t.emailPlaceholder}
+                  addressPlaceholder={t.addressPlaceholder}
+                  websitePlaceholder={t.websitePlaceholder}
+                  productsPlaceholder={t.productsPlaceholder}
+                  phoneTextOverride={t.phoneTextOverride}
+                  emailTextOverride={t.emailTextOverride}
+                  addressTextOverride={t.addressTextOverride}
+                  websiteTextOverride={t.websiteTextOverride}
+                  productsTextOverride={t.productsTextOverride}
+                />
               </div>
               <div className="p-4">
                 <div className="flex items-center justify-between">
