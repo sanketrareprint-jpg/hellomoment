@@ -1,16 +1,24 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import DeleteBusinessButton from '@/components/DeleteBusinessButton';
+import AdminBarChart from '@/components/AdminBarChart';
+import AdminDonutChart from '@/components/AdminDonutChart';
+import { getAdminDashboardStats } from '@/lib/adminStats';
 
 export const dynamic = 'force-dynamic';
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+function StatCard({ label, value, caption }: { label: string; value: string | number; caption?: string }) {
   return (
     <div className="card p-3">
       <div className="text-xs text-gray-500">{label}</div>
       <div className="text-xl font-bold text-gray-900 mt-0.5">{value}</div>
+      {caption && <div className="text-[11px] text-gray-400 mt-0.5 truncate">{caption}</div>}
     </div>
   );
+}
+
+function rupees(paise: number) {
+  return `₹${(paise / 100).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
 
 export default async function AdminDashboardPage({ searchParams }: { searchParams: { q?: string; page?: string } }) {
@@ -30,7 +38,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  const [businesses, total, totalBusinesses, newThisWeek, totalContacts, totalSends, lastSends] = await Promise.all([
+  const [businesses, total, totalBusinesses, newThisWeek, totalContacts, totalSends, lastSends, stats] = await Promise.all([
     prisma.business.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -44,6 +52,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
     prisma.contact.count(),
     prisma.sendLog.count({ where: { status: 'SUCCESS' } }),
     prisma.sendLog.groupBy({ by: ['businessId'], _max: { sentAt: true } }),
+    getAdminDashboardStats(),
   ]);
 
   const lastSendByBusiness = new Map(lastSends.map((row) => [row.businessId, row._max.sentAt]));
@@ -59,6 +68,45 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
         <StatCard label="New in last 7 days" value={newThisWeek} />
         <StatCard label="Total contacts added" value={totalContacts} />
         <StatCard label="Flyers sent (success)" value={totalSends} />
+        <StatCard
+          label="Flyer templates"
+          value={stats.totalStarterTemplates}
+          caption={`${stats.totalFlyerTemplateCopies} copies in use`}
+        />
+        <StatCard
+          label="Frame designs"
+          value={stats.totalFrames}
+          caption={`${stats.totalBusinessFrameCopies} adopted by businesses`}
+        />
+        <StatCard
+          label="Today's coin recharge"
+          value={rupees(stats.todayRechargePaise)}
+          caption={`${rupees(stats.todayWalletSpendPaise)} wallet spend today`}
+        />
+        <StatCard label="Today's coins spent" value={stats.todayCoinsSpent.toLocaleString('en-IN')} caption="trial coins" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+        <div className="card p-4 min-w-0">
+          <h2 className="text-sm font-bold text-gray-900 mb-1">Business sign-ups — month on month</h2>
+          <p className="text-xs text-gray-400 mb-2">New businesses registered, last 6 months</p>
+          <AdminBarChart data={stats.monthlySignups} color="#db2777" />
+        </div>
+        <div className="card p-4 min-w-0">
+          <h2 className="text-sm font-bold text-gray-900 mb-1">Wallet recharge revenue</h2>
+          <p className="text-xs text-gray-400 mb-2">Paid recharges, last 7 days</p>
+          <AdminBarChart data={stats.dailyRechargePaise} color="#db2777" formatValue={(v) => `₹${v.toLocaleString('en-IN')}`} />
+        </div>
+        <div className="card p-4 min-w-0">
+          <h2 className="text-sm font-bold text-gray-900 mb-1">Flyers sent by occasion</h2>
+          <p className="text-xs text-gray-400 mb-2">All-time send attempts</p>
+          <AdminDonutChart data={stats.sendsByOccasion} centerLabel={String(stats.totalSendAttempts)} />
+        </div>
+        <div className="card p-4 min-w-0">
+          <h2 className="text-sm font-bold text-gray-900 mb-1">Send outcome</h2>
+          <p className="text-xs text-gray-400 mb-2">All-time success vs. failure rate</p>
+          <AdminDonutChart data={stats.sendsByStatus} centerLabel={String(stats.totalSendAttempts)} />
+        </div>
       </div>
 
       <form className="mb-3" method="GET">
