@@ -62,7 +62,7 @@ export default async function EditFramePage({ params }: { params: { id: string }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit frame</h1>
+      <h1 className="text-lg font-bold text-gray-900 mb-3">Edit frame</h1>
       <FramePlaceholderEditor business={brand} initial={initial} redirectPath="/dashboard/frames?folder=my" />
     </div>
   );

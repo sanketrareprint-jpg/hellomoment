@@ -96,7 +96,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit flyer template</h1>
+      <h1 className="text-lg font-bold text-gray-900 mb-3">Edit flyer template</h1>
       <TemplatePlaceholderEditor
         business={brand}
         frames={businessFrames}

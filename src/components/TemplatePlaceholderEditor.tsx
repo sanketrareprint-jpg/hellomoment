@@ -1445,7 +1445,7 @@ export default function TemplatePlaceholderEditor({
           selected. top-0 has nothing to "jump" to (it's already satisfied
           at the column's natural position), so it keeps this column
           pinned near the top while scrolling without that snap. */}
-      <div ref={previewColumnRef} className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">
+      <div ref={previewColumnRef} className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-4.5rem)] lg:overflow-y-auto">
         <div className="flex items-center justify-between mb-1.5">
           <p className="text-xs text-gray-600">
             Drag the labeled markers on the flyer to position them. Numbers below give exact control.

@@ -145,7 +145,7 @@ export default function DashboardShell({
         {/* Desktop top bar: just the wallet balance, top-right — the sidebar has no top bar of its own at lg and up.
             Fixed height (not sticky) and kept outside the scrolling `main` below, so it — like the sidebar — stays
             put while only the page content underneath it scrolls. */}
-        <div className="hidden lg:flex lg:h-16 items-center justify-between px-8 border-b border-gray-100 shrink-0">
+        <div className="hidden lg:flex lg:h-11 items-center justify-between px-8 border-b border-gray-100 shrink-0">
           <a
             href={`https://wa.me/${HELP_WHATSAPP_NUMBER}?text=${encodeURIComponent(HELP_WHATSAPP_MESSAGE)}`}
             target="_blank"
