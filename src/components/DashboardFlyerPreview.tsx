@@ -52,11 +52,10 @@ interface TextField {
 /**
  * Read-only "what a customer receives" thumbnail for the dashboard's
  * template rows: the template background plus its sample name/designation/
- * date/photo, and — for STARTER templates when the business has a default
- * Frame — that frame's overlay graphic and branding (logo/firm name/phone/
- * email/...), laid out exactly like TemplatePlaceholderEditor's preview and
- * sendWish.ts's renderFlyer. Without a default Frame (or for a CUSTOM
- * template) the template's own branding placeholders are used instead.
+ * date/photo, and — when the business has a default Frame — that frame's
+ * overlay graphic and branding (logo/firm name/phone/email/...), laid out
+ * like TemplatePlaceholderEditor's preview. Without a default Frame the
+ * template's own branding placeholders are used instead.
  */
 export default function DashboardFlyerPreview({
   template: t,
@@ -80,8 +79,10 @@ export default function DashboardFlyerPreview({
   }, []);
   const scale = width > 0 ? width / t.canvasWidth : 0;
 
-  // Same rule as sendWish.ts: a Frame is only ever applied to STARTER templates.
-  const frame = t.source === 'STARTER' ? defaultFrame : null;
+  // Unlike sendWish.ts (which only applies a Frame to STARTER templates),
+  // the dashboard shows the default Frame over every template, including a
+  // business's own uploads, by request.
+  const frame = defaultFrame;
   const { scale: frameScale, topOffset: frameTopOffset } = frame
     ? frameLayoutFor(t.canvasWidth, t.canvasHeight, frame.canvasWidth, frame.canvasHeight)
     : { scale: 1, topOffset: 0 };
