@@ -1059,7 +1059,32 @@ export default function TemplatePlaceholderEditor({
               <select
                 className="input"
                 value={form.occasion}
-                onChange={(e) => setForm({ ...form, occasion: e.target.value as TemplateFormValues['occasion'] })}
+                onChange={(e) => {
+                  const occasion = e.target.value as TemplateFormValues['occasion'];
+                  // Festival flyers are complete artwork on their own — no
+                  // contact or branding field is needed, so switching to
+                  // Festival turns every field off (any can still be turned
+                  // back on by hand).
+                  setForm(
+                    occasion === 'FESTIVAL'
+                      ? {
+                          ...form,
+                          occasion,
+                          useName: false,
+                          useDesignation: false,
+                          useDate: false,
+                          usePhoto: false,
+                          useLogo: false,
+                          useFirmName: false,
+                          usePhone: false,
+                          useEmail: false,
+                          useAddress: false,
+                          useWebsite: false,
+                          useProducts: false,
+                        }
+                      : { ...form, occasion },
+                  );
+                }}
               >
                 <option value="BIRTHDAY">Birthday</option>
                 <option value="ANNIVERSARY">Anniversary</option>
