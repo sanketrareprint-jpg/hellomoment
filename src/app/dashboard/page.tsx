@@ -3,7 +3,8 @@ import { getCurrentBusiness } from '@/lib/session';
 import { getTodayInTimezone, daysUntilNextOccurrence, formatDateForDisplay } from '@/lib/dateUtils';
 import Link from 'next/link';
 import DashboardBannerSlider from '@/components/DashboardBannerSlider';
-import DashboardTemplatesByCategory from '@/components/DashboardTemplatesByCategory';
+import DashboardTemplatesByCategory, { type DashboardTemplateRow } from '@/components/DashboardTemplatesByCategory';
+import type { BrandInfo, FrameOption } from '@/components/TemplatePlaceholderEditor';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,13 +12,12 @@ export default async function DashboardOverview() {
   const business = await getCurrentBusiness();
   if (!business) return null;
 
-  const [contactCount, templateCount, templates, festivalCount, recentLogs, contacts, banners, customMessageCounts] = await Promise.all([
+  const [contactCount, templateCount, rawTemplates, festivalCount, recentLogs, contacts, banners, rawDefaultFrame, customMessageCounts] = await Promise.all([
     prisma.contact.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.findMany({
       where: { businessId: business.id },
       orderBy: { createdAt: 'desc' },
-      select: { id: true, name: true, occasion: true, backgroundUrl: true, canvasWidth: true, canvasHeight: true },
     }),
     prisma.festival.count({ where: { businessId: business.id, active: true } }),
     prisma.sendLog.findMany({
@@ -32,6 +32,7 @@ export default async function DashboardOverview() {
       orderBy: { order: 'asc' },
       select: { id: true, imageUrl: true, linkUrl: true },
     }),
+    prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } }),
     prisma.messageTemplate.groupBy({
       by: ['status'],
       where: { businessId: business.id, category: 'CUSTOM' },
@@ -40,6 +41,74 @@ export default async function DashboardOverview() {
   ]);
   const customMessageCount = (status: string) =>
     customMessageCounts.find((c) => c.status === status)?._count._all ?? 0;
+
+  // Placeholders are JSON strings in the DB — parsed here so the dashboard
+  // cards can draw each template with its sample name/date/photo and the
+  // default Frame's branding, the same way the template editor previews it.
+  const parse = (json: string | null) => (json ? JSON.parse(json) : null);
+  const templates: DashboardTemplateRow[] = rawTemplates.map((t) => {
+    const rawPhoto = parse(t.photoPlaceholder);
+    return {
+      id: t.id,
+      name: t.name,
+      occasion: t.occasion,
+      source: t.source,
+      backgroundUrl: t.backgroundUrl,
+      canvasWidth: t.canvasWidth,
+      canvasHeight: t.canvasHeight,
+      namePlaceholder: parse(t.namePlaceholder),
+      designationPlaceholder: parse(t.designationPlaceholder),
+      datePlaceholder: parse(t.datePlaceholder),
+      // Older templates saved a single square `size` before width/height existed.
+      photoPlaceholder: rawPhoto
+        ? { ...rawPhoto, width: rawPhoto.width ?? rawPhoto.size, height: rawPhoto.height ?? rawPhoto.size }
+        : null,
+      logoPlaceholder: parse(t.logoPlaceholder),
+      firmNamePlaceholder: parse(t.firmNamePlaceholder),
+      phonePlaceholder: parse(t.phonePlaceholder),
+      emailPlaceholder: parse(t.emailPlaceholder),
+      addressPlaceholder: parse(t.addressPlaceholder),
+      websitePlaceholder: parse(t.websitePlaceholder),
+      productsPlaceholder: parse(t.productsPlaceholder),
+      phoneTextOverride: t.phoneTextOverride,
+      emailTextOverride: t.emailTextOverride,
+      addressTextOverride: t.addressTextOverride,
+      websiteTextOverride: t.websiteTextOverride,
+      productsTextOverride: t.productsTextOverride,
+    };
+  });
+
+  const defaultFrame: FrameOption | null = rawDefaultFrame
+    ? {
+        id: rawDefaultFrame.id,
+        name: rawDefaultFrame.name,
+        overlayUrl: rawDefaultFrame.overlayUrl,
+        overlayHue: rawDefaultFrame.overlayHue,
+        isDefault: rawDefaultFrame.isDefault,
+        canvasWidth: rawDefaultFrame.canvasWidth,
+        canvasHeight: rawDefaultFrame.canvasHeight,
+        logoPlaceholder: parse(rawDefaultFrame.logoPlaceholder),
+        firmNamePlaceholder: parse(rawDefaultFrame.firmNamePlaceholder),
+        phonePlaceholder: parse(rawDefaultFrame.phonePlaceholder),
+        emailPlaceholder: parse(rawDefaultFrame.emailPlaceholder),
+        addressPlaceholder: parse(rawDefaultFrame.addressPlaceholder),
+        websitePlaceholder: parse(rawDefaultFrame.websitePlaceholder),
+        productsPlaceholder: parse(rawDefaultFrame.productsPlaceholder),
+        customTextPlaceholders: parse(rawDefaultFrame.customTextPlaceholders),
+      }
+    : null;
+
+  const brand: BrandInfo = {
+    logoUrl: business.logoUrl,
+    name: business.name,
+    phoneDisplay: business.phoneDisplay,
+    emailDisplay: business.emailDisplay,
+    addressText: business.addressText,
+    websiteUrl: business.websiteUrl,
+    productsText: business.productsText,
+    firmNameScript: business.firmNameScript as 'ENGLISH' | 'MARATHI',
+    firmNameMarathi: business.firmNameMarathi,
+  };
 
   const today = getTodayInTimezone(business.timezone);
   type Upcoming = { id: string; name: string; occasion: 'BIRTHDAY' | 'ANNIVERSARY'; days: number; date: Date };
@@ -126,7 +195,7 @@ export default async function DashboardOverview() {
         </div>
       </Link>
 
-      <DashboardTemplatesByCategory templates={templates} />
+      <DashboardTemplatesByCategory templates={templates} defaultFrame={defaultFrame} business={brand} />
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="card p-4">

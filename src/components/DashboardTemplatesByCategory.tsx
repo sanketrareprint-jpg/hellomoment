@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import DashboardFlyerPreview, { type DashboardFlyerTemplate } from '@/components/DashboardFlyerPreview';
+import type { BrandInfo, FrameOption } from '@/components/TemplatePlaceholderEditor';
 
 const OCCASION_LABEL: Record<string, string> = {
   BIRTHDAY: 'Birthday',
@@ -8,20 +10,28 @@ const OCCASION_LABEL: Record<string, string> = {
 
 const OCCASION_ORDER = ['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL'];
 
-export interface DashboardTemplateRow {
+export interface DashboardTemplateRow extends DashboardFlyerTemplate {
   id: string;
   name: string;
   occasion: string;
-  backgroundUrl: string;
-  canvasWidth: number;
-  canvasHeight: number;
 }
 
 // Groups the business's flyer templates by occasion and shows each group as
 // its own horizontally-scrolling row (folder/category-wise), so the
 // dashboard gives a quick visual sense of what's available per occasion
 // without navigating into the Templates page.
-export default function DashboardTemplatesByCategory({ templates }: { templates: DashboardTemplateRow[] }) {
+// Each card shows the flyer as it would actually be sent — sample name/
+// date/photo plus the business's default Frame and branding (see
+// DashboardFlyerPreview) — not just the bare background artwork.
+export default function DashboardTemplatesByCategory({
+  templates,
+  defaultFrame,
+  business,
+}: {
+  templates: DashboardTemplateRow[];
+  defaultFrame: FrameOption | null;
+  business: BrandInfo;
+}) {
   if (templates.length === 0) return null;
 
   const groups = new Map<string, DashboardTemplateRow[]>();
@@ -52,15 +62,9 @@ export default function DashboardTemplatesByCategory({ templates }: { templates:
               <Link
                 key={t.id}
                 href={`/dashboard/templates/${t.id}/edit`}
-                className="card overflow-hidden shrink-0 w-36 snap-start hover:shadow-md hover:-translate-y-0.5 transition-all"
+                className="card overflow-hidden shrink-0 w-44 sm:w-52 snap-start hover:shadow-md hover:-translate-y-0.5 transition-all"
               >
-                <div
-                  className="w-full bg-gray-100 flex items-center justify-center overflow-hidden"
-                  style={{ aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}` }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={t.backgroundUrl} alt={t.name} className="w-full h-full object-contain" />
-                </div>
+                <DashboardFlyerPreview template={t} defaultFrame={defaultFrame} business={business} />
                 <p className="text-xs font-medium text-gray-700 truncate px-2 py-1.5">{t.name}</p>
               </Link>
             ))}
