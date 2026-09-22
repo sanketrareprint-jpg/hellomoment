@@ -3,17 +3,19 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { requireApiBusiness } from '@/lib/session';
 import { isTemplateUsableBy } from '@/lib/messageTemplates';
-import { inputVariables, parseVariables, templateFitsOccasion } from '@/lib/messageTemplateVars';
+import { SEND_OCCASIONS, inputVariables, parseVariables, templateFitsOccasion } from '@/lib/messageTemplateVars';
 
 const schema = z.object({
-  occasion: z.enum(['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL']),
+  // "ALL" = every occasion the template fits, saved in one go.
+  occasion: z.enum(['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL', 'ALL']),
   messageTemplateId: z.string().min(1).nullable(),
   variableValues: z.record(z.string().max(200)).optional(),
 });
 
 /**
  * Sets (or clears, with messageTemplateId: null) which message template this
- * business sends with its flyers for one occasion, plus its typed values
+ * business sends with its flyers for one occasion (or, with "ALL", every
+ * occasion the template fits), plus its typed values
  * for the template's "filled in by the business" variables.
  */
 export async function PUT(req: NextRequest) {
@@ -28,6 +30,7 @@ export async function PUT(req: NextRequest) {
   const { occasion, messageTemplateId, variableValues = {} } = parsed.data;
 
   if (!messageTemplateId) {
+    if (occasion === 'ALL') return NextResponse.json({ error: 'Pick an occasion to reset.' }, { status: 400 });
     await prisma.messageTemplateSelection.deleteMany({ where: { businessId: business.id, occasion } });
     return NextResponse.json({ ok: true });
   }
@@ -36,7 +39,8 @@ export async function PUT(req: NextRequest) {
   if (!template || !isTemplateUsableBy(template, business.id)) {
     return NextResponse.json({ error: 'This template is not available to use yet.' }, { status: 400 });
   }
-  if (!templateFitsOccasion(template.occasion, occasion)) {
+  const occasions = occasion === 'ALL' ? SEND_OCCASIONS.filter((o) => templateFitsOccasion(template.occasion, o)) : [occasion];
+  if (occasions.length === 0 || !occasions.every((o) => templateFitsOccasion(template.occasion, o))) {
     return NextResponse.json({ error: 'This template is not meant for that occasion.' }, { status: 400 });
   }
 
@@ -48,10 +52,14 @@ export async function PUT(req: NextRequest) {
     cleanValues[String(v.index)] = value;
   }
 
-  await prisma.messageTemplateSelection.upsert({
-    where: { businessId_occasion: { businessId: business.id, occasion } },
-    create: { businessId: business.id, occasion, messageTemplateId, variableValues: JSON.stringify(cleanValues) },
-    update: { messageTemplateId, variableValues: JSON.stringify(cleanValues) },
-  });
+  await prisma.$transaction(
+    occasions.map((o) =>
+      prisma.messageTemplateSelection.upsert({
+        where: { businessId_occasion: { businessId: business.id, occasion: o } },
+        create: { businessId: business.id, occasion: o, messageTemplateId, variableValues: JSON.stringify(cleanValues) },
+        update: { messageTemplateId, variableValues: JSON.stringify(cleanValues) },
+      })
+    )
+  );
   return NextResponse.json({ ok: true });
 }

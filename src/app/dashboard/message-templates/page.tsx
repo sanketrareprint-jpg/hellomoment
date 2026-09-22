@@ -7,7 +7,7 @@ import MessageTemplatesWorkspace, { type MessageTemplateRow } from '@/components
 
 export const dynamic = 'force-dynamic';
 
-export default async function MessageTemplatesPage() {
+export default async function MessageTemplatesPage({ searchParams }: { searchParams: { create?: string } }) {
   const business = await getCurrentBusiness();
   if (!business) return null;
 
@@ -76,6 +76,8 @@ export default async function MessageTemplatesPage() {
         pricePaise={pricePaise}
         walletBalancePaise={walletOwner.walletBalancePaise}
         business={{ name: business.name, email: walletOwner.email }}
+        // Dashboard's "+ Create custom message template" card links here with ?create=1.
+        openCreate={searchParams.create === '1'}
       />
     </div>
   );

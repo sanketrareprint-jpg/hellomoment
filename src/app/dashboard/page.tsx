@@ -6,19 +6,8 @@ import DashboardBannerSlider from '@/components/DashboardBannerSlider';
 import { getAllBannerSlideSeconds } from '@/lib/bannerTiming';
 import DashboardTemplatesByCategory, { type DashboardTemplateRow } from '@/components/DashboardTemplatesByCategory';
 import type { BrandInfo, FrameOption } from '@/components/TemplatePlaceholderEditor';
-import WhatsAppMessagePreview from '@/components/WhatsAppMessagePreview';
 import { isTemplateUsableBy } from '@/lib/messageTemplates';
-import {
-  DEFAULT_WISH_BODY,
-  DEFAULT_WISH_VARIABLES,
-  OCCASION_LABELS,
-  SEND_OCCASIONS,
-  parseVariableValues,
-  parseVariables,
-  renderPreview,
-  templateFitsOccasion,
-} from '@/lib/messageTemplateVars';
-import { brandFirmNameText } from '@/lib/sendWish';
+import { OCCASION_LABELS, parseVariables, renderPreview } from '@/lib/messageTemplateVars';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +15,7 @@ export default async function DashboardOverview() {
   const business = await getCurrentBusiness();
   if (!business) return null;
 
-  const [contactCount, templateCount, rawTemplates, festivalCount, recentLogs, contacts, banners, rawDefaultFrame, customMessageCounts, messageSelections] = await Promise.all([
+  const [contactCount, templateCount, rawTemplates, festivalCount, recentLogs, contacts, banners, rawDefaultFrame, rawMessageTemplates, messageSelections] = await Promise.all([
     prisma.contact.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.count({ where: { businessId: business.id } }),
     prisma.flyerTemplate.findMany({
@@ -47,10 +36,16 @@ export default async function DashboardOverview() {
       select: { id: true, imageUrl: true, linkUrl: true, device: true },
     }),
     prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } }),
-    prisma.messageTemplate.groupBy({
-      by: ['status'],
-      where: { businessId: business.id, category: 'CUSTOM' },
-      _count: { _all: true },
+    // Same set the Message templates page offers: active admin-made ones plus
+    // this business's own custom ones (filtered to usable ones below).
+    prisma.messageTemplate.findMany({
+      where: {
+        OR: [
+          { businessId: null, isActive: true, category: { in: ['GENERAL', 'SPECIAL'] } },
+          { businessId: business.id, category: 'CUSTOM' },
+        ],
+      },
+      orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
     }),
     prisma.messageTemplateSelection.findMany({ where: { businessId: business.id }, include: { messageTemplate: true } }),
   ]);
@@ -61,42 +56,22 @@ export default async function DashboardOverview() {
   const hasMobileBanners = banners.some((b) => b.device === 'MOBILE');
   const mobileBanners = hasMobileBanners ? banners.filter((b) => b.device === 'MOBILE') : desktopBanners;
   const slideSeconds = banners.length > 1 ? await getAllBannerSlideSeconds() : null;
-  const customMessageCount = (status: string) =>
-    customMessageCounts.find((c) => c.status === status)?._count._all ?? 0;
-
-  // The WhatsApp text each occasion's flyer goes out with — the business's
-  // selected message template (Message templates page), or the default wish
-  // when none is picked or it's no longer usable (same rule as sendWish.ts).
-  // Filled-in parts are shown in [brackets], like AiSensy's own preview.
-  const bracketFromName = `[${brandFirmNameText(business) || business.name}]`;
-  const messagePreviews = SEND_OCCASIONS.map((occasion) => {
-    const sel = messageSelections.find((s) => s.occasion === occasion);
-    const t = sel?.messageTemplate;
-    const usable = !!t && isTemplateUsableBy(t, business.id) && templateFitsOccasion(t.occasion, occasion);
-    const ctx = {
-      contactName: '[Customer name]',
-      occasionWord: occasion === 'FESTIVAL' ? '[Festival name]' : `[${OCCASION_LABELS[occasion]}]`,
-      businessName: bracketFromName,
-      dateText: '[Date]',
-    };
-    if (!t || !usable) {
+  const availableMessageTemplates = rawMessageTemplates
+    .filter((t) => isTemplateUsableBy(t, business.id))
+    .map((t) => {
+      const variables = parseVariables(t.variables);
+      const samples = Object.fromEntries(variables.map((v) => [String(v.index), v.sample ?? '']));
       return {
-        occasion,
-        name: 'Default wish message',
-        isDefault: true,
-        text: renderPreview(DEFAULT_WISH_BODY, DEFAULT_WISH_VARIABLES, {}, ctx),
+        id: t.id,
+        name: t.name,
+        category: t.category,
+        occasion: t.occasion as keyof typeof OCCASION_LABELS,
+        text: renderPreview(t.body, variables, samples),
+        inUseFor: messageSelections
+          .filter((s) => s.messageTemplateId === t.id)
+          .map((s) => OCCASION_LABELS[s.occasion as keyof typeof OCCASION_LABELS]),
       };
-    }
-    const bracketed = Object.fromEntries(
-      Object.entries(parseVariableValues(sel!.variableValues)).map(([k, v]) => [k, `[${v}]`])
-    );
-    return {
-      occasion,
-      name: t.name,
-      isDefault: false,
-      text: renderPreview(t.body, parseVariables(t.variables), bracketed, ctx),
-    };
-  });
+    });
 
   // Placeholders are JSON strings in the DB — parsed here so the dashboard
   // cards can draw each template with its sample name/date/photo and the
@@ -238,53 +213,55 @@ export default async function DashboardOverview() {
         <StatCard label="Active festivals" value={festivalCount} href="/dashboard/festivals" />
       </div>
 
-      <Link
-        href="/dashboard/message-templates"
-        className="card p-4 flex flex-wrap items-center justify-between gap-3 hover:border-brand-300 transition-colors"
-      >
-        <div>
-          <h2 className="font-semibold text-gray-900 text-sm">Custom message templates</h2>
-          <p className="text-xs text-gray-500">Your own WhatsApp messages sent with the flyer</p>
-        </div>
-        <div className="flex gap-4 text-sm">
-          <span>
-            <span className="text-xl font-bold text-green-700">{customMessageCount('APPROVED')}</span>{' '}
-            <span className="text-gray-500">approved</span>
-          </span>
-          <span>
-            <span className="text-xl font-bold text-amber-600">{customMessageCount('PENDING')}</span>{' '}
-            <span className="text-gray-500">pending</span>
-          </span>
-          {customMessageCount('REJECTED') > 0 && (
-            <span>
-              <span className="text-xl font-bold text-red-600">{customMessageCount('REJECTED')}</span>{' '}
-              <span className="text-gray-500">rejected</span>
-            </span>
-          )}
-        </div>
-      </Link>
+      <DashboardTemplatesByCategory templates={templates} defaultFrame={defaultFrame} business={brand} />
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold text-gray-900 text-sm">WhatsApp message sent with your flyers</h2>
-          <Link href="/dashboard/message-templates" className="text-sm text-brand-600 font-medium">
-            Change →
+          <h2 className="font-semibold text-gray-900 text-sm">Message templates</h2>
+          <Link href="/dashboard/message-templates" className="text-xs text-brand-600 font-medium">
+            View all →
           </Link>
         </div>
-        <div className="grid sm:grid-cols-3 gap-3">
-          {messagePreviews.map((p) => (
-            <WhatsAppMessagePreview
-              key={p.occasion}
-              occasionLabel={OCCASION_LABELS[p.occasion]}
-              templateName={p.name}
-              text={p.text}
-              isDefault={p.isDefault}
-            />
+        <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
+          <Link
+            href="/dashboard/message-templates?create=1"
+            className="card shrink-0 w-44 sm:w-52 snap-start flex flex-col items-center justify-center gap-2 p-4 border-dashed text-brand-600 hover:border-brand-300 hover:shadow-md transition-all"
+          >
+            <span className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center text-3xl leading-none">+</span>
+            <span className="text-xs font-medium text-center">Create custom message template</span>
+          </Link>
+          {availableMessageTemplates.map((t) => (
+            <Link
+              key={t.id}
+              href="/dashboard/message-templates"
+              className="card shrink-0 w-64 sm:w-72 snap-start p-3 flex flex-col hover:shadow-md hover:-translate-y-0.5 transition-all"
+            >
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-gray-900 truncate">{t.name}</div>
+                  <div className="text-xs text-gray-500">{OCCASION_LABELS[t.occasion] ?? t.occasion}</div>
+                </div>
+                <span
+                  className={
+                    'text-[10px] font-semibold uppercase rounded px-1.5 py-0.5 whitespace-nowrap ' +
+                    (t.category === 'SPECIAL'
+                      ? 'bg-fuchsia-100 text-fuchsia-700'
+                      : t.category === 'CUSTOM'
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-brand-50 text-brand-700')
+                  }
+                >
+                  {t.category === 'SPECIAL' ? 'Special' : t.category === 'CUSTOM' ? 'Custom' : 'General'}
+                </span>
+              </div>
+              <p className="flex-1 rounded-lg bg-[#e7ffdb] border border-green-200 px-2 py-1.5 text-xs leading-relaxed text-gray-800 whitespace-pre-wrap break-words line-clamp-6">
+                {t.text}
+              </p>
+              {t.inUseFor.length > 0 && <p className="text-xs text-green-700 mt-2">In use for: {t.inUseFor.join(', ')}</p>}
+            </Link>
           ))}
         </div>
       </div>
-
-      <DashboardTemplatesByCategory templates={templates} defaultFrame={defaultFrame} business={brand} />
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div className="card p-4">

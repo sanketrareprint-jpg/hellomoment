@@ -116,26 +116,31 @@ export default function MessageTemplatesWorkspace({
   pricePaise,
   walletBalancePaise,
   business,
+  openCreate = false,
 }: {
   templates: MessageTemplateRow[];
   selections: MessageTemplateSelectionRow[];
   pricePaise: number;
   walletBalancePaise: number;
   business: { name: string; email: string };
+  openCreate?: boolean;
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('GENERAL');
+  const [tab, setTab] = useState<Tab>(openCreate ? 'CUSTOM' : 'GENERAL');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   // "Use this template" dialog
   const [using, setUsing] = useState<MessageTemplateRow | null>(null);
-  const [useOccasion, setUseOccasion] = useState<SendOccasion>('FESTIVAL');
+  // "ALL" = every occasion the template fits, saved in one go.
+  const [useOccasion, setUseOccasion] = useState<SendOccasion | 'ALL'>('ALL');
   const [useValues, setUseValues] = useState<Record<string, string>>({});
 
   // Custom template editor dialog (id null = new)
-  const [editing, setEditing] = useState<{ id: string | null; draft: MessageTemplateDraft } | null>(null);
+  const [editing, setEditing] = useState<{ id: string | null; draft: MessageTemplateDraft } | null>(
+    openCreate ? { id: null, draft: EMPTY_DRAFT } : null
+  );
 
   // Pay & submit dialog
   const [paying, setPaying] = useState<MessageTemplateRow | null>(null);
@@ -146,8 +151,9 @@ export default function MessageTemplatesWorkspace({
   const visible = templates.filter((t) => t.category === tab && (t.usable || t.category === 'CUSTOM'));
 
   function openUse(t: MessageTemplateRow) {
-    const occasion = SEND_OCCASIONS.find((o) => templateFitsOccasion(t.occasion, o)) ?? 'FESTIVAL';
-    const existing = selections.find((s) => s.occasion === occasion && s.messageTemplateId === t.id);
+    const fits = SEND_OCCASIONS.filter((o) => templateFitsOccasion(t.occasion, o));
+    const occasion = fits.length > 1 ? 'ALL' : fits[0] ?? 'FESTIVAL';
+    const existing = selections.find((s) => fits.includes(s.occasion) && s.messageTemplateId === t.id);
     setUsing(t);
     setUseOccasion(occasion);
     setUseValues(existing?.variableValues ?? {});
@@ -186,7 +192,13 @@ export default function MessageTemplatesWorkspace({
         messageTemplateId: using.id,
         variableValues: useValues,
       });
-      setNotice(`"${using.name}" will now be sent with your ${OCCASION_LABELS[useOccasion].toLowerCase()} flyers.`);
+      const which =
+        useOccasion === 'ALL'
+          ? SEND_OCCASIONS.filter((o) => templateFitsOccasion(using.occasion, o))
+              .map((o) => OCCASION_LABELS[o].toLowerCase())
+              .join(', ')
+          : OCCASION_LABELS[useOccasion].toLowerCase();
+      setNotice(`"${using.name}" will now be sent with your ${which} flyers.`);
       setUsing(null);
     });
   }
@@ -457,8 +469,11 @@ export default function MessageTemplatesWorkspace({
               <select
                 className="input"
                 value={useOccasion}
-                onChange={(e) => setUseOccasion(e.target.value as SendOccasion)}
+                onChange={(e) => setUseOccasion(e.target.value as SendOccasion | 'ALL')}
               >
+                {SEND_OCCASIONS.filter((o) => templateFitsOccasion(using.occasion, o)).length > 1 && (
+                  <option value="ALL">All occasions (birthday, anniversary &amp; festival flyers)</option>
+                )}
                 {SEND_OCCASIONS.filter((o) => templateFitsOccasion(using.occasion, o)).map((o) => (
                   <option key={o} value={o}>
                     {OCCASION_LABELS[o]} flyers
@@ -482,7 +497,8 @@ export default function MessageTemplatesWorkspace({
               <div className="rounded-xl bg-[#e7ffdb] border border-green-200 px-3 py-2 text-sm text-gray-800 whitespace-pre-wrap">
                 {renderPreview(using.body, using.variables, useValues, {
                   contactName: 'Priya',
-                  occasionWord: useOccasion === 'FESTIVAL' ? 'Diwali' : OCCASION_LABELS[useOccasion],
+                  occasionWord:
+                    useOccasion === 'FESTIVAL' ? 'Diwali' : useOccasion === 'ALL' ? 'Birthday' : OCCASION_LABELS[useOccasion],
                   businessName: business.name,
                   dateText: '25 August',
                 })}
