@@ -300,7 +300,16 @@ async function renderFlyer(
   // branding once and have it apply across every template/occasion, rather
   // than repeating the setup per template. Falls back to the template's own
   // placeholders (unchanged behavior) when no default frame is set.
-  const defaultFrame = await prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } });
+  //
+  // Only for STARTER templates (the bundled, ready-made designs) — a CUSTOM
+  // template is the business's own uploaded artwork, which may well already
+  // have its own branding/footer baked into the image, so overlaying a
+  // Frame on top of it too just collides two branding graphics on the same
+  // flyer (see TemplatePlaceholderEditor.tsx's matching frameActive gate).
+  const defaultFrame =
+    template.source === 'STARTER'
+      ? await prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } })
+      : null;
 
   let logoPlaceholder: LogoPlaceholder | null = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
   let firmNamePlaceholder: TextPlaceholder | null = template.firmNamePlaceholder

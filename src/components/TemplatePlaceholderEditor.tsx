@@ -354,8 +354,13 @@ export default function TemplatePlaceholderEditor({
   // phone/email/address/website/products placeholders render branding at
   // send time (see defaultFrame handling in sendWish.ts) — so the preview
   // should show those, scaled onto this template's canvas, instead of this
-  // template's own branding placeholders, which are ignored then.
-  const frameActive = Boolean(defaultFrame) && !manualBrandingOpen;
+  // template's own branding placeholders, which are ignored then. Gated on
+  // showBranding (true only for STARTER templates — see this template's own
+  // edit page) to match sendWish.ts, which never applies a Frame to a
+  // CUSTOM template; without this the canvas kept showing the Frame
+  // overlaid on a business's own uploaded artwork even though a real send
+  // of that same template no longer would.
+  const frameActive = showBranding && Boolean(defaultFrame) && !manualBrandingOpen;
 
   // Same layout sendWish.ts (and flyer.ts's overlay compositing) applies —
   // the frame's placeholders were positioned against its own canvas size

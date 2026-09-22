@@ -55,6 +55,20 @@ export async function POST(req: NextRequest) {
       { status: 400 }
     );
   }
+  // Frames only ever apply to STARTER templates at send time (see
+  // defaultFrame's gating in sendWish.ts) — a CUSTOM template is the
+  // business's own uploaded artwork, which a real send never overlays a
+  // Frame onto. Rendering one here anyway would break this endpoint's own
+  // promise of showing exactly what a customer would receive.
+  if (template.source !== 'STARTER') {
+    return NextResponse.json(
+      {
+        error:
+          'Your default birthday template is a custom template, so frames never apply to it at send time. Set a starter template as default under Flyer templates to preview this frame.',
+      },
+      { status: 400 }
+    );
+  }
 
   // Frame placeholders are authored against the frame's own canvas (its
   // overlay graphic's native size) — scale/anchor them onto the template's
