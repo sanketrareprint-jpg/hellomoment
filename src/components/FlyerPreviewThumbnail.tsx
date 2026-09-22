@@ -86,24 +86,30 @@ export default function FlyerPreviewThumbnail({
   productsTextOverride,
   className,
 }: FlyerPreviewThumbnailProps) {
-  // Font sizes/positions are saved in the template's own canvas pixel
-  // space (e.g. 1086×1448) — this card can render at any width depending
-  // on the grid's column count and the viewport, so a live `scale` (this
-  // rendered width ÷ canvasWidth) is tracked via ResizeObserver, the same
-  // way TemplatePlaceholderEditor's own preview does, rather than relying
-  // on any CSS unit to do that scaling on its own.
+  // This component is handed whatever box its caller gives it (a fixed-
+  // height card in the templates grid, say) — that box's own aspect ratio
+  // won't generally match the template's own canvasWidth/canvasHeight, so
+  // it's tracked in both dimensions and the flyer is scaled down to fully
+  // *fit inside* it (like <img object-contain>, letterboxed/pillarboxed
+  // and centered) rather than stretched to fill it. Every placeholder's
+  // saved (x, y, fontSize, size) is in the template's own canvas pixel
+  // space, so that one `scale` factor also has to apply to the overlay
+  // markers below, not just the background image — otherwise they drift
+  // out of sync with whatever letterboxing the image ends up with.
   const containerRef = useRef<HTMLDivElement>(null);
-  const [renderedWidth, setRenderedWidth] = useState(0);
+  const [box, setBox] = useState({ width: 0, height: 0 });
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const update = () => setRenderedWidth(el.clientWidth);
+    const update = () => setBox({ width: el.clientWidth, height: el.clientHeight });
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
-  const scale = renderedWidth / canvasWidth;
+  const scale = box.width > 0 && box.height > 0 ? Math.min(box.width / canvasWidth, box.height / canvasHeight) : 0;
+  const renderedWidth = canvasWidth * scale;
+  const renderedHeight = canvasHeight * scale;
 
   const firmNameText =
     business.firmNameScript === 'MARATHI' ? business.firmNameMarathi || business.name : business.name.toUpperCase();
@@ -118,16 +124,21 @@ export default function FlyerPreviewThumbnail({
   ];
 
   return (
-    <div
-      ref={containerRef}
-      className={className}
-      style={{ position: 'relative', width: '100%', aspectRatio: `${canvasWidth} / ${canvasHeight}` }}
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
-
+    <div ref={containerRef} className={className} style={{ position: 'relative', width: '100%', height: '100%' }}>
       {scale > 0 && (
-        <>
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            width: renderedWidth,
+            height: renderedHeight,
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={backgroundUrl} alt="" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
+
           {logoPlaceholder && business.logoUrl && (
             <div
               className="absolute flex items-center justify-center overflow-hidden pointer-events-none"
@@ -195,7 +206,7 @@ export default function FlyerPreviewThumbnail({
               </div>
             );
           })}
-        </>
+        </div>
       )}
     </div>
   );
