@@ -6,8 +6,8 @@ import { prisma } from '@/lib/db';
 import { requireApiBusiness } from '@/lib/session';
 import { generateFlyer, type PhotoPlaceholder } from '@/lib/flyer';
 import { servedUrlToAbsolutePath, STORAGE_DIR } from '@/lib/uploads';
-import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder } from '@/lib/framePlaceholders';
-import type { TextPlaceholder, LogoPlaceholder } from '@/lib/flyerPlaceholders';
+import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder, scaleCustomTextPlaceholder } from '@/lib/framePlaceholders';
+import type { TextPlaceholder, LogoPlaceholder, CustomTextPlaceholder } from '@/lib/flyerPlaceholders';
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import { brandFirmNameText } from '@/lib/sendWish';
 
@@ -101,6 +101,13 @@ export async function POST(req: NextRequest) {
   const productsPlaceholder: TextPlaceholder | null = frame.productsPlaceholder
     ? scaleTextPlaceholder(JSON.parse(frame.productsPlaceholder), frameScale, frameTopOffset)
     : null;
+  const customTextPlaceholders: CustomTextPlaceholder[] = frame.customTextPlaceholders
+    ? JSON.parse(frame.customTextPlaceholders)
+    : [];
+  const customTexts = customTextPlaceholders.map((p) => {
+    const scaled = scaleCustomTextPlaceholder(p, frameScale, frameTopOffset);
+    return { placeholder: scaled, text: scaled.text };
+  });
   const overlayPath = frame.overlayUrl ? servedUrlToAbsolutePath(frame.overlayUrl) : null;
 
   const designationPlaceholder = template.designationPlaceholder ? JSON.parse(template.designationPlaceholder) : null;
@@ -136,6 +143,7 @@ export async function POST(req: NextRequest) {
     websiteText: business.websiteUrl || null,
     productsPlaceholder,
     productsText: business.productsText || null,
+    customTexts,
     outputPath,
   });
 

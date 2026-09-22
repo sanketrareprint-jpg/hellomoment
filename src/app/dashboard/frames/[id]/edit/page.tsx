@@ -21,6 +21,7 @@ export default async function EditFramePage({ params }: { params: { id: string }
   const addressPlaceholder = frame.addressPlaceholder ? JSON.parse(frame.addressPlaceholder) : null;
   const websitePlaceholder = frame.websitePlaceholder ? JSON.parse(frame.websitePlaceholder) : null;
   const productsPlaceholder = frame.productsPlaceholder ? JSON.parse(frame.productsPlaceholder) : null;
+  const customTexts = frame.customTextPlaceholders ? JSON.parse(frame.customTextPlaceholders) : [];
 
   const brand: BrandInfo = {
     logoUrl: business.logoUrl,
@@ -56,6 +57,7 @@ export default async function EditFramePage({ params }: { params: { id: string }
     websitePlaceholder: { ...defaults.websitePlaceholder, ...(websitePlaceholder ?? {}) },
     useProducts: Boolean(productsPlaceholder),
     productsPlaceholder: { ...defaults.productsPlaceholder, ...(productsPlaceholder ?? {}) },
+    customTexts,
   };
 
   return (

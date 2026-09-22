@@ -7,12 +7,27 @@ import { frameDefaultsFor, type FrameFormValues } from '@/lib/framePlaceholders'
 import PlaceholderControls from '@/components/PlaceholderControls';
 import FloatingNudgePad from '@/components/FloatingNudgePad';
 import type { BrandInfo } from '@/components/TemplatePlaceholderEditor';
-import type { TextPlaceholder } from '@/lib/flyerPlaceholders';
+import type { CustomTextPlaceholder, TextPlaceholder } from '@/lib/flyerPlaceholders';
 
 export type { FrameFormValues };
 
 type TextFieldKey = 'firmName' | 'phone' | 'email' | 'address' | 'website' | 'products';
-type FieldKey = TextFieldKey | 'logo';
+// A custom text box's selection/drag key is `custom:<its id>` — a template
+// literal type rather than a plain string so it stays distinct from the
+// fixed keys below at compile time, while still being a single string the
+// rest of the drag/selection plumbing (which is generic over "some key")
+// can treat uniformly. customIdFor()/isCustomKey() below convert between
+// the two.
+type CustomFieldKey = `custom:${string}`;
+type FieldKey = TextFieldKey | 'logo' | CustomFieldKey;
+
+function customKeyFor(id: string): CustomFieldKey {
+  return `custom:${id}`;
+}
+
+function customIdFor(key: FieldKey | null): string | null {
+  return key && key.startsWith('custom:') ? key.slice('custom:'.length) : null;
+}
 
 export const EMPTY_FRAME: FrameFormValues = {
   name: '',
@@ -33,6 +48,7 @@ export const EMPTY_FRAME: FrameFormValues = {
   useAddress: true,
   useWebsite: true,
   useProducts: false,
+  customTexts: [],
   ...frameDefaultsFor(5400, 1080),
 };
 
@@ -154,6 +170,10 @@ export default function FramePlaceholderEditor({
     return Boolean(getTextPlaceholder(key).locked);
   }
 
+  function getCustomText(id: string): CustomTextPlaceholder | undefined {
+    return form.customTexts.find((c) => c.id === id);
+  }
+
   function toggleLock(key: FieldKey) {
     if (key === 'logo') {
       setForm((f) => ({ ...f, logoPlaceholder: { ...f.logoPlaceholder, locked: !f.logoPlaceholder.locked } }));
@@ -177,21 +197,39 @@ export default function FramePlaceholderEditor({
 
   const effectiveBusiness: BrandInfo | undefined = business ? { ...business, ...brandOverride } : business;
 
-  // Shrinks the preview canvas to fit its column on narrow screens (e.g. a
-  // phone, where the column is narrower than MAX_PREVIEW_WIDTH) instead of
-  // overflowing and forcing a horizontal scroll. `scale` derives from this,
-  // so drag math (onPointerMove, which reads the same rendered box via
+  // Shrinks the preview canvas to fit both its column's width AND the
+  // browser window's visible height — not just width, as this used to.
+  // Width-only fitting worked fine while every frame was a short, wide
+  // banner (5:1), but a portrait 3:4 frame at MAX_PREVIEW_WIDTH renders
+  // taller than most windows, pushing "Save & generate preview"/"Show grid"
+  // and the bottom of the canvas off-screen. Instead this fits the canvas
+  // entirely within whichever of (column width, available window height) is
+  // more constraining — same idea as CSS `object-fit: contain` — so the
+  // whole frame is always visible without scrolling. `scale` derives from
+  // this, so drag math (onPointerMove, which reads the same rendered box via
   // getBoundingClientRect) stays correct at any size.
   const [previewWidth, setPreviewWidth] = useState(MAX_PREVIEW_WIDTH);
   useEffect(() => {
     const el = previewColumnRef.current;
     if (!el) return;
-    const update = () => setPreviewWidth(Math.max(120, Math.min(MAX_PREVIEW_WIDTH, el.clientWidth)));
+    const aspect = form.canvasWidth / Math.max(1, form.canvasHeight);
+    const update = () => {
+      const availableWidth = el.clientWidth;
+      // A little breathing room below the canvas (page padding, etc.) so it
+      // doesn't land flush against the bottom of the viewport.
+      const availableHeight = window.innerHeight - el.getBoundingClientRect().top - 24;
+      const widthFromHeight = availableHeight * aspect;
+      setPreviewWidth(Math.max(120, Math.min(MAX_PREVIEW_WIDTH, availableWidth, widthFromHeight)));
+    };
     update();
     const observer = new ResizeObserver(update);
     observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
+    window.addEventListener('resize', update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', update);
+    };
+  }, [form.canvasWidth, form.canvasHeight]);
 
   const scale = previewWidth / form.canvasWidth;
   const previewHeight = form.canvasHeight * scale;
@@ -276,8 +314,13 @@ export default function FramePlaceholderEditor({
     }
   }
 
+  // A custom text box is "on" simply by existing in form.customTexts — there
+  // is no separate toggle for it (see FrameFormValues.customTexts' own
+  // comment), so it reads as always-on here and is switched off by deleting
+  // it (see removeCustomText) instead.
   function isFieldOn(key: FieldKey): boolean {
-    switch (key) {
+    if (customIdFor(key)) return true;
+    switch (key as Exclude<FieldKey, CustomFieldKey>) {
       case 'logo':
         return form.useLogo;
       case 'firmName':
@@ -296,8 +339,9 @@ export default function FramePlaceholderEditor({
   }
 
   function setFieldOn(key: FieldKey, value: boolean) {
+    if (customIdFor(key)) return; // no on/off switch for a custom text box — see isFieldOn above
     setForm((f) => {
-      switch (key) {
+      switch (key as Exclude<FieldKey, CustomFieldKey>) {
         case 'logo':
           return { ...f, useLogo: value };
         case 'firmName':
@@ -318,7 +362,7 @@ export default function FramePlaceholderEditor({
     });
   }
 
-  function getTextPlaceholder(key: TextFieldKey): TextPlaceholder {
+  function getFixedTextPlaceholder(key: TextFieldKey): TextPlaceholder {
     switch (key) {
       case 'firmName':
         return form.firmNamePlaceholder;
@@ -335,7 +379,7 @@ export default function FramePlaceholderEditor({
     }
   }
 
-  function setTextPlaceholder(key: TextFieldKey, p: TextPlaceholder) {
+  function setFixedTextPlaceholder(key: TextFieldKey, p: TextPlaceholder) {
     setForm((f) => {
       switch (key) {
         case 'firmName':
@@ -356,6 +400,52 @@ export default function FramePlaceholderEditor({
     });
   }
 
+  // Fallback used only if a stale key somehow points at a since-deleted
+  // custom text box — harmless (never actually rendered/dragged, since a
+  // key like that can't be selected in the first place).
+  const FALLBACK_TEXT_PLACEHOLDER: TextPlaceholder = { x: 0, y: 0, fontSize: 32, color: '#111111', fontWeight: 600, align: 'center' };
+
+  function getTextPlaceholder(key: TextFieldKey | CustomFieldKey): TextPlaceholder {
+    const customId = customIdFor(key);
+    if (customId) return getCustomText(customId) ?? FALLBACK_TEXT_PLACEHOLDER;
+    return getFixedTextPlaceholder(key as TextFieldKey);
+  }
+
+  function setTextPlaceholder(key: TextFieldKey | CustomFieldKey, p: TextPlaceholder) {
+    const customId = customIdFor(key);
+    if (customId) {
+      setForm((f) => ({ ...f, customTexts: f.customTexts.map((c) => (c.id === customId ? { ...c, ...p } : c)) }));
+      return;
+    }
+    setFixedTextPlaceholder(key as TextFieldKey, p);
+  }
+
+  function addCustomText() {
+    const id = `c${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+    const item: CustomTextPlaceholder = {
+      id,
+      text: 'Your text',
+      x: Math.round(form.canvasWidth / 2),
+      y: Math.round(form.canvasHeight / 2),
+      fontSize: Math.round(Math.min(form.canvasWidth, form.canvasHeight) * 0.08),
+      color: '#111111',
+      fontWeight: 600,
+      align: 'center',
+      rotation: 0,
+    };
+    setForm((f) => ({ ...f, customTexts: [...f.customTexts, item] }));
+    setSelected(customKeyFor(id));
+  }
+
+  function removeCustomText(id: string) {
+    setForm((f) => ({ ...f, customTexts: f.customTexts.filter((c) => c.id !== id) }));
+    setSelected((s) => (customIdFor(s) === id ? null : s));
+  }
+
+  function updateCustomText(id: string, patch: Partial<CustomTextPlaceholder>) {
+    setForm((f) => ({ ...f, customTexts: f.customTexts.map((c) => (c.id === id ? { ...c, ...patch } : c)) }));
+  }
+
   function missingBrandDataNote(key: FieldKey): string | null {
     if (key === 'logo' && !effectiveBusiness?.logoUrl) return 'Add a logo in Settings → Brand kit for flyers — until you do, this spot stays blank on your flyers.';
     if (key === 'phone' && !effectiveBusiness?.phoneDisplay) return 'Type a phone number below.';
@@ -366,8 +456,10 @@ export default function FramePlaceholderEditor({
     return null;
   }
 
-  function previewTextFor(key: TextFieldKey): string {
-    switch (key) {
+  function previewTextFor(key: TextFieldKey | CustomFieldKey): string {
+    const customId = customIdFor(key);
+    if (customId) return getCustomText(customId)?.text || 'Your text';
+    switch (key as TextFieldKey) {
       case 'firmName':
         return firmNamePreviewText;
       case 'phone':
@@ -433,7 +525,7 @@ export default function FramePlaceholderEditor({
           trackedX = form.logoPlaceholder.x + form.logoPlaceholder.size / 2;
           trackedY = form.logoPlaceholder.y + form.logoPlaceholder.size / 2;
         } else {
-          const p = getTextPlaceholder(target as TextFieldKey);
+          const p = getTextPlaceholder(target as TextFieldKey | CustomFieldKey);
           trackedX = p.x;
           trackedY = p.y;
         }
@@ -465,7 +557,7 @@ export default function FramePlaceholderEditor({
       return;
     }
     if (target) {
-      const key = target as TextFieldKey;
+      const key = target as TextFieldKey | CustomFieldKey;
       setTextPlaceholder(key, { ...getTextPlaceholder(key), x: Math.round(trackedX), y: Math.round(trackedY) });
     }
   }
@@ -483,7 +575,7 @@ export default function FramePlaceholderEditor({
       setForm((f) => ({ ...f, logoPlaceholder: { ...f.logoPlaceholder, x: f.logoPlaceholder.x + dx, y: f.logoPlaceholder.y + dy } }));
       return;
     }
-    const key = selected as TextFieldKey;
+    const key = selected as TextFieldKey | CustomFieldKey;
     const p = getTextPlaceholder(key);
     setTextPlaceholder(key, { ...p, x: p.x + dx, y: p.y + dy });
   }
@@ -510,6 +602,7 @@ export default function FramePlaceholderEditor({
       addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
       websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
       productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
+      customTextPlaceholders: form.customTexts,
     };
     const url = form.id ? `${apiBase}/${form.id}` : apiBase;
     const method = form.id ? 'PUT' : 'POST';
@@ -629,13 +722,16 @@ export default function FramePlaceholderEditor({
   }
 
   const selectedDef = selected ? BRAND_FIELDS.find((d) => d.key === selected) : null;
+  const selectedCustomId = customIdFor(selected);
+  const selectedCustom = selectedCustomId ? getCustomText(selectedCustomId) : null;
   const selectedNote = selected ? missingBrandDataNote(selected) : null;
+  const selectedLabel = selectedDef?.label ?? (selectedCustom ? 'Custom text' : undefined);
 
   return (
     <>
     <FloatingNudgePad
       visible={Boolean(selected) && !isLocked(selected as FieldKey)}
-      label={selectedDef?.label}
+      label={selectedLabel}
       onNudge={nudgeSelected}
     />
     {finalPreview.url && (
@@ -783,10 +879,47 @@ export default function FramePlaceholderEditor({
             </div>
           </div>
 
-          {selected && selectedDef && (
+          <div className="border-t border-gray-100 pt-2">
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Custom text</h3>
+              <button
+                type="button"
+                onClick={addCustomText}
+                className="text-xs font-medium text-brand-600 hover:text-brand-700 whitespace-nowrap"
+              >
+                + Add text
+              </button>
+            </div>
+            {form.customTexts.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {form.customTexts.map((c) => {
+                  const key = customKeyFor(c.id);
+                  const isSelected = selected === key;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setSelected(key)}
+                      title={c.text}
+                      className={
+                        'max-w-[9rem] truncate rounded-lg border px-2 py-1 text-[11px] font-medium ' +
+                        (isSelected
+                          ? 'border-brand-500 bg-brand-50 text-brand-700 ring-1 ring-brand-500'
+                          : 'border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50')
+                      }
+                    >
+                      {c.text.trim() || 'Text'}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {selected && (selectedDef || selectedCustom) && (
             <div className="border-t border-gray-100 pt-2">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm font-semibold text-gray-900">{selectedDef.label}</span>
+                <span className="text-sm font-semibold text-gray-900">{selectedLabel}</span>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -816,14 +949,24 @@ export default function FramePlaceholderEditor({
                     </svg>
                     {isLocked(selected) ? 'Locked' : 'Lock'}
                   </button>
-                  <label className="flex items-center gap-1.5 text-xs text-gray-600">
-                    <input
-                      type="checkbox"
-                      checked={isFieldOn(selected)}
-                      onChange={(e) => setFieldOn(selected, e.target.checked)}
-                    />
-                    Show on flyer
-                  </label>
+                  {selectedCustom ? (
+                    <button
+                      type="button"
+                      onClick={() => removeCustomText(selectedCustom.id)}
+                      className="text-xs font-medium text-red-600 hover:text-red-700"
+                    >
+                      Delete
+                    </button>
+                  ) : (
+                    <label className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <input
+                        type="checkbox"
+                        checked={isFieldOn(selected)}
+                        onChange={(e) => setFieldOn(selected, e.target.checked)}
+                      />
+                      Show on flyer
+                    </label>
+                  )}
                 </div>
               </div>
 
@@ -834,6 +977,20 @@ export default function FramePlaceholderEditor({
               )}
 
               {selectedNote && <p className="text-xs text-amber-600 mb-1.5">{selectedNote}</p>}
+
+              {selectedCustom && (
+                <div className="mb-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
+                  <label className="label mb-0">Text shown on the flyer</label>
+                  <textarea
+                    className="input"
+                    rows={2}
+                    value={selectedCustom.text}
+                    onChange={(e) => updateCustomText(selectedCustom.id, { text: e.target.value })}
+                    placeholder="Type your text…"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Press Enter to start a new line.</p>
+                </div>
+              )}
 
               {brandKeyFor(selected) && effectiveBusiness && (
                 <div className="mb-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
@@ -1074,6 +1231,43 @@ export default function FramePlaceholderEditor({
                     <path strokeLinecap="round" strokeLinejoin="round" d={iconPath} />
                   </svg>
                 )}
+                <span
+                  style={{
+                    fontSize: fontPx,
+                    fontWeight: p.fontWeight,
+                    fontFamily: cssFontFamilyFor(p.fontFamily),
+                    whiteSpace: 'pre',
+                    textAlign: p.align,
+                  }}
+                >
+                  {previewTextFor(key)}
+                </span>
+              </div>
+            );
+          })}
+
+          {form.customTexts.map((c) => {
+            const key = customKeyFor(c.id);
+            const p = getTextPlaceholder(key);
+            const fontPx = Math.max(1, p.fontSize * scale);
+            return (
+              <div
+                key={key}
+                onPointerDown={startDrag(key)}
+                className={'absolute px-1 ' + (isLocked(key) ? 'cursor-not-allowed' : 'cursor-move')}
+                style={{
+                  left: p.x * scale,
+                  top: p.y * scale,
+                  transform: [
+                    p.align === 'center' ? 'translate(-50%, -50%)' : p.align === 'right' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
+                    p.rotation ? `rotate(${p.rotation}deg)` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' '),
+                  color: p.color,
+                  outline: selected === key ? `1px dashed ${isLocked(key) ? 'rgba(180,83,9,0.9)' : 'rgba(0,0,0,0.5)'}` : undefined,
+                }}
+              >
                 <span
                   style={{
                     fontSize: fontPx,
