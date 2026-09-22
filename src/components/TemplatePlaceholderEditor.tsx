@@ -52,15 +52,6 @@ export interface BrandInfo {
   firmNameMarathi: string | null;
 }
 
-// One entry in the admin "preview with a business's saved details" picker
-// (see `businesses` below) — just enough to fill a <select>; the chosen
-// business's full BrandInfo is fetched on demand from
-// /api/admin/businesses/[id]/brand.
-export interface BusinessOption {
-  id: string;
-  name: string;
-}
-
 // Fields whose placeholder is a plain TextPlaceholder (font/size/color/align
 // etc.) — i.e. everything except the photo box and the logo image, which
 // each have their own shape.
@@ -258,8 +249,7 @@ const BRAND_TEXT_GROUP_KEYS: TextFieldKey[] = ['phone', 'email', 'address', 'web
 
 export default function TemplatePlaceholderEditor({
   initial,
-  business: businessProp,
-  businesses = [],
+  business,
   frames = [],
   showBranding = true,
   showPerBusinessOptions = true,
@@ -269,14 +259,6 @@ export default function TemplatePlaceholderEditor({
 }: {
   initial?: TemplateFormValues;
   business?: BrandInfo;
-  // Admin-only: a business picker for the shared StarterTemplate library
-  // editor, which has no business of its own. Choosing one here fetches
-  // that business's real Brand kit and previews the design filled in with
-  // it (logo/firm name/phone/email/address/website/products) instead of
-  // generic placeholder text — purely a preview, never saved onto the
-  // template. Left empty (the default) on every business-owned editor,
-  // which already gets its own real `business` prop above.
-  businesses?: BusinessOption[];
   // This business's saved Frames, if any — offered in the branding section
   // below as the recommended alternative to manually positioning each field.
   frames?: FrameOption[];
@@ -327,40 +309,6 @@ export default function TemplatePlaceholderEditor({
   // snapping that value straight to the pointer (which jumped the element
   // to the cursor on the very first, often sub-pixel, move of a click).
   const dragOffset = useRef<{ dx: number; dy: number }>({ dx: 0, dy: 0 });
-
-  // Admin business picker (see `businesses` above): which business's real
-  // Brand kit to preview with, and the fetched result. Empty selection keeps
-  // the generic placeholder text. Irrelevant (never shown) on every
-  // business-owned editor, which passes its own `business` prop directly.
-  const [previewBusinessId, setPreviewBusinessId] = useState('');
-  const [previewBrand, setPreviewBrand] = useState<BrandInfo | null>(null);
-  const [previewBrandLoading, setPreviewBrandLoading] = useState(false);
-  useEffect(() => {
-    if (!previewBusinessId) {
-      setPreviewBrand(null);
-      return;
-    }
-    let cancelled = false;
-    setPreviewBrandLoading(true);
-    fetch(`/api/admin/businesses/${previewBusinessId}/brand`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled) setPreviewBrand(data.brand ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setPreviewBrand(null);
-      })
-      .finally(() => {
-        if (!cancelled) setPreviewBrandLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [previewBusinessId]);
-  // What every branding field below actually previews with: the fetched
-  // preview business when one's picked, else whatever real `business` prop
-  // this editor was given (a business-owned editor's own account).
-  const business = previewBrand ?? businessProp;
 
   // This business's default Frame, if any. When set, it overrides every
   // template's own branding placeholders at send time regardless of what's
@@ -1098,29 +1046,6 @@ export default function TemplatePlaceholderEditor({
           {showBranding && (
             <div>
               <h3 className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-0.5">Your business branding</h3>
-
-              {businesses.length > 0 && (
-                <div className="mb-1.5">
-                  <label className="label">Preview with a business&rsquo;s saved details</label>
-                  <select
-                    className="input"
-                    value={previewBusinessId}
-                    onChange={(e) => setPreviewBusinessId(e.target.value)}
-                  >
-                    <option value="">Generic placeholder text (default)</option>
-                    {businesses.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.name}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
-                    {previewBrandLoading
-                      ? 'Loading…'
-                      : 'Fetches that business’s Settings → Brand kit for this preview only — nothing is saved onto this shared template.'}
-                  </p>
-                </div>
-              )}
 
               {defaultFrame ? (
                 <div className="rounded-lg border border-brand-200 bg-brand-50/60 p-1.5 mb-1.5">
