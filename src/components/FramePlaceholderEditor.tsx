@@ -40,9 +40,7 @@ const MAX_PREVIEW_WIDTH = 720;
 type DragTarget = FieldKey | null;
 
 // Quick-pick swatches for the overlay recolor control — evenly spread
-// hue-rotate degrees (0 = the overlay's original, uploaded color) rendered
-// as actual thumbnails of the overlay graphic so what's shown is exactly
-// what picking it will look like, not an abstract color chip.
+// hue-rotate degrees (0 = the overlay's original, uploaded color).
 const OVERLAY_HUE_PRESETS = [0, 45, 90, 135, 180, 225, 270, 315];
 
 // Same fields/icons as BRAND_FIELDS in TemplatePlaceholderEditor.tsx —
@@ -197,6 +195,22 @@ export default function FramePlaceholderEditor({
 
   const scale = previewWidth / form.canvasWidth;
   const previewHeight = form.canvasHeight * scale;
+
+  // The canvas shows the overlay recolored by the server (see
+  // /api/frames/overlay-hue) rather than approximating the shift with a CSS
+  // `hue-rotate()` filter, since that filter and the Sharp `.modulate()` call
+  // flyer.ts actually renders with can visibly disagree on a multi-tone
+  // graphic — debounced so dragging the hue slider doesn't fire a request
+  // per pixel of travel.
+  const [previewHue, setPreviewHue] = useState(form.overlayHue);
+  useEffect(() => {
+    const timer = setTimeout(() => setPreviewHue(form.overlayHue), 150);
+    return () => clearTimeout(timer);
+  }, [form.overlayHue]);
+  const overlayPreviewSrc =
+    form.overlayUrl && previewHue
+      ? `/api/frames/overlay-hue?url=${encodeURIComponent(form.overlayUrl)}&hue=${previewHue}`
+      : form.overlayUrl;
 
   function cssFontFamilyFor(id?: string) {
     return (FONT_FAMILIES.find((f) => f.id === id) ?? FONT_FAMILIES.find((f) => f.id === 'default'))!.cssFamily;
@@ -973,10 +987,9 @@ export default function FramePlaceholderEditor({
           {form.overlayUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={form.overlayUrl}
+              src={overlayPreviewSrc}
               alt="Frame overlay"
               className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-              style={{ filter: form.overlayHue ? `hue-rotate(${form.overlayHue}deg)` : undefined }}
             />
           )}
 
