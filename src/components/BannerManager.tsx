@@ -67,7 +67,6 @@ export default function BannerManager({
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
     // Fall back to the input itself in case the browser kept a chosen file
     // that never reached state (e.g. across a page refresh).
     const input = document.getElementById(inputId) as HTMLInputElement | null;
@@ -76,6 +75,13 @@ export default function BannerManager({
       setError('Choose an image first.');
       return;
     }
+    await uploadFile(chosen);
+  }
+
+  // Uploads right away when an image is chosen, so the banner is saved before
+  // the admin can lose it to a page refresh.
+  async function uploadFile(chosen: File) {
+    setError(null);
     setBusy(true);
     try {
       const formData = new FormData();
@@ -133,6 +139,17 @@ export default function BannerManager({
       <div>
         <form onSubmit={handleUpload} className="space-y-3">
           <div>
+            <label className="label">Link (optional)</label>
+            <input
+              className="input"
+              type="url"
+              placeholder="https://..."
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+            />
+            <p className="text-xs text-gray-500 mt-1">If set, the banner opens this link when clicked. Enter it before choosing the image.</p>
+          </div>
+          <div>
             <label className="label">Banner image</label>
             <input
               id={inputId}
@@ -140,8 +157,11 @@ export default function BannerManager({
               accept="image/png,image/jpeg,image/webp"
               onChange={(e) => {
                 setError(null);
-                setFile(e.target.files?.[0] ?? null);
+                const chosen = e.target.files?.[0] ?? null;
+                setFile(chosen);
+                if (chosen) uploadFile(chosen);
               }}
+              disabled={busy}
               className="text-sm"
             />
             {file && (
@@ -157,19 +177,8 @@ export default function BannerManager({
               {device === 'DESKTOP'
                 ? 'Wide banner image (e.g. 1200×400px works well).'
                 : 'Mobile banner image (e.g. 800×400px works well).'}{' '}
-              JPG, PNG or WebP, max 10MB.
+              JPG, PNG or WebP, max 10MB. Saved as soon as you choose it.
             </p>
-          </div>
-          <div>
-            <label className="label">Link (optional)</label>
-            <input
-              className="input"
-              type="url"
-              placeholder="https://..."
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-            />
-            <p className="text-xs text-gray-500 mt-1">If set, the banner opens this link when clicked.</p>
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button type="submit" disabled={busy} className="btn-primary">
