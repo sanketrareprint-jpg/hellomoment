@@ -16,6 +16,11 @@ const placeholderSchema = z.object({
   locked: z.boolean().optional(),
 });
 
+const customTextPlaceholderSchema = placeholderSchema.extend({
+  id: z.string().min(1),
+  text: z.string(),
+});
+
 const frameSchema = z.object({
   name: z.string().min(1),
   overlayUrl: z.string().nullable().optional(),
@@ -29,6 +34,7 @@ const frameSchema = z.object({
   addressPlaceholder: placeholderSchema.nullable().optional(),
   websitePlaceholder: placeholderSchema.nullable().optional(),
   productsPlaceholder: placeholderSchema.nullable().optional(),
+  customTextPlaceholders: z.array(customTextPlaceholderSchema).optional(),
 });
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -59,6 +65,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     addressPlaceholder,
     websitePlaceholder,
     productsPlaceholder,
+    customTextPlaceholders,
     ...rest
   } = parsed.data;
 
@@ -73,6 +80,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       addressPlaceholder: addressPlaceholder ? JSON.stringify(addressPlaceholder) : null,
       websitePlaceholder: websitePlaceholder ? JSON.stringify(websitePlaceholder) : null,
       productsPlaceholder: productsPlaceholder ? JSON.stringify(productsPlaceholder) : null,
+      customTextPlaceholders: customTextPlaceholders && customTextPlaceholders.length ? JSON.stringify(customTextPlaceholders) : null,
     },
   });
   return NextResponse.json({ frame });

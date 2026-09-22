@@ -8,7 +8,8 @@ import { servedUrlToAbsolutePath, STORAGE_DIR } from './uploads';
 import { formatDateForDisplay } from './dateUtils';
 import { COINS_PER_SEND } from './pricing';
 import { getWalletOwner } from './businessFamily';
-import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder } from './framePlaceholders';
+import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder, scaleCustomTextPlaceholder } from './framePlaceholders';
+import type { CustomTextPlaceholder } from './flyerPlaceholders';
 
 /**
  * The single place that turns "it's Priya's birthday" (or a festival) into
@@ -326,6 +327,10 @@ async function renderFlyer(
   let productsPlaceholder: TextPlaceholder | null = template.productsPlaceholder
     ? JSON.parse(template.productsPlaceholder)
     : null;
+  // Free-form text boxes from the default Frame, if any — templates
+  // themselves never have their own (see TemplatePlaceholderEditor.tsx),
+  // only a Frame can carry these.
+  let customTexts: { placeholder: TextPlaceholder; text: string }[] = [];
   let overlayPath: string | null = null;
   let overlayHue = 0;
 
@@ -363,6 +368,13 @@ async function renderFlyer(
     productsPlaceholder = defaultFrame.productsPlaceholder
       ? scaleTextPlaceholder(JSON.parse(defaultFrame.productsPlaceholder), frameScale, frameTopOffset)
       : null;
+    const customTextPlaceholders: CustomTextPlaceholder[] = defaultFrame.customTextPlaceholders
+      ? JSON.parse(defaultFrame.customTextPlaceholders)
+      : [];
+    customTexts = customTextPlaceholders.map((p) => {
+      const scaled = scaleCustomTextPlaceholder(p, frameScale, frameTopOffset);
+      return { placeholder: scaled, text: scaled.text };
+    });
     overlayPath = defaultFrame.overlayUrl ? servedUrlToAbsolutePath(defaultFrame.overlayUrl) : null;
     overlayHue = defaultFrame.overlayHue;
   }
@@ -414,6 +426,7 @@ async function renderFlyer(
     websiteText,
     productsPlaceholder,
     productsText,
+    customTexts,
     outputPath,
   });
 

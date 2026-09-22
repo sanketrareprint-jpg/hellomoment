@@ -29,6 +29,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
       addressPlaceholder: true,
       websitePlaceholder: true,
       productsPlaceholder: true,
+      customTextPlaceholders: true,
     },
   });
   // Parsed here (JSON strings in the DB) so the client editor can lay the
@@ -49,6 +50,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
     addressPlaceholder: f.addressPlaceholder ? JSON.parse(f.addressPlaceholder) : null,
     websitePlaceholder: f.websitePlaceholder ? JSON.parse(f.websitePlaceholder) : null,
     productsPlaceholder: f.productsPlaceholder ? JSON.parse(f.productsPlaceholder) : null,
+    customTextPlaceholders: f.customTextPlaceholders ? JSON.parse(f.customTextPlaceholders) : null,
   }));
 
   // Scaled to *this* template's own canvas size — not a fixed 1080×1080

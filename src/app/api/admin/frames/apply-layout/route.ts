@@ -34,6 +34,7 @@ export async function POST(req: NextRequest) {
     addressPlaceholder: source.addressPlaceholder ? JSON.parse(source.addressPlaceholder) : null,
     websitePlaceholder: source.websitePlaceholder ? JSON.parse(source.websitePlaceholder) : null,
     productsPlaceholder: source.productsPlaceholder ? JSON.parse(source.productsPlaceholder) : null,
+    customTextPlaceholders: source.customTextPlaceholders ? JSON.parse(source.customTextPlaceholders) : [],
   };
 
   const targets = await prisma.frame.findMany({ where: { id: { not: source.id } } });
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
           addressPlaceholder: scaled.addressPlaceholder ? JSON.stringify(scaled.addressPlaceholder) : null,
           websitePlaceholder: scaled.websitePlaceholder ? JSON.stringify(scaled.websitePlaceholder) : null,
           productsPlaceholder: scaled.productsPlaceholder ? JSON.stringify(scaled.productsPlaceholder) : null,
+          customTextPlaceholders: scaled.customTextPlaceholders.length ? JSON.stringify(scaled.customTextPlaceholders) : null,
         },
       });
     })
