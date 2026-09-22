@@ -59,27 +59,35 @@ export default function BannerManager({
     }
   }
 
+  function clearChosenFile() {
+    setFile(null);
+    const input = document.getElementById(inputId) as HTMLInputElement | null;
+    if (input) input.value = '';
+  }
+
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!file) {
+    // Fall back to the input itself in case the browser kept a chosen file
+    // that never reached state (e.g. across a page refresh).
+    const input = document.getElementById(inputId) as HTMLInputElement | null;
+    const chosen = file ?? input?.files?.[0] ?? null;
+    if (!chosen) {
       setError('Choose an image first.');
       return;
     }
     setBusy(true);
     try {
       const formData = new FormData();
-      formData.set('file', file);
+      formData.set('file', chosen);
       formData.set('placement', placement);
       formData.set('device', device);
       if (linkUrl.trim()) formData.set('linkUrl', linkUrl.trim());
       const res = await fetch('/api/admin/banners', { method: 'POST', body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
-      setFile(null);
+      clearChosenFile();
       setLinkUrl('');
-      const input = document.getElementById(inputId) as HTMLInputElement | null;
-      if (input) input.value = '';
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
@@ -130,9 +138,21 @@ export default function BannerManager({
               id={inputId}
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                setError(null);
+                setFile(e.target.files?.[0] ?? null);
+              }}
               className="text-sm"
             />
+            {file && (
+              <button
+                type="button"
+                onClick={clearChosenFile}
+                className="ml-2 text-xs font-medium text-red-600 hover:underline"
+              >
+                ✕ Remove
+              </button>
+            )}
             <p className="text-xs text-gray-500 mt-1">
               {device === 'DESKTOP'
                 ? 'Wide banner image (e.g. 1200×400px works well).'
@@ -211,11 +231,11 @@ export default function BannerManager({
                   Hidden · Show
                 </button>
               )}
-              <div className="absolute top-1 right-1 flex gap-1">
+              <div className="flex items-center justify-between gap-2 px-2 py-1.5 bg-white border-t border-gray-200">
                 <button
                   type="button"
                   onClick={() => setPreviewBanner(b)}
-                  className="w-7 h-7 rounded-full bg-white/90 shadow flex items-center justify-center text-gray-700 hover:bg-white"
+                  className="flex items-center gap-1 text-xs text-gray-700 hover:text-gray-900"
                   title="Preview"
                   aria-label="Preview banner"
                 >
@@ -223,18 +243,20 @@ export default function BannerManager({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
+                  Preview
                 </button>
                 <button
                   type="button"
                   disabled={rowBusyId === b.id}
                   onClick={() => handleDelete(b.id)}
-                  className="w-7 h-7 rounded-full bg-white/90 shadow flex items-center justify-center text-red-600 hover:bg-white"
+                  className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-700"
                   title="Delete"
                   aria-label="Delete banner"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3M4 7h16" />
                   </svg>
+                  {rowBusyId === b.id ? 'Deleting…' : 'Delete'}
                 </button>
               </div>
             </div>
