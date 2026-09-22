@@ -301,11 +301,14 @@ model FlyerTemplate {
 // not per-business. `placement` keeps the two slots independent so admin can
 // run different creative on the dashboard vs. the landing page.
 // placement: "DASHBOARD" | "LANDING"
+// device: "DESKTOP" | "MOBILE" — each placement has a separate desktop and
+// mobile image set.
 model DashboardBanner {
   id        String   @id @default(cuid())
   imageUrl  String
   linkUrl   String? // optional; banner is clickable if set
   placement String   @default("DASHBOARD") // "DASHBOARD" | "LANDING"
+  device    String   @default("DESKTOP") // "DESKTOP" | "MOBILE"
   order     Int      @default(0) // lower shows first
   isActive  Boolean  @default(true)
 

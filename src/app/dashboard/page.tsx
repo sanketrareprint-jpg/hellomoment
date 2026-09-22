@@ -43,7 +43,7 @@ export default async function DashboardOverview() {
     prisma.dashboardBanner.findMany({
       where: { isActive: true, placement: 'DASHBOARD' },
       orderBy: { order: 'asc' },
-      select: { id: true, imageUrl: true, linkUrl: true },
+      select: { id: true, imageUrl: true, linkUrl: true, device: true },
     }),
     prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } }),
     prisma.messageTemplate.groupBy({
@@ -53,6 +53,12 @@ export default async function DashboardOverview() {
     }),
     prisma.messageTemplateSelection.findMany({ where: { businessId: business.id }, include: { messageTemplate: true } }),
   ]);
+
+  // Separate desktop / mobile banner sets; phones fall back to the desktop
+  // set until a mobile banner is added.
+  const desktopBanners = banners.filter((b) => b.device !== 'MOBILE');
+  const hasMobileBanners = banners.some((b) => b.device === 'MOBILE');
+  const mobileBanners = hasMobileBanners ? banners.filter((b) => b.device === 'MOBILE') : desktopBanners;
   const customMessageCount = (status: string) =>
     customMessageCounts.find((c) => c.status === status)?._count._all ?? 0;
 
@@ -186,7 +192,16 @@ export default async function DashboardOverview() {
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
       </div>
 
-      {banners.length > 0 && <DashboardBannerSlider banners={banners} />}
+      {desktopBanners.length > 0 && (
+        <div className="hidden sm:block">
+          <DashboardBannerSlider banners={desktopBanners} />
+        </div>
+      )}
+      {mobileBanners.length > 0 && (
+        <div className="sm:hidden">
+          <DashboardBannerSlider banners={mobileBanners} aspectClass={hasMobileBanners ? 'aspect-[2/1]' : undefined} />
+        </div>
+      )}
 
       {setupIncomplete && (
         <div className="card p-4 border-amber-300 bg-amber-50 flex items-start gap-3">
