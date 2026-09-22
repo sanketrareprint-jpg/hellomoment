@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import DeleteBusinessButton from '@/components/DeleteBusinessButton';
 import AddCreditForm from '@/components/AddCreditForm';
 import AddTrialCoinsForm from '@/components/AddTrialCoinsForm';
+import AdminBusinessEditPanel from '@/components/AdminBusinessEditPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -233,6 +234,28 @@ export default async function AdminBusinessDetailPage({
           redirectTo="/admin"
         />
       </div>
+
+      <AdminBusinessEditPanel
+        business={{
+          id: business.id,
+          name: business.name,
+          email: business.email,
+          ownerWhatsapp: business.ownerWhatsapp,
+          timezone: business.timezone,
+          walletRatePaise: business.walletRatePaise,
+          phoneDisplay: business.phoneDisplay,
+          emailDisplay: business.emailDisplay,
+          addressText: business.addressText,
+          productsText: business.productsText,
+          websiteUrl: business.websiteUrl,
+          firmNameScript: business.firmNameScript,
+          firmNameMarathi: business.firmNameMarathi,
+          aisensyApiKey: business.aisensyApiKey,
+          aisensyBirthdayCampaign: business.aisensyBirthdayCampaign,
+          aisensyAnniversaryCampaign: business.aisensyAnniversaryCampaign,
+          aisensyFestivalCampaign: business.aisensyFestivalCampaign,
+        }}
+      />
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="card p-3 space-y-2">
