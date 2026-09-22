@@ -116,15 +116,17 @@ export default function MessageTemplatesWorkspace({
   pricePaise,
   walletBalancePaise,
   business,
+  openCreate = false,
 }: {
   templates: MessageTemplateRow[];
   selections: MessageTemplateSelectionRow[];
   pricePaise: number;
   walletBalancePaise: number;
   business: { name: string; email: string };
+  openCreate?: boolean;
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('GENERAL');
+  const [tab, setTab] = useState<Tab>(openCreate ? 'CUSTOM' : 'GENERAL');
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -136,7 +138,9 @@ export default function MessageTemplatesWorkspace({
   const [useValues, setUseValues] = useState<Record<string, string>>({});
 
   // Custom template editor dialog (id null = new)
-  const [editing, setEditing] = useState<{ id: string | null; draft: MessageTemplateDraft } | null>(null);
+  const [editing, setEditing] = useState<{ id: string | null; draft: MessageTemplateDraft } | null>(
+    openCreate ? { id: null, draft: EMPTY_DRAFT } : null
+  );
 
   // Pay & submit dialog
   const [paying, setPaying] = useState<MessageTemplateRow | null>(null);
