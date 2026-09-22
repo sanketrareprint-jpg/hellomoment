@@ -100,6 +100,9 @@ export default async function LandingPage() {
           <Link href="/pricing" className="hidden sm:inline text-sm font-medium text-gray-600 hover:text-brand-600">
             Pricing
           </Link>
+          <Link href="/blog" className="hidden sm:inline text-sm font-medium text-gray-600 hover:text-brand-600">
+            Blog
+          </Link>
           <Link href="/login" className="btn-secondary text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap">
             Log in
           </Link>
