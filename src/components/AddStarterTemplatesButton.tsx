@@ -12,12 +12,14 @@ import { useRouter } from 'next/navigation';
  * bundled artwork has been updated refreshes the background image on any
  * starter designs the business already has (their placeholder positions
  * and default status are left alone), so this doubles as a "get the latest
- * designs" button.
+ * designs" button. The Templates page already does this sync automatically
+ * on every visit (src/app/dashboard/templates/page.tsx), so this button is
+ * mainly here for a business that wants to force an immediate check.
  */
 export default function AddStarterTemplatesButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ created: string[]; updated: string[] } | null>(null);
+  const [result, setResult] = useState<{ created: string[]; updated: string[]; removed: string[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function onClick() {
@@ -46,6 +48,8 @@ export default function AddStarterTemplatesButton() {
         <p className="text-sm text-gray-600 mt-2">
           {result.created.length > 0 && <>Added {result.created.length} new design{result.created.length === 1 ? '' : 's'}. </>}
           {result.updated.length > 0 && <>Refreshed the artwork on {result.updated.length} existing design{result.updated.length === 1 ? '' : 's'}. </>}
+          {result.removed.length > 0 && <>Removed {result.removed.length} design{result.removed.length === 1 ? '' : 's'} no longer offered. </>}
+          {result.created.length === 0 && result.updated.length === 0 && result.removed.length === 0 && 'Already up to date. '}
           Your logo, name, and branding are already placed on each — edit any of them any time.
         </p>
       )}

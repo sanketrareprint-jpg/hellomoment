@@ -267,6 +267,18 @@ model FlyerTemplate {
   isDefault          Boolean  @default(false) // used when a contact/festival doesn't specify a template
   aisensyCampaignName String? // overrides the business-level default campaign for this template, if set
 
+  // Which admin-curated StarterTemplate this row was copied from, if any
+  // (source="STARTER" only — set by seedStarterTemplatesForBusiness). Unlike
+  // BusinessFrame.frameId (which SetNulls so a business keeps their copy
+  // after admin removes a Frame), this cascades: admin deleting a
+  // StarterTemplate deletes every business's copy of it too, keeping the
+  // starter library "live" instead of businesses hanging onto designs
+  // admin no longer offers. A business's own edits to their copy are still
+  // theirs alone until then — this only fires on the admin original's
+  // deletion, not on refresh.
+  starterTemplateId String?
+  starterTemplate   StarterTemplate? @relation(fields: [starterTemplateId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -274,6 +286,7 @@ model FlyerTemplate {
   sendLogs  SendLog[]
 
   @@index([businessId, occasion])
+  @@index([starterTemplateId])
 }
 
 // A custom festival/occasion the business wants to broadcast wishes for
@@ -332,6 +345,8 @@ model StarterTemplate {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  flyerTemplates FlyerTemplate[] // every business's copy of this design — deleted along with it, see FlyerTemplate.starterTemplateId
 
   @@index([occasion, isActive, order])
 }

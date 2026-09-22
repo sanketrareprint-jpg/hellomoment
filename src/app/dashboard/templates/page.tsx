@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { getCurrentBusiness } from '@/lib/session';
+import { seedStarterTemplatesForBusiness } from '@/lib/seedStarterTemplates';
 import AddStarterTemplatesButton from '@/components/AddStarterTemplatesButton';
 import TemplatesGrid from '@/components/TemplatesGrid';
 
@@ -26,6 +27,18 @@ export default async function TemplatesPage({
 }) {
   const business = await getCurrentBusiness();
   if (!business) return null;
+
+  // Keeps the "Starter templates" folder live: picks up anything admin
+  // added, updated or removed from the shared library since this business
+  // last looked, with no "Add / refresh" click needed. Cheap when nothing
+  // changed (see seedStarterTemplatesForBusiness) — safe to run on every
+  // page load. Swallowed on failure so a transient file-copy issue never
+  // takes down the whole Templates page.
+  try {
+    await seedStarterTemplatesForBusiness(business.id);
+  } catch (err) {
+    console.error('Failed to auto-sync starter templates', err);
+  }
 
   const templates = await prisma.flyerTemplate.findMany({
     where: { businessId: business.id },
