@@ -79,10 +79,9 @@ export default function DashboardFlyerPreview({
   }, []);
   const scale = width > 0 ? width / t.canvasWidth : 0;
 
-  // Unlike sendWish.ts (which only applies a Frame to STARTER templates),
-  // the dashboard shows the default Frame over every template, including a
-  // business's own uploads, by request.
-  const frame = defaultFrame;
+  // Same rule as sendWish.ts: a Frame only ever applies to STARTER
+  // templates — never overlay it on a business's own uploaded (CUSTOM) artwork.
+  const frame = t.source === 'STARTER' ? defaultFrame : null;
   const { scale: frameScale, topOffset: frameTopOffset } = frame
     ? frameLayoutFor(t.canvasWidth, t.canvasHeight, frame.canvasWidth, frame.canvasHeight)
     : { scale: 1, topOffset: 0 };

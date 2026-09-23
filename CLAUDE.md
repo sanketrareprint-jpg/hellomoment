@@ -15,3 +15,7 @@
 ## Before committing
 - Review `git diff` and revert any change that is not directly part of the task.
 - In your final reply, list every file you changed and why.
+
+## Permanent product rules (from the owner — never break these)
+- NEVER overlay a Frame on a business's own uploaded (CUSTOM) flyer template — not in sends, previews, dashboard cards, downloads, or anywhere else. Frames apply only to STARTER templates.
+- Business templates and frames must stay in sync with the admin backend: anything admin adds, updates or removes (starter templates, frames) must be reflected in every business account.

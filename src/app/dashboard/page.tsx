@@ -7,6 +7,7 @@ import { getAllBannerSlideSeconds } from '@/lib/bannerTiming';
 import DashboardTemplatesByCategory, { type DashboardTemplateRow } from '@/components/DashboardTemplatesByCategory';
 import type { BrandInfo, FrameOption } from '@/components/TemplatePlaceholderEditor';
 import { isTemplateUsableBy } from '@/lib/messageTemplates';
+import { seedStarterTemplatesForBusiness } from '@/lib/seedStarterTemplates';
 import { OCCASION_LABELS, parseVariables, renderPreview } from '@/lib/messageTemplateVars';
 
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,15 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardOverview() {
   const business = await getCurrentBusiness();
   if (!business) return null;
+
+  // Keep the dashboard's template rows in sync with the admin starter
+  // library (same as the Flyer templates page) — new/updated/removed admin
+  // designs show up here without visiting that page first.
+  try {
+    await seedStarterTemplatesForBusiness(business.id);
+  } catch (err) {
+    console.error('Failed to auto-sync starter templates', err);
+  }
 
   const [contactCount, templateCount, rawTemplates, festivalCount, recentLogs, contacts, banners, rawDefaultFrame, rawMessageTemplates, messageSelections] = await Promise.all([
     prisma.contact.count({ where: { businessId: business.id } }),

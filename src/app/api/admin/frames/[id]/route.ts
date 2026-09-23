@@ -108,7 +108,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (denied) return denied;
 
   try {
-    await prisma.frame.delete({ where: { id: params.id } });
+    // Keep businesses in sync with the admin gallery: removing a Frame also
+    // removes every business's copy of it, so it stops applying to flyers.
+    await prisma.$transaction([
+      prisma.businessFrame.deleteMany({ where: { frameId: params.id } }),
+      prisma.frame.delete({ where: { id: params.id } }),
+    ]);
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });

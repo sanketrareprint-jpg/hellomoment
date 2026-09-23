@@ -37,7 +37,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: 'Only festival and other flyers can be downloaded.' }, { status: 400 });
   }
 
-  const defaultFrame = await prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } });
+  // Only for STARTER templates — never overlay a Frame on a business's own
+  // uploaded (CUSTOM) artwork (same rule as sendWish.ts's renderFlyer).
+  const defaultFrame =
+    template.source === 'STARTER'
+      ? await prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } })
+      : null;
 
   let logoPlaceholder: LogoPlaceholder | null = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
   let firmNamePlaceholder: TextPlaceholder | null = template.firmNamePlaceholder
