@@ -46,6 +46,7 @@ export async function adoptFrameForBusiness(businessId: string, frameId: string)
       addressPlaceholder: frame.addressPlaceholder,
       websitePlaceholder: frame.websitePlaceholder,
       productsPlaceholder: frame.productsPlaceholder,
+      customTextPlaceholders: frame.customTextPlaceholders,
     },
   });
 }
