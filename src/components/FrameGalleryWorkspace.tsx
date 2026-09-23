@@ -223,7 +223,7 @@ export default function FrameGalleryWorkspace({ frames, business }: { frames: Ga
                 }
               >
                 <div
-                  className={'w-full flex items-center justify-center' + (f.overlayUrl ? '' : ' aspect-[5/1]')}
+                  className="w-full aspect-[5/1] flex items-center justify-center"
                   style={{
                     backgroundColor: '#e5e7eb',
                     backgroundImage: f.overlayUrl
@@ -238,7 +238,7 @@ export default function FrameGalleryWorkspace({ frames, business }: { frames: Ga
                     <img
                       src={f.overlayUrl}
                       alt={f.name}
-                      className="w-full h-auto block"
+                      className="w-full h-full object-cover"
                       style={{ filter: f.overlayHue ? `hue-rotate(${f.overlayHue}deg)` : undefined }}
                     />
                   ) : (

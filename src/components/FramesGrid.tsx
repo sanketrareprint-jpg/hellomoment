@@ -16,7 +16,7 @@ export interface BusinessFrameRow {
 function FramePreview({ overlayUrl, overlayHue, name }: { overlayUrl: string | null; overlayHue?: number | null; name: string }) {
   return (
     <div
-      className={'w-full flex items-center justify-center' + (overlayUrl ? '' : ' aspect-[5/1]')}
+      className="w-full aspect-[5/1] flex items-center justify-center"
       style={{
         backgroundColor: '#e5e7eb',
         backgroundImage: overlayUrl
@@ -31,7 +31,7 @@ function FramePreview({ overlayUrl, overlayHue, name }: { overlayUrl: string | n
         <img
           src={overlayUrl}
           alt={name}
-          className="w-full h-auto block"
+          className="w-full h-full object-cover"
           style={{ filter: overlayHue ? `hue-rotate(${overlayHue}deg)` : undefined }}
         />
       ) : (
