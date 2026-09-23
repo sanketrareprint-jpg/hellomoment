@@ -122,7 +122,10 @@ export async function sendWishForContact(params: {
     aisensyResponse = { toContact: contactResult.body };
     if (!contactResult.ok) {
       status = 'FAILED';
-      errorMessage = `AiSensy rejected the send to the contact (HTTP ${contactResult.status}).`;
+      // Include AiSensy's own response body (truncated), same as the owner
+      // branch below, so the real rejection reason shows up in Send logs.
+      const bodySnippet = JSON.stringify(contactResult.body ?? {}).slice(0, 300);
+      errorMessage = `AiSensy rejected the send to the contact (HTTP ${contactResult.status}): ${bodySnippet}`;
     }
 
     // The business owner gets notified on a separate approved AiSensy
