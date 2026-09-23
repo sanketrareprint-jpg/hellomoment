@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import FramePreview, { type FramePlaceholders } from '@/components/FramePreview';
+import FramePlaceholderEditor, { type FrameFormValues } from '@/components/FramePlaceholderEditor';
 import type { BrandInfo } from '@/components/TemplatePlaceholderEditor';
+import { frameDefaultsFor } from '@/lib/framePlaceholders';
 
 export interface GalleryFrameRow {
   id: string;
@@ -26,6 +28,45 @@ const FIELDS: { key: BrandFieldKey; label: string; placeholder: string; multilin
   { key: 'productsText', label: 'Products / services', placeholder: 'e.g. Sweets · Snacks · Catering', multiline: true },
 ];
 
+// A just-added BusinessFrame row (as returned by POST /api/frames/adopt) →
+// the editor's form values — same mapping as the Edit frame page
+// (src/app/dashboard/frames/[id]/edit/page.tsx).
+function editorValuesFor(frame: Record<string, any>): FrameFormValues {
+  const defaults = frameDefaultsFor(frame.canvasWidth, frame.canvasHeight);
+  const parse = (json: string | null) => (json ? JSON.parse(json) : null);
+  const logo = parse(frame.logoPlaceholder);
+  const firmName = parse(frame.firmNamePlaceholder);
+  const phone = parse(frame.phonePlaceholder);
+  const email = parse(frame.emailPlaceholder);
+  const address = parse(frame.addressPlaceholder);
+  const website = parse(frame.websitePlaceholder);
+  const products = parse(frame.productsPlaceholder);
+  return {
+    id: frame.id,
+    name: frame.name,
+    isDefault: frame.isDefault,
+    overlayUrl: frame.overlayUrl ?? '',
+    overlayHue: frame.overlayHue,
+    canvasWidth: frame.canvasWidth,
+    canvasHeight: frame.canvasHeight,
+    useLogo: Boolean(logo),
+    logoPlaceholder: { ...defaults.logoPlaceholder, ...(logo ?? {}) },
+    useFirmName: Boolean(firmName),
+    firmNamePlaceholder: { ...defaults.firmNamePlaceholder, ...(firmName ?? {}) },
+    usePhone: Boolean(phone),
+    phonePlaceholder: { ...defaults.phonePlaceholder, ...(phone ?? {}) },
+    useEmail: Boolean(email),
+    emailPlaceholder: { ...defaults.emailPlaceholder, ...(email ?? {}) },
+    useAddress: Boolean(address),
+    addressPlaceholder: { ...defaults.addressPlaceholder, ...(address ?? {}) },
+    useWebsite: Boolean(website),
+    websitePlaceholder: { ...defaults.websitePlaceholder, ...(website ?? {}) },
+    useProducts: Boolean(products),
+    productsPlaceholder: { ...defaults.productsPlaceholder, ...(products ?? {}) },
+    customTexts: parse(frame.customTextPlaceholders) ?? [],
+  };
+}
+
 /**
  * The Frame gallery's "fill your details once, watch every design update
  * live" workspace — business details on one side, the selected frame's
@@ -45,6 +86,13 @@ export default function FrameGalleryWorkspace({ frames, business }: { frames: Ga
   const [adoptingId, setAdoptingId] = useState<string | null>(null);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  // The business's own copy just added via "+ Add in frame" — opened right
+  // here in the frame editor so fields can be positioned straight away.
+  const [editing, setEditing] = useState<FrameFormValues | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (editing) editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [editing]);
 
   const selected = frames.find((f) => f.id === selectedId) ?? null;
 
@@ -110,6 +158,7 @@ export default function FrameGalleryWorkspace({ frames, business }: { frames: Ga
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || 'Could not add this frame');
       setAddedIds((prev) => new Set(prev).add(id));
+      if (data?.frame) setEditing(editorValuesFor(data.frame));
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not add this frame');
@@ -253,6 +302,23 @@ export default function FrameGalleryWorkspace({ frames, business }: { frames: Ga
           </div>
         </div>
       </div>
+
+      {editing && (
+        <div ref={editorRef} className="mt-6 border-t border-gray-200 pt-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-gray-900">Edit frame — {editing.name}</h3>
+            <button type="button" className="text-sm text-gray-500 hover:text-gray-700" onClick={() => setEditing(null)}>
+              Close editor
+            </button>
+          </div>
+          <FramePlaceholderEditor
+            key={editing.id}
+            business={draft}
+            initial={editing}
+            redirectPath="/dashboard/frames?folder=my"
+          />
+        </div>
+      )}
     </div>
   );
 }
