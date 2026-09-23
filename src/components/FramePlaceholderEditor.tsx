@@ -108,6 +108,7 @@ export default function FramePlaceholderEditor({
   apiBase = '/api/frames',
   uploadUrl = '/api/uploads/frame',
   redirectPath = '/dashboard/frames',
+  fullHeightPreview = false,
 }: {
   initial?: FrameFormValues;
   // Passed in so the live preview shows the *actual* logo/firm name/phone
@@ -124,6 +125,10 @@ export default function FramePlaceholderEditor({
   apiBase?: string;
   uploadUrl?: string;
   redirectPath?: string;
+  // Frame gallery: size the preview to the whole window height rather than
+  // whatever's left below the editor's current on-page position (the
+  // editor sits further down that page, which otherwise shrinks it).
+  fullHeightPreview?: boolean;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<FrameFormValues>(initial ?? EMPTY_FRAME);
@@ -217,7 +222,9 @@ export default function FramePlaceholderEditor({
       const availableWidth = el.clientWidth;
       // A little breathing room below the canvas (page padding, etc.) so it
       // doesn't land flush against the bottom of the viewport.
-      const availableHeight = window.innerHeight - el.getBoundingClientRect().top - 24;
+      const availableHeight = fullHeightPreview
+        ? window.innerHeight - 96
+        : window.innerHeight - el.getBoundingClientRect().top - 24;
       const widthFromHeight = availableHeight * aspect;
       setPreviewWidth(Math.max(120, Math.min(MAX_PREVIEW_WIDTH, availableWidth, widthFromHeight)));
     };
@@ -229,7 +236,7 @@ export default function FramePlaceholderEditor({
       observer.disconnect();
       window.removeEventListener('resize', update);
     };
-  }, [form.canvasWidth, form.canvasHeight]);
+  }, [form.canvasWidth, form.canvasHeight, fullHeightPreview]);
 
   const scale = previewWidth / form.canvasWidth;
   const previewHeight = form.canvasHeight * scale;

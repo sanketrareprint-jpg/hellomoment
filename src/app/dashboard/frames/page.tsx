@@ -61,6 +61,13 @@ export default async function FramesPage({ searchParams }: { searchParams: { fol
     },
   }));
 
+  // Gallery frame id → this business's most recent copy of it (myFrames is
+  // newest first), so the gallery opens straight into that copy's editor.
+  const galleryCopies: Record<string, (typeof myFrames)[number]> = {};
+  for (const f of myFrames) {
+    if (f.frameId && !galleryCopies[f.frameId]) galleryCopies[f.frameId] = f;
+  }
+
   return (
     <div className="max-w-5xl">
       <div className="mb-6">
@@ -140,7 +147,7 @@ export default async function FramesPage({ searchParams }: { searchParams: { fol
               <FramesGrid frames={myFrames} />
             )
           ) : (
-            <FrameGalleryWorkspace frames={galleryFrameRows} business={brand} />
+            <FrameGalleryWorkspace frames={galleryFrameRows} business={brand} copies={galleryCopies} />
           )}
         </div>
       )}
