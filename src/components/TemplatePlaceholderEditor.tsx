@@ -1613,10 +1613,22 @@ export default function TemplatePlaceholderEditor({
           )}
 
           {form.usePhoto && form.backgroundUrl && (
+            // Outer box carries positioning, the drag-to-move handler, and the
+            // resize handle — it must NOT have clip-path on it. clip-path clips
+            // an element's entire subtree to the given shape, including any
+            // child positioned outside the box's own bounds (like the resize
+            // dot below, offset via -right-1.5/-bottom-1.5 so it pokes out past
+            // the corner). For the hexagon shape that clipped the dot away
+            // entirely — invisible and unable to receive pointer events, so the
+            // frame couldn't be resized by drag. circle/rounded/square (which
+            // use border-radius, not clip-path) were unaffected. The hexagon's
+            // shape is now drawn by an inner, pointer-events-none overlay
+            // instead, so the outer box's corner — and its resize handle —
+            // is never clipped.
             <div
               onPointerDown={startDrag('photo')}
               className={
-                'absolute border-2 border-dashed border-brand-500 bg-brand-500/20 flex items-center justify-center text-[10px] font-medium text-brand-700 ' +
+                'absolute flex items-center justify-center text-[10px] font-medium text-brand-700 ' +
                 (isLocked('photo') ? 'cursor-not-allowed' : 'cursor-move')
               }
               style={{
@@ -1624,20 +1636,25 @@ export default function TemplatePlaceholderEditor({
                 top: form.photoPlaceholder.y * scale,
                 width: form.photoPlaceholder.width * scale,
                 height: form.photoPlaceholder.height * scale,
-                borderRadius:
-                  form.photoPlaceholder.shape === 'circle'
-                    ? '9999px'
-                    : form.photoPlaceholder.shape === 'rounded'
-                      ? '18%'
-                      : '4px',
-                clipPath:
-                  form.photoPlaceholder.shape === 'hexagon'
-                    ? 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)'
-                    : undefined,
                 transform: form.photoPlaceholder.rotation ? `rotate(${form.photoPlaceholder.rotation}deg)` : undefined,
               }}
             >
-              Photo
+              <div
+                className="absolute inset-0 border-2 border-dashed border-brand-500 bg-brand-500/20 pointer-events-none"
+                style={{
+                  borderRadius:
+                    form.photoPlaceholder.shape === 'circle'
+                      ? '9999px'
+                      : form.photoPlaceholder.shape === 'rounded'
+                        ? '18%'
+                        : '4px',
+                  clipPath:
+                    form.photoPlaceholder.shape === 'hexagon'
+                      ? 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)'
+                      : undefined,
+                }}
+              />
+              <span className="relative pointer-events-none">Photo</span>
               {!isLocked('photo') && (
                 <div
                   onPointerDown={(e) => {
