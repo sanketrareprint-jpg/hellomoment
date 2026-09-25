@@ -524,6 +524,21 @@ async function buildPhotoComposite(
   const h = Math.round(placeholder.height ?? placeholder.size ?? 0);
   const shape = placeholder.shape ?? 'circle';
 
+  // A photo's `rotation` angles the crop FRAME only — the mask shape that
+  // decides which part of the box is visible — never the photo's own
+  // pixels. A business rotates a hexagon/rounded/square frame to angle it
+  // against a template's artwork (e.g. a tilted cut-out on the background),
+  // and expects the person's face to stay upright inside it, not spin with
+  // the frame. Earlier this rotated the already-masked photo as one flat
+  // image (mask + pixels together) via rotateBuffer, so the photo's content
+  // visibly tilted along with the frame. Now the rotation is baked into the
+  // mask's own SVG `transform` instead, so `dest-in` clips the (always
+  // upright, cover-fit) photo to a rotated window rather than rotating the
+  // photo itself. Logo/text placeholders are unaffected — their `rotation`
+  // still rotates the whole rendered element, which is what a logo/text box
+  // wants.
+  const rotateAttr = placeholder.rotation ? ` transform="rotate(${placeholder.rotation} ${w / 2} ${h / 2})"` : '';
+
   let photo = sharp(photoPath).resize(w, h, { fit: 'cover' });
 
   if (shape === 'circle') {
@@ -531,13 +546,13 @@ async function buildPhotoComposite(
     const maskSvg = Buffer.from(
       `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><ellipse cx="${w / 2}" cy="${
         h / 2
-      }" rx="${w / 2}" ry="${h / 2}" fill="#fff"/></svg>`
+      }" rx="${w / 2}" ry="${h / 2}" fill="#fff"${rotateAttr}/></svg>`
     );
     photo = photo.composite([{ input: maskSvg, blend: 'dest-in' }]);
-  } else if (shape === 'rounded') {
-    const radius = Math.round(Math.min(w, h) * 0.18);
+  } else if (shape === 'rounded' || shape === 'square') {
+    const radius = shape === 'rounded' ? Math.round(Math.min(w, h) * 0.18) : 0;
     const maskSvg = Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${radius}" ry="${radius}" fill="#fff"/></svg>`
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" rx="${radius}" ry="${radius}" fill="#fff"${rotateAttr}/></svg>`
     );
     photo = photo.composite([{ input: maskSvg, blend: 'dest-in' }]);
   } else if (shape === 'hexagon') {
@@ -552,21 +567,23 @@ async function buildPhotoComposite(
       .map(([x, y]) => `${x},${y}`)
       .join(' ');
     const maskSvg = Buffer.from(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><polygon points="${points}" fill="#fff"/></svg>`
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><polygon points="${points}" fill="#fff"${rotateAttr}/></svg>`
+    );
+    photo = photo.composite([{ input: maskSvg, blend: 'dest-in' }]);
+  } else if (placeholder.rotation) {
+    // No named shape matched (plain rectangle, no crop mask normally
+    // needed) but a rotation is set — give it a rect mask too, so there is
+    // still a frame outline to angle. Without this, a rotated "square"
+    // placeholder with no shape set would have nothing visible to rotate.
+    const maskSvg = Buffer.from(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="#fff"${rotateAttr}/></svg>`
     );
     photo = photo.composite([{ input: maskSvg, blend: 'dest-in' }]);
   }
 
-  let photoBuffer = await photo.png().toBuffer();
-  let left = Math.round(placeholder.x);
-  let top = Math.round(placeholder.y);
-
-  if (placeholder.rotation) {
-    const rotated = await rotateBuffer(photoBuffer, w, h, placeholder.rotation);
-    photoBuffer = rotated.data;
-    left = Math.round(left + rotated.offsetX);
-    top = Math.round(top + rotated.offsetY);
-  }
+  const photoBuffer = await photo.png().toBuffer();
+  const left = Math.round(placeholder.x);
+  const top = Math.round(placeholder.y);
 
   return { input: photoBuffer, left, top };
 }
