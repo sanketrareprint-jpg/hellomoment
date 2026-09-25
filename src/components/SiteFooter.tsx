@@ -50,6 +50,7 @@ export default function SiteFooter() {
             <Link href="/#features" className="hover:text-brand-600">Features</Link>
             <Link href="/pricing" className="hover:text-brand-600">Pricing</Link>
             <Link href="/#how-it-works" className="hover:text-brand-600">How It Works</Link>
+            <Link href="/blog" className="hover:text-brand-600">Blog</Link>
           </div>
         </div>
 

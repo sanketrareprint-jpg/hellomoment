@@ -40,7 +40,7 @@ export default function DashboardShell({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="min-h-screen lg:flex">
+    <div className="min-h-screen lg:h-screen lg:flex lg:overflow-hidden">
       {/* Mobile top bar: shown below the lg breakpoint, replaces the always-on sidebar */}
       <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between gap-3 bg-white/90 backdrop-blur border-b border-gray-200 px-4 py-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -94,7 +94,7 @@ export default function DashboardShell({
         className={
           'fixed inset-y-0 left-0 z-50 w-64 shrink-0 bg-white border-r border-gray-200 flex flex-col transform transition-transform duration-200 ease-in-out ' +
           (open ? 'translate-x-0' : '-translate-x-full') +
-          ' lg:translate-x-0 lg:static lg:z-auto'
+          ' lg:translate-x-0 lg:static lg:z-auto lg:h-screen lg:overflow-y-auto'
         }
       >
         <div className="px-5 py-5 border-b border-gray-100 flex items-center justify-between">
@@ -141,9 +141,11 @@ export default function DashboardShell({
         </div>
       </aside>
 
-      <div className="flex-1 min-w-0 flex flex-col">
-        {/* Desktop top bar: just the wallet balance, top-right — the sidebar has no top bar of its own at lg and up. */}
-        <div className="hidden lg:flex items-center justify-between px-8 py-3 border-b border-gray-100">
+      <div className="flex-1 min-w-0 flex flex-col lg:h-screen">
+        {/* Desktop top bar: just the wallet balance, top-right — the sidebar has no top bar of its own at lg and up.
+            Fixed height (not sticky) and kept outside the scrolling `main` below, so it — like the sidebar — stays
+            put while only the page content underneath it scrolls. */}
+        <div className="hidden lg:flex lg:h-11 items-center justify-between px-8 border-b border-gray-100 shrink-0">
           <a
             href={`https://wa.me/${HELP_WHATSAPP_NUMBER}?text=${encodeURIComponent(HELP_WHATSAPP_MESSAGE)}`}
             target="_blank"
@@ -166,7 +168,7 @@ export default function DashboardShell({
             )}
           </Link>
         </div>
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 lg:overflow-y-auto">{children}</main>
       </div>
     </div>
   );

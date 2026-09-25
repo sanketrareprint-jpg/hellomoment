@@ -87,6 +87,8 @@ model Business {
   trialCoinTransactions TrialCoinTransaction[]
   rechargeOrders      RechargeOrder[]
   passwordResetTokens PasswordResetToken[]
+  messageTemplates    MessageTemplate[]
+  messageTemplateSelections MessageTemplateSelection[]
 
   @@index([ownerBusinessId])
 }
@@ -216,14 +218,14 @@ model Contact {
 // A reusable flyer background + where the variable name/date/photo go on it.
 // The business uploads the designed background image once; everything else
 // (name, date, photo) is overlaid automatically at send time.
-// occasion: "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+// occasion: "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL" | "OTHER" ("OTHER" = general flyers, never sent automatically)
 model FlyerTemplate {
   id         String   @id @default(cuid())
   businessId String
   business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
 
   name          String
-  occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+  occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL" | "OTHER"
   source        String   @default("CUSTOM") // "STARTER" (bundled ready-made design) | "CUSTOM" (business-made) — splits the Templates page into two folders
   backgroundUrl String // /uploads/templates/<file>
   canvasWidth   Int      @default(1080)
@@ -267,6 +269,18 @@ model FlyerTemplate {
   isDefault          Boolean  @default(false) // used when a contact/festival doesn't specify a template
   aisensyCampaignName String? // overrides the business-level default campaign for this template, if set
 
+  // Which admin-curated StarterTemplate this row was copied from, if any
+  // (source="STARTER" only — set by seedStarterTemplatesForBusiness). Unlike
+  // BusinessFrame.frameId (which SetNulls so a business keeps their copy
+  // after admin removes a Frame), this cascades: admin deleting a
+  // StarterTemplate deletes every business's copy of it too, keeping the
+  // starter library "live" instead of businesses hanging onto designs
+  // admin no longer offers. A business's own edits to their copy are still
+  // theirs alone until then — this only fires on the admin original's
+  // deletion, not on refresh.
+  starterTemplateId String?
+  starterTemplate   StarterTemplate? @relation(fields: [starterTemplateId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -274,6 +288,7 @@ model FlyerTemplate {
   sendLogs  SendLog[]
 
   @@index([businessId, occasion])
+  @@index([starterTemplateId])
 }
 
 // A custom festival/occasion the business wants to broadcast wishes for
@@ -286,11 +301,14 @@ model FlyerTemplate {
 // not per-business. `placement` keeps the two slots independent so admin can
 // run different creative on the dashboard vs. the landing page.
 // placement: "DASHBOARD" | "LANDING"
+// device: "DESKTOP" | "MOBILE" — each placement has a separate desktop and
+// mobile image set.
 model DashboardBanner {
   id        String   @id @default(cuid())
   imageUrl  String
   linkUrl   String? // optional; banner is clickable if set
   placement String   @default("DASHBOARD") // "DASHBOARD" | "LANDING"
+  device    String   @default("DESKTOP") // "DESKTOP" | "MOBILE"
   order     Int      @default(0) // lower shows first
   isActive  Boolean  @default(true)
 
@@ -310,7 +328,7 @@ model DashboardBanner {
 model StarterTemplate {
   id            String   @id @default(cuid())
   name          String
-  occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+  occasion      String // "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL" | "OTHER"
   backgroundUrl String // /api/files/templates/<file>
   canvasWidth   Int      @default(1080)
   canvasHeight  Int      @default(1080)
@@ -333,6 +351,8 @@ model StarterTemplate {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  flyerTemplates FlyerTemplate[] // every business's copy of this design — deleted along with it, see FlyerTemplate.starterTemplateId
+
   @@index([occasion, isActive, order])
 }
 
@@ -352,6 +372,7 @@ model Frame {
   id         String  @id @default(cuid())
   name       String
   overlayUrl String? // /api/files/frames/<file> — optional decorative border/badge graphic composited between the flyer background and the branding text; omit for a plain "positions only" frame
+  overlayHue Int     @default(0) // 0-360 degrees — recolors overlayUrl at render time (CSS/sharp hue-rotate) so one uploaded gradient graphic can be offered in several color combinations without re-uploading a separate image per color
   canvasWidth  Int @default(1080)
   canvasHeight Int @default(1080)
 
@@ -363,6 +384,12 @@ model Frame {
   addressPlaceholder  String?
   websitePlaceholder  String?
   productsPlaceholder String?
+  // JSON array of free-form text boxes (id, typed text, position/style) a
+  // business can add beyond the fixed brand fields above — see
+  // CustomTextPlaceholder in src/lib/flyerPlaceholders.ts. Unlike the fields
+  // above, each entry carries its own text content rather than pulling from
+  // Settings → Brand kit. Null/absent means none.
+  customTextPlaceholders String?
 
   isActive Boolean @default(true) // only active frames are offered to businesses
   order    Int     @default(0) // lower shows first
@@ -393,6 +420,7 @@ model BusinessFrame {
 
   name       String
   overlayUrl String?
+  overlayHue Int     @default(0) // 0-360 degrees — see Frame.overlayHue; a business can recolor their own copy independently of the admin original
   canvasWidth  Int @default(1080)
   canvasHeight Int @default(1080)
 
@@ -403,6 +431,8 @@ model BusinessFrame {
   addressPlaceholder  String?
   websitePlaceholder  String?
   productsPlaceholder String?
+  // See the matching field's comment on Frame above.
+  customTextPlaceholders String?
 
   isDefault Boolean @default(false)
 
@@ -465,4 +495,89 @@ model SendLog {
   sentAt DateTime @default(now())
 
   @@index([businessId, sentAt])
+}
+
+// A WhatsApp text message template sent alongside the flyer (the flyer is
+// the approved AiSensy template's image header; this is its body text).
+// Three categories:
+//  - "GENERAL": added by admin, every variable is filled automatically
+//    (contact name, occasion, business name, date) — a business just picks it.
+//  - "SPECIAL": added by admin, with at least one "INPUT" variable a
+//    business fills in themselves when picking it (e.g. the offer/discount
+//    or coupon code) — values differ business to business.
+//  - "CUSTOM": written by a business (businessId set), paid for at
+//    customMessageTemplatePrice (see AppSetting / src/lib/messageTemplates.ts),
+//    then reviewed by admin — usable only once status is "APPROVED".
+// `variables` is a JSON array describing each {{n}} in `body`, in order —
+// see MessageVariable in src/lib/messageTemplates.ts.
+// category: "GENERAL" | "SPECIAL" | "CUSTOM"
+// occasion: "ANY" | "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+// status: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" (admin-made ones are always "APPROVED")
+model MessageTemplate {
+  id         String    @id @default(cuid())
+  businessId String? // null for admin-made GENERAL/SPECIAL templates; the owning business for CUSTOM ones
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  category  String
+  name      String
+  occasion  String  @default("ANY")
+  body      String
+  variables String  @default("[]")
+
+  // The approved AiSensy campaign that sends this exact text — set by admin
+  // (on create for GENERAL/SPECIAL, on approval for CUSTOM).
+  aisensyCampaignName String?
+
+  status          String    @default("APPROVED")
+  rejectionReason String?
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+
+  // Payment for CUSTOM templates — paid once; a rejected template can be
+  // edited and resubmitted without paying again.
+  pricePaise      Int       @default(0)
+  paymentMethod   String? // "RAZORPAY" | "WALLET" | "FREE"
+  razorpayOrderId String?   @unique
+  paidAt          DateTime?
+
+  isActive Boolean @default(true) // admin-made templates only: hide from businesses without deleting
+  order    Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  selections MessageTemplateSelection[]
+
+  @@index([businessId, status])
+  @@index([category, isActive, order])
+}
+
+// Which MessageTemplate a business sends with its flyers for each occasion,
+// plus the values it typed for that template's "INPUT" variables (JSON
+// object keyed by variable index, e.g. {"2":"20% OFF"}). No row means the
+// occasion keeps using the original default campaign/text.
+// occasion: "BIRTHDAY" | "ANNIVERSARY" | "FESTIVAL"
+model MessageTemplateSelection {
+  id         String   @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  occasion          String
+  messageTemplateId String
+  messageTemplate   MessageTemplate @relation(fields: [messageTemplateId], references: [id], onDelete: Cascade)
+  variableValues    String          @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([businessId, occasion])
+  @@index([messageTemplateId])
+}
+
+// Global admin-editable settings (key/value), e.g. the custom message
+// template price. See src/lib/messageTemplates.ts for the keys in use.
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }

@@ -28,7 +28,7 @@ const placeholderSchema = z.object({
 
 const templateSchema = z.object({
   name: z.string().min(1),
-  occasion: z.enum(['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL']),
+  occasion: z.enum(['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL', 'OTHER']),
   backgroundUrl: z.string().min(1),
   canvasWidth: z.number().int().positive(),
   canvasHeight: z.number().int().positive(),

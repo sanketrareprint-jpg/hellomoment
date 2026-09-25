@@ -12,7 +12,27 @@ export type FontFamilyId =
   | 'arimo'
   | 'tinos'
   | 'carlito'
-  | 'gelasio';
+  | 'gelasio'
+  | 'lobster'
+  | 'great-vibes'
+  | 'pacifico'
+  | 'bebas-neue'
+  | 'abril-fatface'
+  | 'anton'
+  | 'archivo-black'
+  | 'righteous'
+  | 'amatic-sc'
+  | 'kaushan-script'
+  | 'sacramento'
+  | 'allura'
+  | 'courgette'
+  | 'pt-serif'
+  | 'pt-sans'
+  | 'crimson-text'
+  | 'space-mono'
+  | 'ubuntu'
+  | 'patrick-hand'
+  | 'orbitron';
 
 export interface FontFamilyOption {
   id: FontFamilyId;
@@ -84,8 +104,133 @@ export const FONT_FAMILIES: FontFamilyOption[] = [
     cssFamily: "'Gelasio', Georgia, serif",
     supportsDevanagari: false,
   },
+  {
+    id: 'lobster',
+    label: 'Lobster — bold script (English only)',
+    cssFamily: "'Lobster', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'great-vibes',
+    label: 'Great Vibes — elegant calligraphy (English only)',
+    cssFamily: "'Great Vibes', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'pacifico',
+    label: 'Pacifico — fun casual script (English only)',
+    cssFamily: "'Pacifico', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'bebas-neue',
+    label: 'Bebas Neue — bold condensed headline (English only)',
+    cssFamily: "'Bebas Neue', sans-serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'abril-fatface',
+    label: 'Abril Fatface — dramatic display serif (English only)',
+    cssFamily: "'Abril Fatface', serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'anton',
+    label: 'Anton — ultra-bold condensed headline (English only)',
+    cssFamily: "'Anton', sans-serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'archivo-black',
+    label: 'Archivo Black — bold sans headline (English only)',
+    cssFamily: "'Archivo Black', sans-serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'righteous',
+    label: 'Righteous — fun rounded display (English only)',
+    cssFamily: "'Righteous', sans-serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'amatic-sc',
+    label: 'Amatic SC — quirky hand-drawn display (English only)',
+    cssFamily: "'Amatic SC', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'kaushan-script',
+    label: 'Kaushan Script — flowing brush script (English only)',
+    cssFamily: "'Kaushan Script', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'sacramento',
+    label: 'Sacramento — elegant thin script (English only)',
+    cssFamily: "'Sacramento', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'allura',
+    label: 'Allura — wedding calligraphy (English only)',
+    cssFamily: "'Allura', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'courgette',
+    label: 'Courgette — casual rounded script (English only)',
+    cssFamily: "'Courgette', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'pt-serif',
+    label: 'PT Serif — classic readable serif (English only)',
+    cssFamily: "'PT Serif', serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'pt-sans',
+    label: 'PT Sans — clean modern sans (English only)',
+    cssFamily: "'PT Sans', sans-serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'crimson-text',
+    label: 'Crimson Text — literary serif (English only)',
+    cssFamily: "'Crimson Text', serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'space-mono',
+    label: 'Space Mono — distinctive monospace (English only)',
+    cssFamily: "'Space Mono', monospace",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'ubuntu',
+    label: 'Ubuntu — humanist modern sans (English only)',
+    cssFamily: "'Ubuntu', sans-serif",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'patrick-hand',
+    label: 'Patrick Hand — casual handwriting (English only)',
+    cssFamily: "'Patrick Hand', cursive",
+    supportsDevanagari: false,
+  },
+  {
+    id: 'orbitron',
+    label: 'Orbitron — futuristic sci-fi display (English only)',
+    cssFamily: "'Orbitron', sans-serif",
+    supportsDevanagari: false,
+  },
 ];
+
+/** CSS font-family value for a given font id, falling back to the default face. */
+export function resolveCssFontFamily(id?: string): string {
+  return (FONT_FAMILIES.find((f) => f.id === id) ?? FONT_FAMILIES.find((f) => f.id === 'default'))!.cssFamily;
+}
 
 /** The Google Fonts CSS2 URL that loads every non-default face for the browser preview. */
 export const GOOGLE_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Oswald:wght@400;700&family=Arimo:wght@400;700&family=Tinos:wght@400;700&family=Carlito:wght@400;700&family=Gelasio:wght@400;700&display=swap';
+  'https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Playfair+Display:wght@400;700&family=Dancing+Script:wght@400;700&family=Oswald:wght@400;700&family=Arimo:wght@400;700&family=Tinos:wght@400;700&family=Carlito:wght@400;700&family=Gelasio:wght@400;700&family=Lobster&family=Great+Vibes&family=Pacifico&family=Bebas+Neue&family=Abril+Fatface&family=Anton&family=Archivo+Black&family=Righteous&family=Amatic+SC:wght@400;700&family=Kaushan+Script&family=Sacramento&family=Allura&family=Courgette&family=PT+Serif:wght@400;700&family=PT+Sans:wght@400;700&family=Crimson+Text:wght@400;700&family=Space+Mono:wght@400;700&family=Ubuntu:wght@400;700&family=Patrick+Hand&family=Orbitron:wght@400;700&display=swap';

@@ -4,11 +4,15 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DeleteTemplateButton from '@/components/DeleteTemplateButton';
+import FlyerPreviewThumbnail from '@/components/FlyerPreviewThumbnail';
+import type { BrandInfo } from '@/components/TemplatePlaceholderEditor';
+import type { LogoPlaceholder, TextPlaceholder } from '@/lib/flyerPlaceholders';
 
 const OCCASION_LABEL: Record<string, string> = {
   BIRTHDAY: 'Birthday',
   ANNIVERSARY: 'Anniversary',
   FESTIVAL: 'Festival',
+  OTHER: 'Others',
 };
 
 export interface TemplateRow {
@@ -19,9 +23,24 @@ export interface TemplateRow {
   canvasWidth: number;
   canvasHeight: number;
   isDefault: boolean;
+  // This template's own branding placeholders — already "mapped" per
+  // template in the DB — used to overlay the logged-in business's real
+  // Brand kit onto the thumbnail below instead of just the flat artwork.
+  logoPlaceholder: LogoPlaceholder | null;
+  firmNamePlaceholder: TextPlaceholder | null;
+  phonePlaceholder: TextPlaceholder | null;
+  emailPlaceholder: TextPlaceholder | null;
+  addressPlaceholder: TextPlaceholder | null;
+  websitePlaceholder: TextPlaceholder | null;
+  productsPlaceholder: TextPlaceholder | null;
+  phoneTextOverride: string | null;
+  emailTextOverride: string | null;
+  addressTextOverride: string | null;
+  websiteTextOverride: string | null;
+  productsTextOverride: string | null;
 }
 
-export default function TemplatesGrid({ templates }: { templates: TemplateRow[] }) {
+export default function TemplatesGrid({ templates, business }: { templates: TemplateRow[]; business: BrandInfo }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [settingDefault, setSettingDefault] = useState<string | null>(null);
@@ -52,7 +71,7 @@ export default function TemplatesGrid({ templates }: { templates: TemplateRow[] 
 
   return (
     <div>
-      <div className="relative max-w-sm mb-5">
+      <div className="relative max-w-sm mb-3">
         <input
           className="input pl-9"
           type="search"
@@ -71,41 +90,55 @@ export default function TemplatesGrid({ templates }: { templates: TemplateRow[] 
       </div>
 
       {filtered.length === 0 ? (
-        <div className="card p-10 text-center text-gray-500">No templates match &ldquo;{query}&rdquo;.</div>
+        <div className="card p-6 text-center text-gray-500 text-sm">No templates match &ldquo;{query}&rdquo;.</div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))' }}>
           {filtered.map((t) => (
-            <div key={t.id} className="card overflow-hidden">
-              <div
-                className="w-full bg-gray-100 flex items-center justify-center overflow-hidden"
-                style={{ aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}` }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={t.backgroundUrl} alt={t.name} className="w-full h-full object-contain" />
+            <div key={t.id} className="card overflow-hidden flex flex-col">
+              <div className="w-full h-36 bg-gray-100 overflow-hidden">
+                <FlyerPreviewThumbnail
+                  className="w-full h-full"
+                  backgroundUrl={t.backgroundUrl}
+                  canvasWidth={t.canvasWidth}
+                  canvasHeight={t.canvasHeight}
+                  business={business}
+                  logoPlaceholder={t.logoPlaceholder}
+                  firmNamePlaceholder={t.firmNamePlaceholder}
+                  phonePlaceholder={t.phonePlaceholder}
+                  emailPlaceholder={t.emailPlaceholder}
+                  addressPlaceholder={t.addressPlaceholder}
+                  websitePlaceholder={t.websitePlaceholder}
+                  productsPlaceholder={t.productsPlaceholder}
+                  phoneTextOverride={t.phoneTextOverride}
+                  emailTextOverride={t.emailTextOverride}
+                  addressTextOverride={t.addressTextOverride}
+                  websiteTextOverride={t.websiteTextOverride}
+                  productsTextOverride={t.productsTextOverride}
+                />
               </div>
-              <div className="p-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-gray-900">{t.name}</h3>
+              <div className="p-2.5">
+                <div className="flex items-center justify-between gap-1">
+                  <h3 className="font-medium text-gray-900 text-sm truncate">{t.name}</h3>
                   {t.isDefault && (
-                    <span className="text-xs font-medium bg-brand-100 text-brand-700 rounded-full px-2 py-0.5">
+                    <span className="shrink-0 text-[10px] font-medium bg-brand-100 text-brand-700 rounded-full px-1.5 py-0.5">
                       Default
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-1">{OCCASION_LABEL[t.occasion] ?? t.occasion}</p>
-                <div className="flex gap-3 mt-3 items-center flex-wrap">
-                  <Link href={`/dashboard/templates/${t.id}/edit`} className="text-brand-600 font-medium text-sm">
+                <p className="text-xs text-gray-500">{OCCASION_LABEL[t.occasion] ?? t.occasion}</p>
+                <div className="flex gap-2 mt-1.5 items-center flex-wrap text-xs">
+                  <Link href={`/dashboard/templates/${t.id}/edit`} className="text-brand-600 font-medium">
                     Edit
                   </Link>
                   <DeleteTemplateButton id={t.id} name={t.name} />
                   {!t.isDefault && (
                     <button
                       type="button"
-                      className="text-brand-600 font-medium text-sm disabled:opacity-50"
+                      className="text-brand-600 font-medium disabled:opacity-50"
                       disabled={settingDefault === t.id}
                       onClick={() => setDefault(t.id)}
                     >
-                      {settingDefault === t.id ? 'Setting…' : 'Set as default'}
+                      {settingDefault === t.id ? 'Setting…' : 'Set default'}
                     </button>
                   )}
                 </div>

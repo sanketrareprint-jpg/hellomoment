@@ -8,7 +8,9 @@ import { servedUrlToAbsolutePath, STORAGE_DIR } from './uploads';
 import { formatDateForDisplay } from './dateUtils';
 import { COINS_PER_SEND } from './pricing';
 import { getWalletOwner } from './businessFamily';
-import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder } from './framePlaceholders';
+import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder, scaleCustomTextPlaceholder } from './framePlaceholders';
+import type { CustomTextPlaceholder } from './flyerPlaceholders';
+import { resolveMessageTemplateForSend } from './messageTemplates';
 
 /**
  * The single place that turns "it's Priya's birthday" (or a festival) into
@@ -85,7 +87,12 @@ export async function sendWishForContact(params: {
   let sentToContact = false;
   let sentToOwner = false;
 
-  const campaignName = template.aisensyCampaignName || defaultCampaignFor(business, occasion);
+  // A text message template the business picked for this occasion
+  // (Dashboard → Message templates) replaces the default campaign and its
+  // fixed 3-variable text below; without one, nothing changes.
+  const messageTemplate = await resolveMessageTemplateForSend(business.id, occasion);
+  const campaignName =
+    messageTemplate?.campaignName || template.aisensyCampaignName || defaultCampaignFor(business, occasion);
   const apiKey = resolveAisensyApiKey(business);
 
   if (!apiKey || !campaignName) {
@@ -99,7 +106,9 @@ export async function sendWishForContact(params: {
     // name). If the approved template text ever changes, this must change
     // to match it — AiSensy fills these blanks literally, it doesn't know
     // what they're "supposed" to mean.
-    const templateParams = [contact.name, occasionWord, fromName];
+    const templateParams = messageTemplate
+      ? messageTemplate.buildParams({ contactName: contact.name, occasionWord, businessName: fromName, dateText })
+      : [contact.name, occasionWord, fromName];
 
     const contactResult = await sendAisensyCampaign({
       apiKey,
@@ -113,7 +122,10 @@ export async function sendWishForContact(params: {
     aisensyResponse = { toContact: contactResult.body };
     if (!contactResult.ok) {
       status = 'FAILED';
-      errorMessage = `AiSensy rejected the send to the contact (HTTP ${contactResult.status}).`;
+      // Include AiSensy's own response body (truncated), same as the owner
+      // branch below, so the real rejection reason shows up in Send logs.
+      const bodySnippet = JSON.stringify(contactResult.body ?? {}).slice(0, 300);
+      errorMessage = `AiSensy rejected the send to the contact (HTTP ${contactResult.status}): ${bodySnippet}`;
     }
 
     // The business owner gets notified on a separate approved AiSensy
@@ -173,7 +185,9 @@ export async function sendWishForFestival(params: {
 }) {
   const { business, festival, template, contacts } = params;
   const dateText = formatDateForDisplay(festival.date);
-  const campaignName = template.aisensyCampaignName || business.aisensyFestivalCampaign;
+  // See the matching comment in sendWishForContact.
+  const messageTemplate = await resolveMessageTemplateForSend(business.id, 'FESTIVAL');
+  const campaignName = messageTemplate?.campaignName || template.aisensyCampaignName || business.aisensyFestivalCampaign;
   const apiKey = resolveAisensyApiKey(business);
   const fromName = brandFirmNameText(business) || business.name;
 
@@ -219,7 +233,9 @@ export async function sendWishForFestival(params: {
       const media = { url: absoluteUrlFor(business, flyerUrl), filename: 'flyer.jpg' };
       // Same 3-variable shape as sendWishForContact: {{1}} name, {{2}} the
       // occasion word (here, the festival's own name), {{3}} who it's from.
-      const templateParams = [contact.name, festival.name, fromName];
+      const templateParams = messageTemplate
+        ? messageTemplate.buildParams({ contactName: contact.name, occasionWord: festival.name, businessName: fromName, dateText })
+        : [contact.name, festival.name, fromName];
       const result = await sendAisensyCampaign({
         apiKey,
         campaignName,
@@ -271,7 +287,7 @@ export async function sendWishForFestival(params: {
  * auto-transliteration from the English name isn't reliable enough to do
  * automatically).
  */
-function brandFirmNameText(business: Business): string | null {
+export function brandFirmNameText(business: Business): string | null {
   if (business.firmNameScript === 'MARATHI') {
     return business.firmNameMarathi || business.name || null;
   }
@@ -300,7 +316,16 @@ async function renderFlyer(
   // branding once and have it apply across every template/occasion, rather
   // than repeating the setup per template. Falls back to the template's own
   // placeholders (unchanged behavior) when no default frame is set.
-  const defaultFrame = await prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } });
+  //
+  // Only for STARTER templates (the bundled, ready-made designs) — a CUSTOM
+  // template is the business's own uploaded artwork, which may well already
+  // have its own branding/footer baked into the image, so overlaying a
+  // Frame on top of it too just collides two branding graphics on the same
+  // flyer (see TemplatePlaceholderEditor.tsx's matching frameActive gate).
+  const defaultFrame =
+    template.source === 'STARTER'
+      ? await prisma.businessFrame.findFirst({ where: { businessId: business.id, isDefault: true } })
+      : null;
 
   let logoPlaceholder: LogoPlaceholder | null = template.logoPlaceholder ? JSON.parse(template.logoPlaceholder) : null;
   let firmNamePlaceholder: TextPlaceholder | null = template.firmNamePlaceholder
@@ -317,7 +342,12 @@ async function renderFlyer(
   let productsPlaceholder: TextPlaceholder | null = template.productsPlaceholder
     ? JSON.parse(template.productsPlaceholder)
     : null;
+  // Free-form text boxes from the default Frame, if any — templates
+  // themselves never have their own (see TemplatePlaceholderEditor.tsx),
+  // only a Frame can carry these.
+  let customTexts: { placeholder: TextPlaceholder; text: string }[] = [];
   let overlayPath: string | null = null;
+  let overlayHue = 0;
 
   if (defaultFrame) {
     // The frame's placeholders were positioned against its own canvas size
@@ -353,7 +383,15 @@ async function renderFlyer(
     productsPlaceholder = defaultFrame.productsPlaceholder
       ? scaleTextPlaceholder(JSON.parse(defaultFrame.productsPlaceholder), frameScale, frameTopOffset)
       : null;
+    const customTextPlaceholders: CustomTextPlaceholder[] = defaultFrame.customTextPlaceholders
+      ? JSON.parse(defaultFrame.customTextPlaceholders)
+      : [];
+    customTexts = customTextPlaceholders.map((p) => {
+      const scaled = scaleCustomTextPlaceholder(p, frameScale, frameTopOffset);
+      return { placeholder: scaled, text: scaled.text };
+    });
     overlayPath = defaultFrame.overlayUrl ? servedUrlToAbsolutePath(defaultFrame.overlayUrl) : null;
+    overlayHue = defaultFrame.overlayHue;
   }
 
   // A contact's Title (e.g. "Mr.", "Dr.") is shown as part of the name line
@@ -380,6 +418,7 @@ async function renderFlyer(
     canvasWidth: template.canvasWidth,
     canvasHeight: template.canvasHeight,
     overlayPath,
+    overlayHue,
     namePlaceholder: template.namePlaceholder ? (JSON.parse(template.namePlaceholder) as TextPlaceholder) : null,
     name: displayName,
     designationPlaceholder: designationPlaceholder as TextPlaceholder | null,
@@ -402,6 +441,7 @@ async function renderFlyer(
     websiteText,
     productsPlaceholder,
     productsText,
+    customTexts,
     outputPath,
   });
 

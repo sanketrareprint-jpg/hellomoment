@@ -1,27 +1,48 @@
 import Link from 'next/link';
+import DashboardFlyerPreview, { type DashboardFlyerTemplate } from '@/components/DashboardFlyerPreview';
+import FestivalFlyerCard from '@/components/FestivalFlyerCard';
+import TemplateCardActions from '@/components/TemplateCardActions';
+import type { BrandInfo, FrameOption } from '@/components/TemplatePlaceholderEditor';
 
 const OCCASION_LABEL: Record<string, string> = {
   BIRTHDAY: 'Birthday',
   ANNIVERSARY: 'Anniversary',
   FESTIVAL: 'Festival',
+  OTHER: 'Others',
 };
 
-const OCCASION_ORDER = ['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL'];
+const OCCASION_ORDER = ['BIRTHDAY', 'ANNIVERSARY', 'FESTIVAL', 'OTHER'];
 
-export interface DashboardTemplateRow {
+export interface DashboardTemplateRow extends DashboardFlyerTemplate {
   id: string;
   name: string;
   occasion: string;
-  backgroundUrl: string;
-  canvasWidth: number;
-  canvasHeight: number;
+  isDefault?: boolean;
 }
 
 // Groups the business's flyer templates by occasion and shows each group as
 // its own horizontally-scrolling row (folder/category-wise), so the
 // dashboard gives a quick visual sense of what's available per occasion
 // without navigating into the Templates page.
-export default function DashboardTemplatesByCategory({ templates }: { templates: DashboardTemplateRow[] }) {
+// Each card shows the flyer as it would actually be sent — sample name/
+// date/photo plus the business's default Frame and branding (see
+// DashboardFlyerPreview) — not just the bare background artwork.
+export default function DashboardTemplatesByCategory({
+  templates,
+  defaultFrame,
+  business,
+  showViewAll = true,
+  manage = false,
+}: {
+  templates: DashboardTemplateRow[];
+  defaultFrame: FrameOption | null;
+  business: BrandInfo;
+  showViewAll?: boolean;
+  // Flyer templates page: each card gets Edit / Delete / Set default links.
+  // Otherwise (dashboard) festival/other cards open the preview + Download and
+  // birthday/anniversary cards open the template editor.
+  manage?: boolean;
+}) {
   if (templates.length === 0) return null;
 
   const groups = new Map<string, DashboardTemplateRow[]>();
@@ -43,27 +64,44 @@ export default function DashboardTemplatesByCategory({ templates }: { templates:
         <div key={occasion}>
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-semibold text-gray-900 text-sm">{OCCASION_LABEL[occasion] ?? occasion} templates</h2>
-            <Link href="/dashboard/templates" className="text-xs text-brand-600 font-medium">
-              View all →
-            </Link>
+            {showViewAll && (
+              <Link href="/dashboard/templates" className="text-xs text-brand-600 font-medium">
+                View all →
+              </Link>
+            )}
           </div>
           <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
-            {groups.get(occasion)!.map((t) => (
-              <Link
-                key={t.id}
-                href={`/dashboard/templates/${t.id}/edit`}
-                className="card overflow-hidden shrink-0 w-36 snap-start hover:shadow-md hover:-translate-y-0.5 transition-all"
-              >
-                <div
-                  className="w-full bg-gray-100 flex items-center justify-center overflow-hidden"
-                  style={{ aspectRatio: `${t.canvasWidth} / ${t.canvasHeight}` }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={t.backgroundUrl} alt={t.name} className="w-full h-full object-contain" />
+            {groups.get(occasion)!.map((t) =>
+              manage ? (
+                <div key={t.id} className="card overflow-hidden shrink-0 w-44 sm:w-52 snap-start flex flex-col">
+                  <Link href={`/dashboard/templates/${t.id}/edit`}>
+                    <DashboardFlyerPreview template={t} defaultFrame={defaultFrame} business={business} />
+                  </Link>
+                  <div className="px-2 py-1.5">
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="text-xs font-medium text-gray-700 truncate">{t.name}</p>
+                      {t.isDefault && (
+                        <span className="shrink-0 text-[10px] font-medium bg-brand-100 text-brand-700 rounded-full px-1.5 py-0.5">
+                          Default
+                        </span>
+                      )}
+                    </div>
+                    <TemplateCardActions id={t.id} name={t.name} isDefault={!!t.isDefault} />
+                  </div>
                 </div>
-                <p className="text-xs font-medium text-gray-700 truncate px-2 py-1.5">{t.name}</p>
-              </Link>
-            ))}
+              ) : occasion === 'FESTIVAL' || occasion === 'OTHER' ? (
+                <FestivalFlyerCard key={t.id} template={t} defaultFrame={defaultFrame} business={business} />
+              ) : (
+                <Link
+                  key={t.id}
+                  href={`/dashboard/templates/${t.id}/edit`}
+                  className="card overflow-hidden shrink-0 w-44 sm:w-52 snap-start hover:shadow-md hover:-translate-y-0.5 transition-all"
+                >
+                  <DashboardFlyerPreview template={t} defaultFrame={defaultFrame} business={business} />
+                  <p className="text-xs font-medium text-gray-700 truncate px-2 py-1.5">{t.name}</p>
+                </Link>
+              )
+            )}
           </div>
         </div>
       ))}

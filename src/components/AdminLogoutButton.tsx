@@ -2,11 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 
-export default function AdminLogoutButton() {
+export default function AdminLogoutButton({ className = 'btn-secondary' }: { className?: string }) {
   const router = useRouter();
   return (
     <button
-      className="btn-secondary"
+      className={className}
       onClick={async () => {
         await fetch('/api/admin/logout', { method: 'POST' });
         router.push('/admin/login');

@@ -21,9 +21,15 @@ const placeholderSchema = z.object({
   locked: z.boolean().optional(),
 });
 
+const customTextPlaceholderSchema = placeholderSchema.extend({
+  id: z.string().min(1),
+  text: z.string(),
+});
+
 const frameSchema = z.object({
   name: z.string().min(1),
   overlayUrl: z.string().nullable().optional(),
+  overlayHue: z.number().int().min(0).max(360).optional(),
   canvasWidth: z.number().int().positive(),
   canvasHeight: z.number().int().positive(),
   logoPlaceholder: placeholderSchema.nullable().optional(),
@@ -33,6 +39,7 @@ const frameSchema = z.object({
   addressPlaceholder: placeholderSchema.nullable().optional(),
   websitePlaceholder: placeholderSchema.nullable().optional(),
   productsPlaceholder: placeholderSchema.nullable().optional(),
+  customTextPlaceholders: z.array(customTextPlaceholderSchema).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -60,6 +67,7 @@ export async function POST(req: NextRequest) {
     addressPlaceholder,
     websitePlaceholder,
     productsPlaceholder,
+    customTextPlaceholders,
     ...rest
   } = parsed.data;
 
@@ -76,6 +84,7 @@ export async function POST(req: NextRequest) {
       addressPlaceholder: addressPlaceholder ? JSON.stringify(addressPlaceholder) : null,
       websitePlaceholder: websitePlaceholder ? JSON.stringify(websitePlaceholder) : null,
       productsPlaceholder: productsPlaceholder ? JSON.stringify(productsPlaceholder) : null,
+      customTextPlaceholders: customTextPlaceholders && customTextPlaceholders.length ? JSON.stringify(customTextPlaceholders) : null,
     },
   });
   return NextResponse.json({ frame }, { status: 201 });

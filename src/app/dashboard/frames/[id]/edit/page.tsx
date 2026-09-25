@@ -21,6 +21,7 @@ export default async function EditFramePage({ params }: { params: { id: string }
   const addressPlaceholder = frame.addressPlaceholder ? JSON.parse(frame.addressPlaceholder) : null;
   const websitePlaceholder = frame.websitePlaceholder ? JSON.parse(frame.websitePlaceholder) : null;
   const productsPlaceholder = frame.productsPlaceholder ? JSON.parse(frame.productsPlaceholder) : null;
+  const customTexts = frame.customTextPlaceholders ? JSON.parse(frame.customTextPlaceholders) : [];
 
   const brand: BrandInfo = {
     logoUrl: business.logoUrl,
@@ -39,6 +40,7 @@ export default async function EditFramePage({ params }: { params: { id: string }
     name: frame.name,
     isDefault: frame.isDefault,
     overlayUrl: frame.overlayUrl ?? '',
+    overlayHue: frame.overlayHue,
     canvasWidth: frame.canvasWidth,
     canvasHeight: frame.canvasHeight,
     useLogo: Boolean(logoPlaceholder),
@@ -55,11 +57,12 @@ export default async function EditFramePage({ params }: { params: { id: string }
     websitePlaceholder: { ...defaults.websitePlaceholder, ...(websitePlaceholder ?? {}) },
     useProducts: Boolean(productsPlaceholder),
     productsPlaceholder: { ...defaults.productsPlaceholder, ...(productsPlaceholder ?? {}) },
+    customTexts,
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit frame</h1>
+      <h1 className="text-lg font-bold text-gray-900 mb-3">Edit frame</h1>
       <FramePlaceholderEditor business={brand} initial={initial} redirectPath="/dashboard/frames?folder=my" />
     </div>
   );

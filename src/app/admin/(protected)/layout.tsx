@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { ADMIN_SESSION_COOKIE, verifyAdminSessionToken } from '@/lib/auth';
-import AdminLogoutButton from '@/components/AdminLogoutButton';
+import AdminSidebar from '@/components/AdminSidebar';
 
 export default function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
   const token = cookies().get(ADMIN_SESSION_COOKIE)?.value;
@@ -10,22 +10,9 @@ export default function AdminProtectedLayout({ children }: { children: React.Rea
   }
 
   return (
-    <div className="min-h-screen">
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-2.5">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="raregreet.com" width={26} height={26} className="rounded-lg" />
-            <div className="text-base font-bold text-brand-700">
-              raregreet<span className="text-gray-400">.com</span>
-            </div>
-            <span className="ml-2 text-xs font-medium uppercase tracking-wide text-gray-400 border border-gray-200 rounded-full px-2 py-0.5">
-              Admin
-            </span>
-          </div>
-          <AdminLogoutButton />
-        </div>
-      </header>
-      <main className="max-w-6xl mx-auto px-6 py-4">{children}</main>
+    <div className="h-screen flex bg-gray-50 overflow-hidden">
+      <AdminSidebar />
+      <main className="flex-1 min-w-0 overflow-y-auto px-6 py-5">{children}</main>
     </div>
   );
 }

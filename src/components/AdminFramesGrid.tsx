@@ -97,7 +97,9 @@ export default function AdminFramesGrid({ frames }: { frames: FrameRow[] }) {
           {filtered.map((f, i) => (
             <div key={f.id} className={'card overflow-hidden' + (f.isActive ? '' : ' opacity-60')}>
               <div
-                className="w-full h-40 flex items-center justify-center"
+                // Sized to the overlay graphic itself (not a fixed-height
+                // crop) so admin sees the whole frame at its real shape.
+                className={'w-full flex items-center justify-center' + (f.overlayUrl ? '' : ' h-40')}
                 style={{
                   backgroundColor: '#e5e7eb',
                   backgroundImage: f.overlayUrl
@@ -109,7 +111,7 @@ export default function AdminFramesGrid({ frames }: { frames: FrameRow[] }) {
               >
                 {f.overlayUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={f.overlayUrl} alt={f.name} className="w-full h-40 object-cover" />
+                  <img src={f.overlayUrl} alt={f.name} className="w-full h-auto block" />
                 ) : (
                   <span className="text-xs text-gray-500">No overlay graphic</span>
                 )}

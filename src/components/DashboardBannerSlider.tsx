@@ -11,7 +11,15 @@ export interface SliderBanner {
 // Auto-rotating promotional banner slider, like a website hero carousel —
 // added/managed only from the admin panel (see /admin/banners), never by a
 // business itself. Shown at the top of the dashboard overview.
-export default function DashboardBannerSlider({ banners }: { banners: SliderBanner[] }) {
+export default function DashboardBannerSlider({
+  banners,
+  aspectClass = 'aspect-[3/1]',
+  intervalSeconds = 5,
+}: {
+  banners: SliderBanner[];
+  aspectClass?: string;
+  intervalSeconds?: number;
+}) {
   const [index, setIndex] = useState(0);
 
   const goTo = useCallback(
@@ -23,13 +31,13 @@ export default function DashboardBannerSlider({ banners }: { banners: SliderBann
 
   useEffect(() => {
     if (banners.length <= 1) return;
-    const id = setInterval(() => setIndex((i) => (i + 1) % banners.length), 5000);
+    const id = setInterval(() => setIndex((i) => (i + 1) % banners.length), intervalSeconds * 1000);
     return () => clearInterval(id);
-  }, [banners.length]);
+  }, [banners.length, intervalSeconds]);
 
   if (banners.length === 0) return null;
 
-  const current = banners[index];
+  const current = banners[index] ?? banners[0];
 
   const Image = (
     // eslint-disable-next-line @next/next/no-img-element
@@ -38,7 +46,7 @@ export default function DashboardBannerSlider({ banners }: { banners: SliderBann
 
   return (
     <div className="relative rounded-2xl overflow-hidden shadow-sm border border-gray-200/80 group">
-      <div className="w-full aspect-[3/1] bg-gray-100">
+      <div className={`w-full ${aspectClass} bg-gray-100`}>
         {current.linkUrl ? (
           <a href={current.linkUrl} target="_blank" rel="noopener noreferrer">
             {Image}

@@ -18,6 +18,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
       id: true,
       name: true,
       overlayUrl: true,
+      overlayHue: true,
       isDefault: true,
       canvasWidth: true,
       canvasHeight: true,
@@ -28,6 +29,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
       addressPlaceholder: true,
       websitePlaceholder: true,
       productsPlaceholder: true,
+      customTextPlaceholders: true,
     },
   });
   // Parsed here (JSON strings in the DB) so the client editor can lay the
@@ -37,6 +39,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
     id: f.id,
     name: f.name,
     overlayUrl: f.overlayUrl,
+    overlayHue: f.overlayHue,
     isDefault: f.isDefault,
     canvasWidth: f.canvasWidth,
     canvasHeight: f.canvasHeight,
@@ -47,6 +50,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
     addressPlaceholder: f.addressPlaceholder ? JSON.parse(f.addressPlaceholder) : null,
     websitePlaceholder: f.websitePlaceholder ? JSON.parse(f.websitePlaceholder) : null,
     productsPlaceholder: f.productsPlaceholder ? JSON.parse(f.productsPlaceholder) : null,
+    customTextPlaceholders: f.customTextPlaceholders ? JSON.parse(f.customTextPlaceholders) : null,
   }));
 
   // Scaled to *this* template's own canvas size — not a fixed 1080×1080
@@ -92,7 +96,7 @@ export default async function EditTemplatePage({ params }: { params: { id: strin
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Edit flyer template</h1>
+      <h1 className="text-lg font-bold text-gray-900 mb-3">Edit flyer template</h1>
       <TemplatePlaceholderEditor
         business={brand}
         frames={businessFrames}

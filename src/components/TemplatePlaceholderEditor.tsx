@@ -4,8 +4,15 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FONT_FAMILIES, type FontFamilyId } from '@/lib/fontFamilies';
-import { defaultsFor, type TemplateFormValues, type TextPlaceholder, type LogoPlaceholder, type Align } from '@/lib/flyerPlaceholders';
-import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder } from '@/lib/framePlaceholders';
+import {
+  defaultsFor,
+  type TemplateFormValues,
+  type TextPlaceholder,
+  type LogoPlaceholder,
+  type Align,
+  type CustomTextPlaceholder,
+} from '@/lib/flyerPlaceholders';
+import { frameLayoutFor, scaleLogoPlaceholder, scaleTextPlaceholder, scaleCustomTextPlaceholder } from '@/lib/framePlaceholders';
 import PlaceholderControls from '@/components/PlaceholderControls';
 import FloatingNudgePad from '@/components/FloatingNudgePad';
 
@@ -23,6 +30,7 @@ export interface FrameOption {
   id: string;
   name: string;
   overlayUrl: string | null;
+  overlayHue: number;
   isDefault: boolean;
   canvasWidth: number;
   canvasHeight: number;
@@ -33,6 +41,7 @@ export interface FrameOption {
   addressPlaceholder: TextPlaceholder | null;
   websitePlaceholder: TextPlaceholder | null;
   productsPlaceholder: TextPlaceholder | null;
+  customTextPlaceholders: CustomTextPlaceholder[] | null;
 }
 
 // The business's saved Brand kit (Settings → Brand kit for flyers), passed
@@ -97,6 +106,28 @@ export const EMPTY_TEMPLATE: TemplateFormValues = {
 // the flyer preview is always fully visible without horizontal scrolling.
 const MAX_PREVIEW_WIDTH = 420;
 type DragTarget = FieldKey | 'photo-resize' | null;
+
+// Flyer template backgrounds must be portrait 3:4 (see the matching check in
+// src/lib/uploads.ts, which is the actual enforcement — this just gives
+// faster feedback than waiting on a round trip to the upload API).
+const TEMPLATE_ASPECT_RATIO = 3 / 4;
+const TEMPLATE_ASPECT_RATIO_TOLERANCE = 0.01;
+
+function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Could not read image dimensions.'));
+    };
+    img.src = url;
+  });
+}
 
 // One toolbar button per placeable element, icon-first like a Word/Photoshop
 // tool strip — grouped into "Contact details" (comes from each contact's own
@@ -261,6 +292,10 @@ export default function TemplatePlaceholderEditor({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  // Shown briefly next to "Save changes" — saving no longer navigates away
+  // (see onSubmit below), so this is the only feedback that the click did
+  // something.
+  const [justSaved, setJustSaved] = useState(false);
   // Advanced options (currently just the AiSensy campaign override) are
   // hidden by default — almost no business ever needs this, so showing it
   // on every template just confuses people. Auto-open it if a template
@@ -289,6 +324,15 @@ export default function TemplatePlaceholderEditor({
   // collapsed behind an "advanced" toggle by default rather than looking
   // like positioning these fields here still matters.
   const defaultFrame = frames.find((f) => f.isDefault) ?? null;
+  // Recolored through the same Sharp modulate() call the real render uses
+  // (see /api/frames/overlay-hue) instead of showing the overlay's raw
+  // uploaded color — this frame's own editor lets a business shift that
+  // color, and this preview used to always show the original regardless,
+  // going out of sync with whatever color was actually saved.
+  const defaultFrameOverlaySrc =
+    defaultFrame?.overlayUrl && defaultFrame.overlayHue
+      ? `/api/frames/overlay-hue?url=${encodeURIComponent(defaultFrame.overlayUrl)}&hue=${defaultFrame.overlayHue}`
+      : defaultFrame?.overlayUrl ?? null;
   const [manualBrandingOpen, setManualBrandingOpen] = useState(false);
   const brandFieldKeySet = new Set(BRAND_FIELDS.map((d) => d.key));
 
@@ -318,8 +362,13 @@ export default function TemplatePlaceholderEditor({
   // phone/email/address/website/products placeholders render branding at
   // send time (see defaultFrame handling in sendWish.ts) — so the preview
   // should show those, scaled onto this template's canvas, instead of this
-  // template's own branding placeholders, which are ignored then.
-  const frameActive = Boolean(defaultFrame) && !manualBrandingOpen;
+  // template's own branding placeholders, which are ignored then. Gated on
+  // showBranding (true only for STARTER templates — see this template's own
+  // edit page) to match sendWish.ts, which never applies a Frame to a
+  // CUSTOM template; without this the canvas kept showing the Frame
+  // overlaid on a business's own uploaded artwork even though a real send
+  // of that same template no longer would.
+  const frameActive = showBranding && Boolean(defaultFrame) && !manualBrandingOpen;
 
   // Same layout sendWish.ts (and flyer.ts's overlay compositing) applies —
   // the frame's placeholders were positioned against its own canvas size
@@ -332,6 +381,14 @@ export default function TemplatePlaceholderEditor({
 
   const frameLogoPlaceholder: LogoPlaceholder | null =
     defaultFrame?.logoPlaceholder ? scaleLogoPlaceholder(defaultFrame.logoPlaceholder, frameScale, frameTopOffset) : null;
+
+  // The default Frame's own free-form text boxes (see
+  // BusinessFrame.customTextPlaceholders and FramePlaceholderEditor.tsx's
+  // "Custom text" section), scaled onto this template's canvas the same way
+  // as every other frame-driven field above — rendered read-only below so
+  // this preview matches exactly what sendWish.ts actually composites.
+  const frameCustomTexts: CustomTextPlaceholder[] =
+    defaultFrame?.customTextPlaceholders?.map((p) => scaleCustomTextPlaceholder(p, frameScale, frameTopOffset)) ?? [];
 
   // Only for the brand fields a Frame can carry (name/designation/date live
   // on the template itself, never on a Frame).
@@ -671,6 +728,11 @@ export default function TemplatePlaceholderEditor({
     setUploading(true);
     setError(null);
     try {
+      const { width, height } = await readImageDimensions(file);
+      const ratio = width / height;
+      if (Math.abs(ratio - TEMPLATE_ASPECT_RATIO) > TEMPLATE_ASPECT_RATIO * TEMPLATE_ASPECT_RATIO_TOLERANCE) {
+        throw new Error(`Flyer template images must be portrait 3:4 (e.g. 1080×1440) — this image is ${width}×${height}px.`);
+      }
       const fd = new FormData();
       fd.append('file', file);
       const res = await fetch(uploadUrl, { method: 'POST', body: fd });
@@ -806,56 +868,103 @@ export default function TemplatePlaceholderEditor({
     setTextPlaceholder(key, { ...p, x: p.x + dx, y: p.y + dy });
   }
 
+  // Persists the current form state (create or update, matching onSubmit's
+  // own POST/PUT choice) and returns the saved template's id — shared by
+  // onSubmit and generateFinalPreview so a preview can never be generated
+  // from an unsaved layout (see generateFinalPreview's own comment).
+  async function saveTemplate(): Promise<string> {
+    if (!form.backgroundUrl) {
+      throw new Error('Please upload a flyer background image first.');
+    }
+    const payload = {
+      name: form.name,
+      occasion: form.occasion,
+      backgroundUrl: form.backgroundUrl,
+      canvasWidth: form.canvasWidth,
+      canvasHeight: form.canvasHeight,
+      ...(showPerBusinessOptions
+        ? { isDefault: form.isDefault, aisensyCampaignName: form.aisensyCampaignName || null }
+        : {}),
+      namePlaceholder: form.useName ? form.namePlaceholder : null,
+      designationPlaceholder: form.useDesignation ? form.designationPlaceholder : null,
+      datePlaceholder: form.useDate ? form.datePlaceholder : null,
+      photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
+      logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
+      firmNamePlaceholder: isFieldOn('firmName') ? form.firmNamePlaceholder : null,
+      phonePlaceholder: isFieldOn('phone') ? form.phonePlaceholder : null,
+      emailPlaceholder: isFieldOn('email') ? form.emailPlaceholder : null,
+      addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
+      websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
+      productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
+      phoneTextOverride: form.phoneTextOverride || null,
+      emailTextOverride: form.emailTextOverride || null,
+      addressTextOverride: form.addressTextOverride || null,
+      websiteTextOverride: form.websiteTextOverride || null,
+      productsTextOverride: form.productsTextOverride || null,
+    };
+    const url = form.id ? `${apiBase}/${form.id}` : apiBase;
+    const method = form.id ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Something went wrong');
+
+    // Stay on this page instead of bouncing back to the list — just swap
+    // a freshly-created template's URL over to its own edit page (so a
+    // second save PUTs instead of re-POSTing a duplicate).
+    if (!form.id) {
+      setForm((f) => ({ ...f, id: data.template.id }));
+      router.replace(`${redirectPath.split('?')[0]}/${data.template.id}/edit`);
+    }
+    return form.id ?? data.template.id;
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!form.backgroundUrl) {
-      setError('Please upload a flyer background image first.');
-      return;
-    }
     setLoading(true);
     try {
-      const payload = {
-        name: form.name,
-        occasion: form.occasion,
-        backgroundUrl: form.backgroundUrl,
-        canvasWidth: form.canvasWidth,
-        canvasHeight: form.canvasHeight,
-        ...(showPerBusinessOptions
-          ? { isDefault: form.isDefault, aisensyCampaignName: form.aisensyCampaignName || null }
-          : {}),
-        namePlaceholder: form.useName ? form.namePlaceholder : null,
-        designationPlaceholder: form.useDesignation ? form.designationPlaceholder : null,
-        datePlaceholder: form.useDate ? form.datePlaceholder : null,
-        photoPlaceholder: form.usePhoto ? form.photoPlaceholder : null,
-        logoPlaceholder: isFieldOn('logo') ? form.logoPlaceholder : null,
-        firmNamePlaceholder: isFieldOn('firmName') ? form.firmNamePlaceholder : null,
-        phonePlaceholder: isFieldOn('phone') ? form.phonePlaceholder : null,
-        emailPlaceholder: isFieldOn('email') ? form.emailPlaceholder : null,
-        addressPlaceholder: isFieldOn('address') ? form.addressPlaceholder : null,
-        websitePlaceholder: isFieldOn('website') ? form.websitePlaceholder : null,
-        productsPlaceholder: isFieldOn('products') ? form.productsPlaceholder : null,
-        phoneTextOverride: form.phoneTextOverride || null,
-        emailTextOverride: form.emailTextOverride || null,
-        addressTextOverride: form.addressTextOverride || null,
-        websiteTextOverride: form.websiteTextOverride || null,
-        productsTextOverride: form.productsTextOverride || null,
-      };
-      const url = form.id ? `${apiBase}/${form.id}` : apiBase;
-      const method = form.id ? 'PUT' : 'POST';
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Something went wrong');
-      router.push(redirectPath);
+      await saveTemplate();
       router.refresh();
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Renders the *actual* flyer with a sample contact — same compositing
+  // pipeline a real send uses (see /api/templates/preview and
+  // sendWish.ts's renderFlyer, including its default-Frame-overrides-a-
+  // STARTER-template's-own-branding rule) — as opposed to the HTML/CSS
+  // placeholder preview below, which only approximates it. Saves the
+  // current form state first (via saveTemplate) so this can never show a
+  // layout a real send wouldn't actually produce.
+  const [finalPreview, setFinalPreview] = useState<{ loading: boolean; url: string | null; error: string | null }>({
+    loading: false,
+    url: null,
+    error: null,
+  });
+  async function generateFinalPreview() {
+    setFinalPreview({ loading: true, url: null, error: null });
+    try {
+      const templateId = await saveTemplate();
+      const res = await fetch('/api/templates/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Could not generate preview');
+      setFinalPreview({ loading: false, url: data.url, error: null });
+      router.refresh();
+    } catch (err) {
+      setFinalPreview({ loading: false, url: null, error: err instanceof Error ? err.message : 'Could not generate preview' });
     }
   }
 
@@ -905,6 +1014,32 @@ export default function TemplatePlaceholderEditor({
       label={selectedDef?.label}
       onNudge={nudgeSelected}
     />
+    {finalPreview.url && (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+        onClick={() => setFinalPreview((s) => ({ ...s, url: null }))}
+      >
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-3" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-1.5">
+            <h3 className="text-sm font-semibold text-gray-900">Preview (sample contact)</h3>
+            <button
+              type="button"
+              onClick={() => setFinalPreview((s) => ({ ...s, url: null }))}
+              className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+              aria-label="Close"
+            >
+              &times;
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mb-2">
+            Generating this saved your current changes, then rendered this template exactly as a customer would
+            receive it — not the placeholder preview below.
+          </p>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={finalPreview.url} alt="Final flyer preview" className="w-full rounded-md border border-gray-200" />
+        </div>
+      </div>
+    )}
     <form onSubmit={onSubmit} className="compact-form grid grid-cols-1 lg:grid-cols-2 gap-3">
       <div className="space-y-1.5">
         <div className="card p-1.5 space-y-1">
@@ -924,11 +1059,37 @@ export default function TemplatePlaceholderEditor({
               <select
                 className="input"
                 value={form.occasion}
-                onChange={(e) => setForm({ ...form, occasion: e.target.value as TemplateFormValues['occasion'] })}
+                onChange={(e) => {
+                  const occasion = e.target.value as TemplateFormValues['occasion'];
+                  // Festival flyers are complete artwork on their own — no
+                  // contact or branding field is needed, so switching to
+                  // Festival turns every field off (any can still be turned
+                  // back on by hand).
+                  setForm(
+                    occasion === 'FESTIVAL'
+                      ? {
+                          ...form,
+                          occasion,
+                          useName: false,
+                          useDesignation: false,
+                          useDate: false,
+                          usePhoto: false,
+                          useLogo: false,
+                          useFirmName: false,
+                          usePhone: false,
+                          useEmail: false,
+                          useAddress: false,
+                          useWebsite: false,
+                          useProducts: false,
+                        }
+                      : { ...form, occasion },
+                  );
+                }}
               >
                 <option value="BIRTHDAY">Birthday</option>
                 <option value="ANNIVERSARY">Anniversary</option>
                 <option value="FESTIVAL">Festival</option>
+                <option value="OTHER">Others</option>
               </select>
             </div>
             {showPerBusinessOptions && (
@@ -967,7 +1128,7 @@ export default function TemplatePlaceholderEditor({
           <div>
             <label className="label">Flyer background image</label>
             <input type="file" accept="image/webp" onChange={onBackgroundChange} className="text-xs" />
-            <p className="text-xs text-gray-500 mt-0.5">WebP only.</p>
+            <p className="text-xs text-gray-500 mt-0.5">WebP only, portrait 3:4 (e.g. 1080×1440px).</p>
             {uploading && <p className="text-xs text-gray-500 mt-0.5">Uploading…</p>}
             {form.backgroundUrl && (
               <p className="text-xs text-gray-500 mt-0.5">
@@ -996,9 +1157,9 @@ export default function TemplatePlaceholderEditor({
                 <div className="rounded-lg border border-brand-200 bg-brand-50/60 p-1.5 mb-1.5">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-md overflow-hidden bg-white border border-brand-200 flex-shrink-0 flex items-center justify-center">
-                      {defaultFrame.overlayUrl ? (
+                      {defaultFrameOverlaySrc ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={defaultFrame.overlayUrl} alt={defaultFrame.name} className="w-full h-full object-cover" />
+                        <img src={defaultFrameOverlaySrc} alt={defaultFrame.name} className="w-full h-full object-cover" />
                       ) : (
                         <svg className="w-4 h-4 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
@@ -1099,9 +1260,14 @@ export default function TemplatePlaceholderEditor({
                   <div className="grid grid-cols-3 gap-1.5 mb-1.5">
                     <div>
                       <label className="label">Font</label>
-                      <select className="input" value={groupFontFamily} onChange={(e) => setGroupFontFamily(e.target.value as FontFamilyId)}>
+                      <select
+                        className="input"
+                        style={{ fontFamily: cssFontFamilyFor(groupFontFamily) }}
+                        value={groupFontFamily}
+                        onChange={(e) => setGroupFontFamily(e.target.value as FontFamilyId)}
+                      >
                         {FONT_FAMILIES.map((f) => (
-                          <option key={f.id} value={f.id}>
+                          <option key={f.id} value={f.id} style={{ fontFamily: f.cssFamily }}>
                             {f.label}
                           </option>
                         ))}
@@ -1347,14 +1513,32 @@ export default function TemplatePlaceholderEditor({
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button type="submit" disabled={loading || uploading} className="btn-primary">
             {loading ? 'Saving…' : form.id ? 'Save changes' : 'Create template'}
           </button>
           <button type="button" className="btn-secondary" onClick={() => router.push(redirectPath)}>
             Cancel
           </button>
+          {/* Once saved, this editor keeps editing the same template (see
+              saveTemplate), so picking a new image here replaces this
+              template's image — this is the way to add a separate design. */}
+          {form.id && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => router.push(`${redirectPath.split('?')[0]}/new`)}
+            >
+              + Create another template
+            </button>
+          )}
+          {justSaved && <span className="text-sm text-green-600 font-medium">Saved</span>}
         </div>
+        {form.id && (
+          <p className="text-xs text-gray-500">
+            Saving updates this template. To add a different design, use &quot;Create another template&quot;.
+          </p>
+        )}
       </div>
 
       {/* top-0, not top-4: this column is a CSS Grid item with
@@ -1368,16 +1552,30 @@ export default function TemplatePlaceholderEditor({
           selected. top-0 has nothing to "jump" to (it's already satisfied
           at the column's natural position), so it keeps this column
           pinned near the top while scrolling without that snap. */}
-      <div ref={previewColumnRef} className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+      <div ref={previewColumnRef} className="lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-4.5rem)] lg:overflow-y-auto">
         <div className="flex items-center justify-between mb-1.5">
           <p className="text-xs text-gray-600">
             Drag the labeled markers on the flyer to position them. Numbers below give exact control.
           </p>
-          <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap ml-2">
-            <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
-            Show grid
-          </label>
+          <div className="flex items-center gap-3 ml-2">
+            {business && (
+              <button
+                type="button"
+                onClick={generateFinalPreview}
+                disabled={finalPreview.loading}
+                title="Saves your current changes, then renders the actual flyer a customer would receive"
+                className="text-xs font-medium text-brand-600 hover:underline whitespace-nowrap disabled:opacity-60"
+              >
+                {finalPreview.loading ? 'Saving & generating…' : 'Save & generate preview'}
+              </button>
+            )}
+            <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap">
+              <input type="checkbox" checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)} />
+              Show grid
+            </label>
+          </div>
         </div>
+        {finalPreview.error && <p className="text-xs text-red-600 mb-2">{finalPreview.error}</p>}
         <div
           ref={previewRef}
           onPointerMove={onPointerMove}
@@ -1463,7 +1661,7 @@ export default function TemplatePlaceholderEditor({
             // the flyer.
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={defaultFrame.overlayUrl}
+              src={defaultFrameOverlaySrc ?? defaultFrame.overlayUrl}
               alt={`${defaultFrame.name} frame`}
               className="absolute bottom-0 left-0 block w-full pointer-events-none"
             />
@@ -1600,6 +1798,40 @@ export default function TemplatePlaceholderEditor({
               </div>
             );
           })}
+
+          {frameActive &&
+            frameCustomTexts.map((c) => {
+              const fontPx = Math.max(1, c.fontSize * scale);
+              return (
+                <div
+                  key={c.id}
+                  className="absolute px-1 pointer-events-none"
+                  style={{
+                    left: c.x * scale,
+                    top: c.y * scale,
+                    transform: [
+                      c.align === 'center' ? 'translate(-50%, -50%)' : c.align === 'right' ? 'translate(-100%, -50%)' : 'translate(0, -50%)',
+                      c.rotation ? `rotate(${c.rotation}deg)` : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' '),
+                    color: c.color,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: fontPx,
+                      fontWeight: c.fontWeight,
+                      fontFamily: cssFontFamilyFor(c.fontFamily),
+                      whiteSpace: 'pre',
+                      textAlign: c.align,
+                    }}
+                  >
+                    {c.text}
+                  </span>
+                </div>
+              );
+            })}
         </div>
       </div>
     </form>

@@ -35,6 +35,7 @@ export async function adoptFrameForBusiness(businessId: string, frameId: string)
       frameId: frame.id,
       name: frame.name,
       overlayUrl,
+      overlayHue: frame.overlayHue,
       canvasWidth: frame.canvasWidth,
       canvasHeight: frame.canvasHeight,
       isDefault: !hasAny,
@@ -45,6 +46,7 @@ export async function adoptFrameForBusiness(businessId: string, frameId: string)
       addressPlaceholder: frame.addressPlaceholder,
       websitePlaceholder: frame.websitePlaceholder,
       productsPlaceholder: frame.productsPlaceholder,
+      customTextPlaceholders: frame.customTextPlaceholders,
     },
   });
 }

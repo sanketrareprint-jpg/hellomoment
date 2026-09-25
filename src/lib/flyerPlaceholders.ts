@@ -46,10 +46,22 @@ export interface LogoPlaceholder {
   locked?: boolean;
 }
 
+// A free-form text box a business can add to a Frame beyond the fixed brand
+// fields (logo/firm name/phone/etc.) — see BusinessFrame/Frame's
+// customTextPlaceholders column. Unlike those fixed fields, whose displayed
+// text always comes from Settings → Brand kit, each of these carries its own
+// typed content, so it's a TextPlaceholder plus that content plus a stable
+// id (so one entry survives being dragged/restyled/reordered independently
+// of the others).
+export interface CustomTextPlaceholder extends TextPlaceholder {
+  id: string;
+  text: string;
+}
+
 export interface TemplateFormValues {
   id?: string;
   name: string;
-  occasion: 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL';
+  occasion: 'BIRTHDAY' | 'ANNIVERSARY' | 'FESTIVAL' | 'OTHER';
   isDefault: boolean;
   aisensyCampaignName: string;
   backgroundUrl: string;

@@ -8,6 +8,7 @@ const OCCASION_LABEL: Record<string, string> = {
   BIRTHDAY: 'Birthday',
   ANNIVERSARY: 'Anniversary',
   FESTIVAL: 'Festival',
+  OTHER: 'Others',
 };
 
 export interface StarterTemplateRow {

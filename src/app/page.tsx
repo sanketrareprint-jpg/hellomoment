@@ -3,6 +3,7 @@ import { getCurrentBusiness } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import HeroSlider from '@/components/HeroSlider';
 import DashboardBannerSlider from '@/components/DashboardBannerSlider';
+import { getAllBannerSlideSeconds } from '@/lib/bannerTiming';
 import { prisma } from '@/lib/db';
 import { RECHARGE_TIERS } from '@/lib/pricing';
 import WhatsAppFloatButton from '@/components/WhatsAppFloatButton';
@@ -84,8 +85,11 @@ export default async function LandingPage() {
   const banners = await prisma.dashboardBanner.findMany({
     where: { isActive: true, placement: 'LANDING' },
     orderBy: { order: 'asc' },
-    select: { id: true, imageUrl: true, linkUrl: true },
+    select: { id: true, imageUrl: true, linkUrl: true, device: true },
   });
+  const desktopBanners = banners.filter((b) => b.device !== 'MOBILE');
+  const mobileBanners = banners.filter((b) => b.device === 'MOBILE');
+  const slideSeconds = banners.length > 1 ? await getAllBannerSlideSeconds() : null;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-brand-50 via-white to-white overflow-hidden">
@@ -100,6 +104,9 @@ export default async function LandingPage() {
           <Link href="/pricing" className="hidden sm:inline text-sm font-medium text-gray-600 hover:text-brand-600">
             Pricing
           </Link>
+          <Link href="/blog" className="hidden sm:inline text-sm font-medium text-gray-600 hover:text-brand-600">
+            Blog
+          </Link>
           <Link href="/login" className="btn-secondary text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2 whitespace-nowrap">
             Log in
           </Link>
@@ -111,9 +118,18 @@ export default async function LandingPage() {
       </header>
 
       <div className="flex flex-col">
-        {banners.length > 0 && (
+        {desktopBanners.length > 0 && (
           <section className="hidden sm:block max-w-5xl mx-auto px-4 sm:px-6 pt-6">
-            <DashboardBannerSlider banners={banners} />
+            <DashboardBannerSlider banners={desktopBanners} intervalSeconds={slideSeconds?.['LANDING.DESKTOP']} />
+          </section>
+        )}
+        {mobileBanners.length > 0 && (
+          <section className="sm:hidden w-full px-4 pt-2">
+            <DashboardBannerSlider
+              banners={mobileBanners}
+              aspectClass="aspect-[2/1]"
+              intervalSeconds={slideSeconds?.['LANDING.MOBILE']}
+            />
           </section>
         )}
 
@@ -124,20 +140,6 @@ export default async function LandingPage() {
         </div>
 
         <HeroSlider />
-
-        <section className="order-first sm:hidden max-w-md mx-auto px-4 pb-6">
-          <img
-            src="/raregreet-flyer.webp"
-            srcSet="/raregreet-flyer-640.webp 640w, /raregreet-flyer.webp 1254w"
-            sizes="calc(100vw - 2rem)"
-            width={1254}
-            height={1254}
-            alt="RareGreet — automate your birthday and anniversary wishes on WhatsApp"
-            loading="lazy"
-            decoding="async"
-            className="block w-full h-auto rounded-2xl shadow-xl ring-1 ring-brand-100"
-          />
-        </section>
       </div>
 
       <section id="how-it-works" className="max-w-5xl mx-auto px-6 pb-16 scroll-mt-20">

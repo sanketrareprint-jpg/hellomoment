@@ -12,9 +12,13 @@ import { requireApiBusiness } from '@/lib/session';
  * validation, like login-email uniqueness, that doesn't apply here). Only
  * whichever keys are present in the body are changed; these are the exact
  * same Business columns Settings → Brand kit writes, so a change here shows
- * up on every template and frame that uses it.
+ * up on every template and frame that uses it. `name` and `logoUrl` are
+ * included too — the Frame gallery's business-details panel (see
+ * FrameGalleryWorkspace) edits those inline the same way.
  */
 const schema = z.object({
+  name: z.string().min(1).optional(), // required column — never nulled out, unlike the rest below
+  logoUrl: z.string().nullable().optional(),
   phoneDisplay: z.string().nullable().optional(),
   emailDisplay: z.string().nullable().optional(),
   addressText: z.string().nullable().optional(),
@@ -33,14 +37,18 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? 'Invalid input' }, { status: 400 });
   }
 
+  const { name, ...rest } = parsed.data;
   const data: Record<string, string | null> = {};
-  for (const [key, value] of Object.entries(parsed.data)) {
+  if (name !== undefined) data.name = name.trim();
+  for (const [key, value] of Object.entries(rest)) {
     if (value === undefined) continue;
     data[key] = value && value.trim() ? value : null;
   }
 
   const updated = await prisma.business.update({ where: { id: business.id }, data });
   return NextResponse.json({
+    name: updated.name,
+    logoUrl: updated.logoUrl,
     phoneDisplay: updated.phoneDisplay,
     emailDisplay: updated.emailDisplay,
     addressText: updated.addressText,
