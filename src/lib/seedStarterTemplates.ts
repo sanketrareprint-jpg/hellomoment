@@ -36,7 +36,7 @@ export async function seedStarterTemplatesForBusiness(businessId: string) {
 
   const existing = await prisma.flyerTemplate.findMany({
     where: { businessId, source: 'STARTER' },
-    select: { id: true, name: true, starterTemplateId: true, updatedAt: true },
+    select: { id: true, name: true, starterTemplateId: true, updatedAt: true, placeholdersCustomized: true },
   });
   const existingByStarterId = new Map(
     existing.filter((t) => t.starterTemplateId).map((t) => [t.starterTemplateId as string, t])
@@ -82,16 +82,41 @@ export async function seedStarterTemplatesForBusiness(businessId: string) {
       if (!needsLink && !needsArtworkRefresh) continue; // already in sync — skip the file copy entirely
 
       if (needsArtworkRefresh) {
-        // Refresh the artwork to the latest admin-curated design. Leave
-        // placeholders/default status untouched in case the business
-        // customized them.
+        // Refresh the artwork to the latest admin-curated design. Placeholder
+        // positions/styles come along too, UNLESS the business has already
+        // saved an explicit edit of their own (placeholdersCustomized) — that
+        // copy is theirs from then on, same as before. A never-touched copy
+        // stays a live mirror of whatever admin currently has configured, so
+        // a business who never opened the editor still sees today's design,
+        // not a stale snapshot from whenever they first added it.
         const ext = path.extname(starter.backgroundUrl).replace('.', '') || 'jpg';
         const filename = `${uuid()}.${ext}`;
         await fs.copyFile(servedUrlToAbsolutePath(starter.backgroundUrl), path.join(destDir, filename));
         const backgroundUrl = `/api/files/templates/${filename}`;
         await prisma.flyerTemplate.update({
           where: { id: match.id },
-          data: { backgroundUrl, source: 'STARTER', starterTemplateId: starter.id },
+          data: {
+            backgroundUrl,
+            source: 'STARTER',
+            starterTemplateId: starter.id,
+            ...(match.placeholdersCustomized
+              ? {}
+              : {
+                  canvasWidth: starter.canvasWidth,
+                  canvasHeight: starter.canvasHeight,
+                  namePlaceholder: starter.namePlaceholder,
+                  designationPlaceholder: starter.designationPlaceholder,
+                  datePlaceholder: starter.datePlaceholder,
+                  photoPlaceholder: starter.photoPlaceholder,
+                  logoPlaceholder: starter.logoPlaceholder,
+                  firmNamePlaceholder: starter.firmNamePlaceholder,
+                  phonePlaceholder: starter.phonePlaceholder,
+                  emailPlaceholder: starter.emailPlaceholder,
+                  addressPlaceholder: starter.addressPlaceholder,
+                  websitePlaceholder: starter.websitePlaceholder,
+                  productsPlaceholder: starter.productsPlaceholder,
+                }),
+          },
         });
         updated.push(starter.name);
       } else {

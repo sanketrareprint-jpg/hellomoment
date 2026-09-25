@@ -98,6 +98,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     data: {
       ...rest,
       isDefault: Boolean(isDefault),
+      // This route only ever fires from the business's own template editor,
+      // so any explicit save here means the business has taken ownership of
+      // this copy's placeholders — from now on seedStarterTemplatesForBusiness
+      // leaves them alone on every future admin refresh (see its own
+      // comment). Set unconditionally, including for a template that was
+      // never STARTER-sourced, where it's simply unused.
+      placeholdersCustomized: true,
       namePlaceholder: namePlaceholder ? JSON.stringify(namePlaceholder) : null,
       designationPlaceholder: designationPlaceholder ? JSON.stringify(designationPlaceholder) : null,
       datePlaceholder: datePlaceholder ? JSON.stringify(datePlaceholder) : null,

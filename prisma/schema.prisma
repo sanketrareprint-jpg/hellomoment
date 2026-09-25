@@ -281,6 +281,18 @@ model FlyerTemplate {
   starterTemplateId String?
   starterTemplate   StarterTemplate? @relation(fields: [starterTemplateId], references: [id], onDelete: Cascade)
 
+  // Once true, seedStarterTemplatesForBusiness never overwrites this row's
+  // placeholder fields again, only its background artwork. Stays false
+  // (the default, for a fresh copy) until the business explicitly saves
+  // their own edit through PUT /api/templates/[id] — set unconditionally
+  // there, since that route only ever fires from the business's own
+  // editor. Until then, an admin edit to the StarterTemplate this was
+  // copied from keeps flowing through automatically on every refresh, so
+  // a business who never touched their copy always sees the current
+  // admin-curated design, not a stale snapshot from whenever they first
+  // added it.
+  placeholdersCustomized Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
